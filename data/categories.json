@@ -1,0 +1,121 @@
+{
+  "diapers": {
+    "name": "紙おむつ",
+    "description": "サイズとタイプをそろえ、1枚あたりの価格を比較します。",
+    "metric": "per_piece",
+    "parser": "diapers",
+    "path": "diapers",
+    "segments": [
+      {
+        "id": "tape-newborn",
+        "type": "tape",
+        "size": "newborn",
+        "label": "テープ・新生児",
+        "query": "紙おむつ テープ 新生児"
+      },
+      {
+        "id": "tape-s",
+        "type": "tape",
+        "size": "s",
+        "label": "テープ・S",
+        "query": "紙おむつ テープ Sサイズ"
+      },
+      {
+        "id": "tape-m",
+        "type": "tape",
+        "size": "m",
+        "label": "テープ・M",
+        "query": "紙おむつ テープ Mサイズ"
+      },
+      {
+        "id": "tape-l",
+        "type": "tape",
+        "size": "l",
+        "label": "テープ・L",
+        "query": "紙おむつ テープ Lサイズ"
+      },
+      {
+        "id": "pants-s",
+        "type": "pants",
+        "size": "s",
+        "label": "パンツ・S",
+        "query": "紙おむつ パンツ Sサイズ"
+      },
+      {
+        "id": "pants-m",
+        "type": "pants",
+        "size": "m",
+        "label": "パンツ・M",
+        "query": "紙おむつ パンツ Mサイズ",
+        "queries": [
+          "紙おむつ パンツ Mサイズ",
+          "紙おむつ パンツ M はいはい",
+          "紙おむつ パンツ M たっち"
+        ]
+      },
+      {
+        "id": "pants-l",
+        "type": "pants",
+        "size": "l",
+        "label": "パンツ・L",
+        "query": "紙おむつ パンツ Lサイズ"
+      },
+      {
+        "id": "pants-big",
+        "type": "pants",
+        "size": "big",
+        "label": "パンツ・BIG",
+        "query": "紙おむつ パンツ BIG"
+      },
+      {
+        "id": "pants-big-plus",
+        "type": "pants",
+        "size": "big_plus",
+        "label": "パンツ・BIGより大きい",
+        "query": "紙おむつ パンツ BIGより大きい"
+      }
+    ]
+  },
+  "wipes": {
+    "name": "おしりふき",
+    "description": "標準的なベビー用おしりふきを1枚あたりで比較します。",
+    "metric": "per_piece",
+    "parser": "wipes",
+    "path": "wipes",
+    "segments": [
+      {
+        "id": "wipes-standard",
+        "label": "おしりふき",
+        "query": "ベビー おしりふき"
+      }
+    ]
+  },
+  "formula": {
+    "name": "粉ミルク",
+    "description": "一般的な乳児用粉ミルクを100gあたりで比較します。",
+    "metric": "per_100g",
+    "parser": "formula",
+    "path": "formula",
+    "segments": [
+      {
+        "id": "formula-infant",
+        "label": "乳児用粉ミルク",
+        "query": "粉ミルク 大缶 乳児"
+      }
+    ]
+  },
+  "diaper_bags": {
+    "name": "おむつ用防臭・消臭袋",
+    "description": "おむつ処理用の袋を1枚あたりで比較します。",
+    "metric": "per_piece",
+    "parser": "diaper_bags",
+    "path": "diaper-bags",
+    "segments": [
+      {
+        "id": "diaper-bags",
+        "label": "おむつ用防臭・消臭袋",
+        "query": "おむつ 防臭袋 消臭袋"
+      }
+    ]
+  }
+}

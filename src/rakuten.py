@@ -1,0 +1,116 @@
+from __future__ import annotations
+
+import json
+import os
+import time
+import urllib.parse
+import urllib.request
+
+from .config import SITE_URL
+
+API_URL = "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260701"
+APP_ID = os.environ.get("RAKUTEN_APPLICATION_ID", "").strip()
+ACCESS_KEY = os.environ.get("RAKUTEN_ACCESS_KEY", "").strip()
+AFFILIATE_ID = os.environ.get("RAKUTEN_AFFILIATE_ID", "").strip()
+_LAST_REQUEST_AT = 0.0
+
+
+def _throttle(min_interval: float = 1.05):
+    global _LAST_REQUEST_AT
+    elapsed = time.monotonic() - _LAST_REQUEST_AT
+    if elapsed < min_interval:
+        time.sleep(min_interval - elapsed)
+    _LAST_REQUEST_AT = time.monotonic()
+
+
+def _first_image(item: dict) -> str:
+    for key in ("mediumImageUrls", "smallImageUrls"):
+        value = item.get(key)
+        if not value:
+            continue
+        row = value[0] if isinstance(value, list) and value else value
+        if isinstance(row, dict):
+            row = row.get("imageUrl") or row.get("url")
+        if row:
+            return str(row).replace("http://", "https://")
+    return ""
+
+
+def _normalize(raw: dict) -> dict | None:
+    item = raw.get("Item", raw) if isinstance(raw, dict) else {}
+    try:
+        price = int(float(item.get("itemPrice") or 0))
+    except (TypeError, ValueError):
+        price = 0
+    name = str(item.get("itemName") or "").strip()
+    if not name or price <= 0:
+        return None
+    return {
+        "source": "rakuten",
+        "source_id": str(item.get("itemCode") or ""),
+        "name": name,
+        "price_yen": price,
+        "url": str(item.get("affiliateUrl") or item.get("itemUrl") or ""),
+        "shop": str(item.get("shopName") or ""),
+        "image": _first_image(item),
+        "review_count": int(float(item.get("reviewCount") or 0)),
+    }
+
+
+def fetch_items(keyword: str, pages: int = 2) -> list[dict]:
+    if not APP_ID or not ACCESS_KEY:
+        raise RuntimeError("RAKUTEN_APPLICATION_ID / RAKUTEN_ACCESS_KEY are required")
+    pages = max(1, min(int(pages), 3))
+    items: list[dict] = []
+    seen: set[str] = set()
+    for page in range(1, pages + 1):
+        if page > 1:
+            time.sleep(1.05)
+        params = {
+            "applicationId": APP_ID,
+            "keyword": keyword,
+            "hits": 30,
+            "page": page,
+            "format": "json",
+            "formatVersion": 2,
+            "availability": 1,
+            # Keep the MVP ranking honest: compare offers that the API can restrict to postage included/free shipping.
+            "postageFlag": 1,
+            "elements": "itemName,itemPrice,itemUrl,affiliateUrl,itemCode,shopName,mediumImageUrls,smallImageUrls,reviewCount",
+        }
+        if AFFILIATE_ID:
+            params["affiliateId"] = AFFILIATE_ID
+        _throttle()
+        request = urllib.request.Request(
+            API_URL + "?" + urllib.parse.urlencode(params),
+            headers={
+                "accessKey": ACCESS_KEY,
+                "Origin": "https://stusaurus.github.io",
+                "Referer": SITE_URL,
+                "User-Agent": "baby-cost-jp/0.1",
+            },
+        )
+        last_error = None
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(request, timeout=30) as response:
+                    payload = json.loads(response.read().decode("utf-8"))
+                last_error = None
+                break
+            except Exception as exc:  # network/API transient errors are retried by scheduled build
+                last_error = exc
+                if attempt < 2:
+                    time.sleep(1.2 * (attempt + 1))
+        if last_error:
+            raise last_error
+        rows = payload.get("Items") or payload.get("items") or []
+        for raw in rows:
+            normalized = _normalize(raw)
+            if not normalized:
+                continue
+            key = normalized["source_id"] or f'{normalized["name"]}|{normalized["price_yen"]}|{normalized["shop"]}'
+            if key in seen:
+                continue
+            seen.add(key)
+            items.append(normalized)
+    return items

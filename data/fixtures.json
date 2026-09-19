@@ -1,0 +1,21 @@
+{
+  "pants-m": [
+    {"source":"rakuten","source_id":"mp-m-1","name":"マミーポコ おむつ パンツ Mサイズ 74枚×3個","price_yen":4480,"url":"https://example.invalid/mp-m-1","shop":"fixture","image":"","review_count":220},
+    {"source":"rakuten","source_id":"pn-m-1","name":"パンパース おむつ パンツ Mサイズ 66枚×3個","price_yen":4890,"url":"https://example.invalid/pn-m-1","shop":"fixture","image":"","review_count":310},
+    {"source":"rakuten","source_id":"bad-l","name":"パンパース おむつ パンツ Lサイズ 58枚×3個","price_yen":3000,"url":"https://example.invalid/bad-l","shop":"fixture","image":"","review_count":1}
+  ],
+  "wipes-standard": [
+    {"source":"rakuten","source_id":"wipe-1","name":"レック 水99.9% おしりふき 80枚×20個 ベビー","price_yen":3380,"url":"https://example.invalid/wipe-1","shop":"fixture","image":"","review_count":500},
+    {"source":"rakuten","source_id":"wipe-2","name":"ピジョン おしりふき 72枚 12個セット ベビー用","price_yen":2480,"url":"https://example.invalid/wipe-2","shop":"fixture","image":"","review_count":310},
+    {"source":"rakuten","source_id":"wipe-bad","name":"トイレに流せる おしりふき 72枚×12個","price_yen":1000,"url":"https://example.invalid/wipe-bad","shop":"fixture","image":"","review_count":1}
+  ],
+  "formula-infant": [
+    {"source":"rakuten","source_id":"formula-1","name":"明治 ほほえみ 粉ミルク 800g×2缶セット","price_yen":5380,"url":"https://example.invalid/formula-1","shop":"fixture","image":"","review_count":220},
+    {"source":"rakuten","source_id":"formula-2","name":"森永 はぐくみ 粉ミルク 800g 2缶セット","price_yen":4980,"url":"https://example.invalid/formula-2","shop":"fixture","image":"","review_count":180},
+    {"source":"rakuten","source_id":"formula-bad","name":"和光堂 ぐんぐん フォローアップミルク 830g×2缶","price_yen":2800,"url":"https://example.invalid/formula-bad","shop":"fixture","image":"","review_count":20}
+  ],
+  "diaper-bags": [
+    {"source":"rakuten","source_id":"bag-1","name":"BOS おむつが臭わない袋 ベビー用 200枚 2箱セット","price_yen":3600,"url":"https://example.invalid/bag-1","shop":"fixture","image":"","review_count":420},
+    {"source":"rakuten","source_id":"bag-2","name":"おむつ 防臭袋 ベビー 300枚×2個 消臭バッグ","price_yen":2980,"url":"https://example.invalid/bag-2","shop":"fixture","image":"","review_count":120}
+  ]
+}
