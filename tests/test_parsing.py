@@ -41,6 +41,14 @@ class ParsingTests(unittest.TestCase):
         )
         self.assertIsNone(row)
 
+    def test_rejects_big_and_big_plus_when_both_have_separate_counts(self):
+        row = parse_for_segment(
+            "メリーズ パンツ ビッグ38枚 ビッグより大きい24枚",
+            "diapers",
+            {"type":"pants","size":"big_plus"},
+        )
+        self.assertIsNone(row)
+
     def test_rejects_size_selection_disclosed_in_caption(self):
         row = parse_for_segment(
             "パンパース おむつ パンツ BIGより大きい 30枚×3個",
@@ -67,6 +75,30 @@ class ParsingTests(unittest.TestCase):
         )
         self.assertIsNotNone(row)
         self.assertEqual(row["attributes"]["size"], "big_plus")
+
+    def test_keeps_big_plus_alias_with_big_marketing_word(self):
+        row = parse_for_segment(
+            "マミーポコパンツ ビッグ大36枚 大容量 ビッグ 男女共用 ビッグより大きい",
+            "diapers",
+            {"type":"pants","size":"big_plus"},
+        )
+        self.assertIsNotNone(row)
+
+    def test_s_size_is_not_confused_by_contextual_newborn_word(self):
+        row = parse_for_segment(
+            "メリーズ テープ Sサイズ 62枚×4個 出産準備 新生児 肌に優しい",
+            "diapers",
+            {"type":"tape","size":"s"},
+        )
+        self.assertIsNotNone(row)
+
+    def test_newborn_is_not_confused_by_smtb_shipping_token(self):
+        row = parse_for_segment(
+            "メリーズ テープ 新生児用 68枚×4個 送料無料 【smtb-s】",
+            "diapers",
+            {"type":"tape","size":"newborn"},
+        )
+        self.assertIsNotNone(row)
 
     def test_wipes_excludes_flushable(self):
         row = parse_for_segment("トイレに流せる おしりふき 72枚×12個", "wipes", {})
