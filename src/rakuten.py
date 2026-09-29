@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -57,6 +58,17 @@ def _normalize(raw: dict) -> dict | None:
     }
 
 
+def _http_error(exc: urllib.error.HTTPError) -> RuntimeError:
+    try:
+        body = exc.read().decode("utf-8", errors="replace")
+    except Exception:
+        body = ""
+    # Rakuten error bodies contain parameter names/descriptions but not our secret values.
+    if len(body) > 1000:
+        body = body[:1000] + "..."
+    return RuntimeError(f"Rakuten API HTTP {exc.code}: {body or exc.reason}")
+
+
 def fetch_items(keyword: str, pages: int = 2) -> list[dict]:
     if not APP_ID or not ACCESS_KEY:
         raise RuntimeError("RAKUTEN_APPLICATION_ID / RAKUTEN_ACCESS_KEY are required")
@@ -96,6 +108,10 @@ def fetch_items(keyword: str, pages: int = 2) -> list[dict]:
                 with urllib.request.urlopen(request, timeout=30) as response:
                     payload = json.loads(response.read().decode("utf-8"))
                 last_error = None
+                break
+            except urllib.error.HTTPError as exc:
+                # Parameter/auth errors are deterministic; keep the API response so the workflow is diagnosable.
+                last_error = _http_error(exc)
                 break
             except Exception as exc:  # network/API transient errors are retried by scheduled build
                 last_error = exc
