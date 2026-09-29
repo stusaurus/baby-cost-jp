@@ -92,28 +92,57 @@ def diaper_size_mentions(t: str) -> set[str]:
             found.add(s)
     return found
 
+def diaper_size_count_mentions(t: str) -> set[str]:
+    k=norm(t).lower()
+    found=set()
+    if re.search(
+        r'(?:(?:big|ビッグ|ビック)\s*(?:サイズ)?\s*より\s*大きい\s*(?:サイズ)?|(?:big|ビッグ|ビック)\s*大|スーパー\s*(?:big|ビッグ|ビック)|xxl\s*(?:サイズ)?)'
+        r'\s*[:：]?\s*(?:\([^)]{0,20}\)\s*)?\d+\s*枚',
+        k,
+        re.I,
+    ):
+        found.add('big_plus')
+    if re.search(
+        r'(?<!スーパー)(?:big|ビッグ|ビック)\s*(?:サイズ)?(?!\s*より\s*大きい|\s*大)'
+        r'\s*[:：]?\s*(?:\([^)]{0,20}\)\s*)?\d+\s*枚',
+        k,
+        re.I,
+    ):
+        found.add('big')
+    if re.search(r'新生児\s*(?:用|サイズ)?\s*[:：]?\s*(?:\([^)]{0,20}\)\s*)?\d+\s*枚', k):
+        found.add('newborn')
+    for s in ('s','m','l'):
+        if re.search(
+            rf'(?:^|[\s・/／,(（:_]){s}\s*(?:サイズ)?\s*[:：]?\s*(?:\([^)]{{0,20}}\)\s*)?\d+\s*枚',
+            k,
+            re.I,
+        ):
+            found.add(s)
+    return found
+
 def diaper_size(t):
     found=diaper_size_mentions(t)
+    counted=diaper_size_count_mentions(t)
+    if len(counted)==1:
+        return next(iter(counted))
     return next(iter(found)) if len(found)==1 else ''
 
 def _big_and_big_plus_are_separate_options(title: str) -> bool:
-    k=norm(title).lower()
-    big_with_count = re.search(r'(?:big|ビッグ|ビック)\s*(?:サイズ)?\s*[:：]?\s*\d+\s*枚', k, re.I)
-    big_plus_with_count = re.search(
-        r'(?:(?:big|ビッグ|ビック)\s*(?:サイズ)?\s*より\s*大きい\s*(?:サイズ)?|xxl\s*(?:サイズ)?)\s*[:：]?\s*\d+\s*枚',
-        k,
-        re.I,
-    )
-    return bool(big_with_count and big_plus_with_count)
+    counted=diaper_size_count_mentions(title)
+    return 'big' in counted and 'big_plus' in counted
 
 def _diaper_selection_issue(title: str, supplemental_text: str='') -> str:
     title_types=diaper_type_mentions(title)
     title_sizes=diaper_size_mentions(title)
+    counted_sizes=diaper_size_count_mentions(title)
     if len(title_types)>1:
         return 'ambiguous_diaper_type'
     if len(title_sizes)>1:
-        if title_sizes != {'big','big_plus'} or _big_and_big_plus_are_separate_options(title):
-            return 'ambiguous_diaper_size'
+        # If exactly one size has its own piece count, treat that as the fixed offer and
+        # ignore stray SEO/context size words elsewhere in the title.
+        if len(counted_sizes)!=1:
+            if title_sizes != {'big','big_plus'} or _big_and_big_plus_are_separate_options(title):
+                return 'ambiguous_diaper_size'
     extra=norm(supplemental_text)
     combined=norm(f'{title} {extra}')
     size_choice = re.search(r'(?:サイズ).{0,12}(?:選択|選べ|えらべ|お選び|選ん)|(?:選択|選べ|えらべ|お選び|選ん).{0,12}(?:サイズ)', combined, re.I)
@@ -135,12 +164,17 @@ def parse_for_segment_detailed(title: str, parser: str, segment: dict, supplemen
     if parser=='diapers':
         issue=_diaper_selection_issue(t, supplemental_text)
         if issue: return None,issue
-        type_mentions=diaper_type_mentions(t); size_mentions=diaper_size_mentions(t)
+        type_mentions=diaper_type_mentions(t); size_mentions=diaper_size_mentions(t); counted_sizes=diaper_size_count_mentions(t)
         exp_type=segment.get('type',''); exp_size=segment.get('size','')
         got_type=next(iter(type_mentions)) if len(type_mentions)==1 else ''
-        got_size=next(iter(size_mentions)) if len(size_mentions)==1 else ''
-        if size_mentions == {'big','big_plus'}:
+        if len(counted_sizes)==1:
+            got_size=next(iter(counted_sizes))
+        elif len(size_mentions)==1:
+            got_size=next(iter(size_mentions))
+        elif size_mentions == {'big','big_plus'}:
             got_size='big_plus'
+        else:
+            got_size=''
         if not got_type and exp_type=='tape' and got_size=='newborn': got_type='tape'
         if not got_type: return None,'missing_diaper_type'
         if not got_size: return None,'missing_diaper_size'

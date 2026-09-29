@@ -41,6 +41,14 @@ class ParsingTests(unittest.TestCase):
         )
         self.assertIsNone(row)
 
+    def test_rejects_multi_size_listing_when_each_size_has_a_count(self):
+        row = parse_for_segment(
+            "グーン パンツ M 66枚 / L 56枚 / BIG 50枚 / BIGより大きい 34枚",
+            "diapers",
+            {"type":"pants","size":"big_plus"},
+        )
+        self.assertIsNone(row)
+
     def test_rejects_big_and_big_plus_when_both_have_separate_counts(self):
         row = parse_for_segment(
             "メリーズ パンツ ビッグ38枚 ビッグより大きい24枚",
@@ -99,6 +107,24 @@ class ParsingTests(unittest.TestCase):
             {"type":"tape","size":"newborn"},
         )
         self.assertIsNotNone(row)
+
+    def test_unique_size_count_beats_stray_seo_size_word(self):
+        row = parse_for_segment(
+            "ムーニー テープ Mサイズ 46枚×4パック 赤ちゃん用品 Sサイズ 香川県",
+            "diapers",
+            {"type":"tape","size":"m"},
+        )
+        self.assertIsNotNone(row)
+        self.assertEqual(row["attributes"]["size"], "m")
+
+    def test_unique_big_count_beats_stray_l_keyword(self):
+        row = parse_for_segment(
+            "メリーズ パンツ ビッグ 38枚×3個 まとめ買い Lサイズ 赤ちゃん",
+            "diapers",
+            {"type":"pants","size":"big"},
+        )
+        self.assertIsNotNone(row)
+        self.assertEqual(row["attributes"]["size"], "big")
 
     def test_wipes_excludes_flushable(self):
         row = parse_for_segment("トイレに流せる おしりふき 72枚×12個", "wipes", {})

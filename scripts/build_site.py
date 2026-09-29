@@ -173,6 +173,10 @@ def main(fixture: bool = False, pages: int = 2):
                 "raw_candidates": len(raw),
                 "published_count": len(products),
                 "problem_exclusions": reason_counts,
+                "published_products": [
+                    {"source_id": p.get("source_id", ""), "name": p.get("name", "")}
+                    for p in products
+                ],
             }
             for row in segment_audit:
                 quality_audit["excluded_problem_products"].append({"segment_id": segment["id"], **row})
@@ -200,6 +204,9 @@ def main(fixture: bool = False, pages: int = 2):
         print(f"QUALITY segment={segment_id} published={stats['published_count']} raw={stats['raw_candidates']} exclusions={json.dumps(stats['problem_exclusions'], ensure_ascii=False, sort_keys=True)}")
     for category_id, stats in quality_audit["categories"].items():
         print(f"QUALITY category={category_id} published={stats['published_count']}")
+    for segment_id, stats in quality_audit["segments"].items():
+        for row in stats.get("published_products", []):
+            print(f"QUALITY_PUBLISHED segment={segment_id} source_id={row['source_id']} name={row['name']}")
     for row in quality_audit["excluded_problem_products"]:
         print(f"QUALITY_EXCLUDED segment={row['segment_id']} reason={row['reason']} source_id={row['source_id']} name={row['name']}")
     print(f"Built {len(unique_urls)} indexable URLs at {SITE_DIR} ({'fixture' if fixture else 'live'})")
