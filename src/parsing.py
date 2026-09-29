@@ -138,8 +138,12 @@ def _diaper_selection_issue(title: str, supplemental_text: str='') -> str:
     if len(title_types)>1:
         return 'ambiguous_diaper_type'
     if len(title_sizes)>1:
-        # If exactly one size has its own piece count, treat that as the fixed offer and
-        # ignore stray SEO/context size words elsewhere in the title.
+        # Three or more explicit size labels are a product-variation list even if only
+        # one trailing piece count is present (e.g. M/L/BIG/BIGより大きい 30枚).
+        if len(title_sizes)>=3:
+            return 'ambiguous_diaper_size'
+        # With exactly two size words, a single size-specific piece count is strong
+        # evidence for a fixed offer; the other word is often stray SEO/context copy.
         if len(counted_sizes)!=1:
             if title_sizes != {'big','big_plus'} or _big_and_big_plus_are_separate_options(title):
                 return 'ambiguous_diaper_size'
