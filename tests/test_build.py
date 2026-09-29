@@ -3,6 +3,8 @@ import sys
 import unittest
 from pathlib import Path
 
+from scripts.build_site import normalize_products
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -22,6 +24,7 @@ class BuildTests(unittest.TestCase):
             "site/method/index.html",
             "site/sitemap.xml",
             "site/data/latest.json",
+            "site/data/quality-audit.json",
         ]
         for path in expected:
             self.assertTrue((ROOT / path).exists(), path)
@@ -54,6 +57,17 @@ class BuildTests(unittest.TestCase):
         self.assertIn("取得対象内の最安単価", text)
         self.assertIn("合計 222枚", text)
         self.assertLess(text.index("合計 222枚"), text.index("単価の計算を見る"))
+
+    def test_same_normalized_name_is_deduped_and_cheapest_offer_wins(self):
+        raw = [
+            {"source":"rakuten","source_id":"dup-expensive","name":"パンパース おむつ パンツ Mサイズ 66枚×3個","price_yen":5200,"url":"https://example.invalid/a","shop":"A","image":"","review_count":10},
+            {"source":"rakuten","source_id":"dup-cheap","name":"パンパース おむつ パンツ Mサイズ 66枚×3個","price_yen":4800,"url":"https://example.invalid/b","shop":"B","image":"","review_count":5},
+        ]
+        audit = []
+        rows = normalize_products(raw, "diapers", {"parser":"diapers","metric":"per_piece"}, {"id":"pants-m","type":"pants","size":"m"}, audit=audit)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["source_id"], "dup-cheap")
+        self.assertTrue(any(x["reason"] == "duplicate_equivalent_name" for x in audit))
 
 
 if __name__ == "__main__":

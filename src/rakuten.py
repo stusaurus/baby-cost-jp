@@ -50,6 +50,8 @@ def _normalize(raw: dict) -> dict | None:
         "source": "rakuten",
         "source_id": str(item.get("itemCode") or ""),
         "name": name,
+        "catchcopy": str(item.get("catchcopy") or "").strip(),
+        "caption": str(item.get("itemCaption") or "").strip(),
         "price_yen": price,
         "url": str(item.get("affiliateUrl") or item.get("itemUrl") or ""),
         "shop": str(item.get("shopName") or ""),
@@ -88,7 +90,8 @@ def fetch_items(keyword: str, pages: int = 2) -> list[dict]:
             "availability": 1,
             # Keep the MVP ranking honest: compare offers that the API can restrict to postage included/free shipping.
             "postageFlag": 1,
-            "elements": "itemName,itemPrice,itemUrl,affiliateUrl,itemCode,shopName,mediumImageUrls,smallImageUrls,reviewCount",
+            # catchcopy/itemCaption are used only as quality evidence for selectable-size/type detection.
+            "elements": "itemName,catchcopy,itemCaption,itemPrice,itemUrl,affiliateUrl,itemCode,shopName,mediumImageUrls,smallImageUrls,reviewCount",
         }
         if AFFILIATE_ID:
             params["affiliateId"] = AFFILIATE_ID

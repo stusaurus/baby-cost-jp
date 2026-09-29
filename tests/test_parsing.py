@@ -33,6 +33,41 @@ class ParsingTests(unittest.TestCase):
         self.assertIsNotNone(tacchi)
         self.assertEqual(tacchi["attributes"]["fit_stage"], "たっち")
 
+    def test_rejects_multi_size_diaper_listing(self):
+        row = parse_for_segment(
+            "パンパース おむつ パンツ M/L/BIG/BIGより大きい 30枚",
+            "diapers",
+            {"type":"pants","size":"big_plus"},
+        )
+        self.assertIsNone(row)
+
+    def test_rejects_size_selection_disclosed_in_caption(self):
+        row = parse_for_segment(
+            "パンパース おむつ パンツ BIGより大きい 30枚×3個",
+            "diapers",
+            {"type":"pants","size":"big_plus"},
+            supplemental_text="M・L・BIG・BIGより大きいからサイズを選べます",
+        )
+        self.assertIsNone(row)
+
+    def test_rejects_mixed_tape_and_pants_listing(self):
+        row = parse_for_segment(
+            "ムーニー おむつ テープ パンツ Mサイズ 52枚",
+            "diapers",
+            {"type":"pants","size":"m"},
+        )
+        self.assertIsNone(row)
+
+    def test_keeps_fixed_big_plus_listing(self):
+        row = parse_for_segment(
+            "グーン おむつ パンツ BIGより大きいサイズ 30枚×3個",
+            "diapers",
+            {"type":"pants","size":"big_plus"},
+            supplemental_text="BIGより大きいサイズの商品説明",
+        )
+        self.assertIsNotNone(row)
+        self.assertEqual(row["attributes"]["size"], "big_plus")
+
     def test_wipes_excludes_flushable(self):
         row = parse_for_segment("トイレに流せる おしりふき 72枚×12個", "wipes", {})
         self.assertIsNone(row)
