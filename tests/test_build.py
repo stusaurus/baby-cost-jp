@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from scripts.build_site import normalize_products
-from src.render import display_product_name
+from src.render import display_product_name, product_card
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -56,6 +56,26 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(display_product_name(noisy), "ユニチャーム おむつ BIG 36枚×3個")
         pack = "【3個セット】メリーズ パンツ Mサイズ 52枚"
         self.assertEqual(display_product_name(pack), pack)
+
+    def test_product_card_can_show_image_and_gap_from_first(self):
+        product = {
+            "quantity":{"total":108,"base_unit":"piece","pack_count":3,"evidence":"36枚×3個"},
+            "attributes":{},
+            "name":"マミーポコ パンツ BIGより大きい 36枚×3個",
+            "brand":"マミーポコ",
+            "manufacturer":"ユニ・チャーム",
+            "shop":"fixture shop",
+            "image":"https://example.invalid/item.jpg",
+            "unit_price":20.5,
+            "unit_metric":"per_piece",
+            "price_yen":2214,
+            "url":"https://example.invalid/item",
+            "source_id":"img-1",
+        }
+        html = product_card(product, 2, "diapers", {"type":"pants","size":"big_plus"}, best_unit_price=19.5)
+        self.assertIn('loading="lazy"', html)
+        self.assertIn("1位より +¥1.0 / 1枚", html)
+        self.assertIn("fixture shop", html)
 
     def test_m_subvariant_has_no_separate_index_url(self):
         sitemap = (ROOT / "site/sitemap.xml").read_text(encoding="utf-8")
