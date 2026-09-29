@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 from scripts.build_site import normalize_products
+from src.render import display_product_name
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -36,7 +37,25 @@ class BuildTests(unittest.TestCase):
 
     def test_first_answer_is_above_long_explanation(self):
         text = (ROOT / "site/wipes/index.html").read_text(encoding="utf-8")
-        self.assertLess(text.index("単価が安い順"), text.index("順位の計算"))
+        self.assertLess(text.index("取得対象内の最安単価"), text.index("この順位に入る条件"))
+
+    def test_comparison_has_quick_view_and_quality_copy(self):
+        text = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
+        self.assertIn("上位を早見", text)
+        self.assertIn("サイズ選択式やタイプ不明の商品を除外", text)
+        self.assertIn("楽天で価格・在庫を見る", text)
+
+    def test_home_explains_quality_and_surfaces_live_price(self):
+        text = (ROOT / "site/index.html").read_text(encoding="utf-8")
+        self.assertIn("選択式商品は除外", text)
+        self.assertIn("取得対象内", text)
+        self.assertIn("安さだけでなく、比較条件もそろえます", text)
+
+    def test_display_name_removes_campaign_noise_but_keeps_pack_count(self):
+        noisy = "【ポイント10倍！9/30迄】ユニチャーム おむつ BIG 36枚×3個【smtb-s】"
+        self.assertEqual(display_product_name(noisy), "ユニチャーム おむつ BIG 36枚×3個")
+        pack = "【3個セット】メリーズ パンツ Mサイズ 52枚"
+        self.assertEqual(display_product_name(pack), pack)
 
     def test_m_subvariant_has_no_separate_index_url(self):
         sitemap = (ROOT / "site/sitemap.xml").read_text(encoding="utf-8")
