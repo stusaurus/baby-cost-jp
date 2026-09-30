@@ -91,6 +91,16 @@ class BuildTests(unittest.TestCase):
         self.assertIn("商品数を増やすために、曖昧な商品を載せません", text)
         self.assertIn("footer-brand", text)
 
+    def test_price_snapshot_and_diaper_savings_simulator_render(self):
+        diaper = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
+        wipes = (ROOT / "site/wipes/index.html").read_text(encoding="utf-8")
+        self.assertIn("PRICE SNAPSHOT", diaper)
+        self.assertIn("中央値", diaper)
+        self.assertIn("SAVINGS SIMULATOR", diaper)
+        self.assertIn('data-savings-sim', diaper)
+        self.assertIn("PRICE SNAPSHOT", wipes)
+        self.assertNotIn("SAVINGS SIMULATOR", wipes)
+
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {
             "quantity":{"total":108,"base_unit":"piece","pack_count":3,"evidence":"36枚×3個"},

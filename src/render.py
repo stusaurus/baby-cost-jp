@@ -130,6 +130,30 @@ def quick_compare(products):
     return f'''<section class="quick-compare"><div class="quick-head"><div><div class="section-kicker">QUICK VIEW</div><h2>上位を早見</h2></div><span>タップで商品詳細へ</span></div><div class="quick-grid">{''.join(cards)}</div></section>'''
 
 
+
+def price_snapshot(products, metric: str):
+    if len(products)<2:
+        return ''
+    values=sorted(float(p['unit_price']) for p in products)
+    n=len(values)
+    median=values[n//2] if n%2 else (values[n//2-1]+values[n//2])/2
+    low=values[0]; high=values[-1]
+    saving=max(0.0, median-low)
+    pct=(saving/median*100) if median>0 else 0
+    note=f'最安は中央値より {pct:.0f}% 低い' if pct>=1 else '最安と中央値はほぼ同水準'
+    return f'''<section class="price-snapshot"><div class="price-snapshot-head"><div><div class="section-kicker">PRICE SNAPSHOT</div><h2>いまの価格感</h2></div><span>{esc(note)}</span></div><div class="price-band"><div class="price-point"><small>最安</small><strong>{yen(low)}</strong><em>/ {metric}</em></div><div class="price-line"><i></i><b></b><i></i></div><div class="price-point price-point-mid"><small>中央値</small><strong>{yen(median)}</strong><em>/ {metric}</em></div><div class="price-point"><small>高値側</small><strong>{yen(high)}</strong><em>/ {metric}</em></div></div><p>このページで現在比較できる {len(products)} 商品の単価から算出しています。過去価格との比較ではありません。</p></section>'''
+
+def diaper_savings_simulator(products):
+    if len(products)<2:
+        return ''
+    values=sorted(float(p['unit_price']) for p in products)
+    n=len(values)
+    median=values[n//2] if n%2 else (values[n//2-1]+values[n//2])/2
+    best=values[0]
+    diff=max(0.0,median-best)
+    return f'''<section class="savings-sim" data-savings-sim data-best="{best:.4f}" data-median="{median:.4f}"><div class="savings-mascot">{icon_svg('chick')}</div><div class="savings-copy"><div class="section-kicker">SAVINGS SIMULATOR</div><h2>1か月でどれくらい変わる？</h2><p>最安単価と、このページの中央値を比べます。</p><div class="usage-chips" role="group" aria-label="1日の使用枚数"><button type="button" data-usage="4">4枚/日</button><button type="button" data-usage="5" class="is-active">5枚/日</button><button type="button" data-usage="6">6枚/日</button><button type="button" data-usage="8">8枚/日</button></div><div class="savings-result"><span>30日なら</span><strong data-savings-result>{yen(diff*5*30)}</strong><b>くらい差</b></div><small>※ 使用枚数は例です。実際の使用量に合わせて切り替えてください。</small></div></section>'''
+
+
 def comparison_head_visual(category_id: str):
     icon='diapers' if category_id=='diapers' else category_id
     label={'diapers':'紙おむつ','wipes':'おしりふき','formula':'粉ミルク','diaper_bags':'防臭袋'}.get(category_id,'価格比較')
@@ -170,7 +194,9 @@ def render_comparison(categories, category_id, category, segment, products, upda
         health_note='<p class="neutral-note">※ 粉ミルクは価格だけを比較しています。栄養・体質との相性などは順位付けしていません。</p>'
     head_visual=comparison_head_visual(category_id)
     mascot_tip=comparison_mascot_tip(category_id,len(products))
-    body=f'''<section class="page-head comparison-page-head comparison-page-head--{category_id}">{back}{head_visual}<div class="section-kicker">PRICE COMPARISON</div><h1>{esc(label)}<br><span>コスパ比較</span></h1><p>{metric}あたりの価格を、同じ条件にそろえて比較します。</p>{meta}</section>{mascot_tip}<section class="comparison" data-comparison data-category-id="{category_id}" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-result-count="{len(products)}">{answer}{quick_compare(products)}<h2 class="result-title"><span>ランキング</span> 単価が安い順</h2><div class="products">{cards}</div></section>{health_note}{selector_html}<section class="method-note method-note-visual"><div class="method-note-icon">{icon_svg("check")}</div><div><div class="section-kicker">HOW IT WORKS</div><h2>この順位に入る条件</h2><p>楽天APIで送料込み／送料無料条件に絞り、数量と条件を確認できた商品だけを単価換算しています。紙おむつはサイズ選択式やタイプ不明の商品を除外。ポイント・クーポンは順位に含めません。</p><a href="{SITE_URL}method/">詳しい比較方法を見る →</a></div></section><p class="updated">更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    snapshot=price_snapshot(products,metric)
+    savings=diaper_savings_simulator(products) if category_id=='diapers' else ''
+    body=f'''<section class="page-head comparison-page-head comparison-page-head--{category_id}">{back}{head_visual}<div class="section-kicker">PRICE COMPARISON</div><h1>{esc(label)}<br><span>コスパ比較</span></h1><p>{metric}あたりの価格を、同じ条件にそろえて比較します。</p>{meta}</section>{mascot_tip}<section class="comparison" data-comparison data-category-id="{category_id}" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-result-count="{len(products)}">{answer}{snapshot}{savings}{quick_compare(products)}<h2 class="result-title"><span>ランキング</span> 単価が安い順</h2><div class="products">{cards}</div></section>{health_note}{selector_html}<section class="method-note method-note-visual"><div class="method-note-icon">{icon_svg("check")}</div><div><div class="section-kicker">HOW IT WORKS</div><h2>この順位に入る条件</h2><p>楽天APIで送料込み／送料無料条件に絞り、数量と条件を確認できた商品だけを単価換算しています。紙おむつはサイズ選択式やタイプ不明の商品を除外。ポイント・クーポンは順位に含めません。</p><a href="{SITE_URL}method/">詳しい比較方法を見る →</a></div></section><p class="updated">更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     title=f'{label} 1{ "枚" if category["metric"]=="per_piece" else "00g"}あたり価格比較'
     return shell(title,f'{label}を{metric}あたりに換算して価格比較。',body,segment_url(category,segment),noindex)
 

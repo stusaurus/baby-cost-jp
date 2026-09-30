@@ -63,3 +63,25 @@
     renderSizes();
   });
 })();
+
+
+(() => {
+  const formatYen = (value) => {
+    const n = Number(value || 0);
+    return n < 100 ? '¥' + n.toFixed(1) : '¥' + Math.round(n).toLocaleString('ja-JP');
+  };
+  document.querySelectorAll('[data-savings-sim]').forEach((box) => {
+    const best = Number(box.dataset.best || 0);
+    const median = Number(box.dataset.median || 0);
+    const result = box.querySelector('[data-savings-result]');
+    const buttons = [...box.querySelectorAll('[data-usage]')];
+    if (!result || !buttons.length || best <= 0 || median <= 0) return;
+    const update = (usage) => {
+      const diff = Math.max(0, median - best);
+      result.textContent = formatYen(diff * usage * 30);
+      buttons.forEach((b) => b.classList.toggle('is-active', Number(b.dataset.usage) === usage));
+      window.babyCostEvent?.('savings_simulator_use', {category_id:'diapers', usage_per_day:String(usage)});
+    };
+    buttons.forEach((button) => button.addEventListener('click', () => update(Number(button.dataset.usage || 5))));
+  });
+})();
