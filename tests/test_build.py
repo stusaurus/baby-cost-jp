@@ -109,6 +109,17 @@ class BuildTests(unittest.TestCase):
         self.assertIn("data-compare-modal", text)
         self.assertIn("選んだ商品を比較", text)
 
+    def test_home_has_dynamic_featured_deals(self):
+        import json
+        text = (ROOT / "site/index.html").read_text(encoding="utf-8")
+        latest = json.loads((ROOT / "site/data/latest.json").read_text(encoding="utf-8"))
+        self.assertIn("今日の買い候補", text)
+        self.assertIn("TODAY'S PICKS", text)
+        self.assertIn("中央値より", text)
+        self.assertIn("featured_deals", latest)
+        self.assertGreaterEqual(len(latest["featured_deals"]), 1)
+        self.assertIn("gap_percent", latest["featured_deals"][0])
+
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {
             "quantity":{"total":108,"base_unit":"piece","pack_count":3,"evidence":"36枚×3個"},

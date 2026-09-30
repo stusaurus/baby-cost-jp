@@ -85,7 +85,19 @@ def _home_price(snapshot, metric):
     p=snapshot[0]
     return f'<em>取得対象内 {yen(p["unit_price"])} / {METRIC[metric]}〜</em>'
 
-def render_home(categories, snapshots, updated_at):
+def featured_deals_section(deals):
+    if not deals:
+        return ''
+    cards=[]
+    category_icon={'diapers':'diapers','wipes':'wipes','formula':'formula','diaper_bags':'diaper_bags'}
+    for row in deals:
+        p=row['product']
+        image=f'<div class="deal-image"><img src="{esc(p.get("image"))}" alt="" loading="lazy" decoding="async"></div>' if p.get('image') else f'<div class="deal-image deal-image-fallback">{icon_svg(category_icon.get(row["category_id"],"price"))}</div>'
+        cards.append(f'''<a class="deal-card deal-card--{esc(row["category_id"])}" href="{esc(row["url"])}" data-nav-source="featured_deal" data-category-id="{esc(row["category_id"])}"><div class="deal-top"><span>{esc(row["category_label"])}</span><b>中央値より {row["gap_percent"]:.0f}%低い</b></div>{image}<div class="deal-copy"><small>{esc(row["segment_label"])}</small><strong>{yen(row["unit_price"])}<em> / {METRIC[row["metric"]]}</em></strong><p>{esc(display_product_name(p["name"]))}</p><span>比較を見る →</span></div></a>''')
+    return f'''<section class="featured-deals"><div class="featured-deals-head"><div><div class="section-kicker">TODAY'S PICKS</div><h2>今日の買い候補</h2><p>現在取得できる同条件商品の中で、中央値との差が大きい候補です。</p></div><div class="featured-deals-mascot">{icon_svg("chick")}</div></div><div class="deal-grid">{''.join(cards)}</div><p class="deal-disclaimer">※ 過去価格との比較ではありません。現在の比較対象内での相対的な価格差です。</p></section>'''
+
+
+def render_home(categories, snapshots, deals, updated_at):
     cards=[]
     info=[
         ('diapers','紙おむつ','サイズ・タイプ別 / 1枚','サイズを選んで比較','diapers'),
@@ -97,7 +109,7 @@ def render_home(categories, snapshots, updated_at):
         href=f'{SITE_URL}{categories[cid]["path"]}/'
         live='' if cid=='diapers' else _home_price(snapshots.get(cid),categories[cid]['metric'])
         cards.append(f'''<a class="cat cat--{cid}" data-nav-source="home_category" data-category-id="{cid}" href="{href}"><div class="cat-icon">{icon_svg(icon)}</div><div class="cat-copy"><span class="cat-kicker">{esc(metric)}</span><strong>{esc(name)}</strong><span>{esc(desc)}</span>{live}<b>比較を見る <i>→</i></b></div></a>''')
-    body=f'''<section class="hero hero-visual"><div class="hero-copy"><p class="eyebrow">BABY COST CHECK</p><h1>ベビー用品、<br><span>ちゃんと比べて</span>選ぼう。</h1><p>セット数や容量の違いをそろえて、1枚・100gなど同じ単位で比較。見かけの価格に迷わないためのシンプルな比較サイトです。</p>{trust_strip()}</div>{hero_visual()}</section>{selector(categories)}<section class="home-section category-section"><div class="section-kicker">COMPARE</div><h2>なにを比べる？</h2><p class="section-lead">気になるカテゴリから、いちばん安い候補をすぐチェック。</p><div class="cats">{''.join(cards)}</div></section>{how_visual()}<section class="quality-card quality-visual"><div class="quality-icon">{icon_svg('check')}</div><div><div class="section-kicker">QUALITY FILTER</div><h2>「安いけど条件が違う」を入れません</h2><p>紙おむつはテープ／パンツとサイズを分離。販売ページでサイズを選ぶ商品や、数量を安全に読み取れない商品は除外します。</p></div><a href="{SITE_URL}method/">比較ルールを見る →</a></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    body=f'''<section class="hero hero-visual"><div class="hero-copy"><p class="eyebrow">BABY COST CHECK</p><h1>ベビー用品、<br><span>ちゃんと比べて</span>選ぼう。</h1><p>セット数や容量の違いをそろえて、1枚・100gなど同じ単位で比較。見かけの価格に迷わないためのシンプルな比較サイトです。</p>{trust_strip()}</div>{hero_visual()}</section>{selector(categories)}{featured_deals_section(deals)}<section class="home-section category-section"><div class="section-kicker">COMPARE</div><h2>なにを比べる？</h2><p class="section-lead">気になるカテゴリから、いちばん安い候補をすぐチェック。</p><div class="cats">{''.join(cards)}</div></section>{how_visual()}<section class="quality-card quality-visual"><div class="quality-icon">{icon_svg('check')}</div><div><div class="section-kicker">QUALITY FILTER</div><h2>「安いけど条件が違う」を入れません</h2><p>紙おむつはテープ／パンツとサイズを分離。販売ページでサイズを選ぶ商品や、数量を安全に読み取れない商品は除外します。</p></div><a href="{SITE_URL}method/">比較ルールを見る →</a></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     return shell('ベビー用品コスパ比較 | 1枚・100g単価で比較','紙おむつ、おしりふき、粉ミルクなどを単価換算して比較します。',body,SITE_URL)
 def render_diaper_index(categories, updated_at):
     rows=[]

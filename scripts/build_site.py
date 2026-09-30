@@ -39,6 +39,31 @@ def load_fixtures() -> dict:
     return json.loads((DATA_DIR / "fixtures.json").read_text(encoding="utf-8"))
 
 
+def featured_candidate(products: list[dict], category_id: str, category: dict, segment: dict) -> dict | None:
+    if len(products) < 2:
+        return None
+    values = sorted(float(p["unit_price"]) for p in products)
+    n = len(values)
+    median = values[n // 2] if n % 2 else (values[n // 2 - 1] + values[n // 2]) / 2
+    best = min(products, key=lambda p: (p["unit_price"], -int(p.get("review_count") or 0)))
+    if median <= 0:
+        return None
+    gap = max(0.0, median - float(best["unit_price"]))
+    pct = gap / median * 100
+    return {
+        "category_id": category_id,
+        "category_label": category["label"],
+        "segment_id": segment["id"],
+        "segment_label": segment["label"],
+        "url": segment_url(category, segment),
+        "metric": category["metric"],
+        "unit_price": float(best["unit_price"]),
+        "median_unit_price": round(median, 4),
+        "gap_percent": round(pct, 1),
+        "product": best,
+    }
+
+
 def _canonical_product_name(name: str) -> str:
     text = norm(name).lower()
     return re.sub(r"[^0-9a-zぁ-んァ-ヶ一-龯]+", "", text)
@@ -116,6 +141,7 @@ def main(fixture: bool = False, pages: int = 2):
     shutil.copytree(ROOT / "src" / "static", SITE_DIR / "static")
 
     snapshots = {}
+    featured_candidates = []
     latest = {
         "schema_version": 1,
         "generated_at": updated_at.isoformat(),
@@ -145,6 +171,9 @@ def main(fixture: bool = False, pages: int = 2):
                     raw.extend(fetch_items(query, pages=pages))
             segment_audit: list[dict] = []
             products = normalize_products(raw, category_id, category, segment, audit=segment_audit)
+            candidate = featured_candidate(products, category_id, category, segment)
+            if candidate:
+                featured_candidates.append(candidate)
             category_rows.extend(products)
             category_count += len(products)
             url = segment_url(category, segment)
@@ -184,7 +213,26 @@ def main(fixture: bool = False, pages: int = 2):
         if category_id != "diapers":
             snapshots[category_id] = sorted(category_rows, key=lambda p: p["unit_price"])[:3]
 
-    write_page(SITE_DIR / "index.html", render_home(categories, snapshots, updated_at))
+    featured_deals = []
+    for category_id in categories:
+        rows = [row for row in featured_candidates if row["category_id"] == category_id]
+        if rows:
+            featured_deals.append(max(rows, key=lambda row: (row["gap_percent"], -row["unit_price"])))
+    featured_deals.sort(key=lambda row: row["gap_percent"], reverse=True)
+    latest["featured_deals"] = [
+        {
+            "category_id": row["category_id"],
+            "segment_id": row["segment_id"],
+            "segment_label": row["segment_label"],
+            "unit_price": row["unit_price"],
+            "median_unit_price": row["median_unit_price"],
+            "gap_percent": row["gap_percent"],
+            "source_id": row["product"].get("source_id", ""),
+        }
+        for row in featured_deals
+    ]
+
+    write_page(SITE_DIR / "index.html", render_home(categories, snapshots, featured_deals, updated_at))
     write_page(SITE_DIR / "diapers" / "index.html", render_diaper_index(categories, updated_at))
     write_page(SITE_DIR / "method" / "index.html", render_method())
 
