@@ -124,8 +124,26 @@ def quick_compare(products):
     cards=[]
     for i,p in enumerate(products[:3],1):
         q=p['quantity']; total=f'{q["total"]:g}{"g" if q["base_unit"]=="g" else "枚"}'
-        cards.append(f'''<a class="quick-item" href="#rank-{i}"><span>{i}位</span><strong>{yen(p["unit_price"])}<small> / {METRIC[p["unit_metric"]]}</small></strong><p>{esc(display_product_name(p["name"]))}</p><em>{total}・¥{p["price_yen"]:,}</em></a>''')
+        image=f'<div class="quick-image"><img src="{esc(p.get("image"))}" alt="" loading="lazy" decoding="async"></div>' if p.get('image') else f'<div class="quick-image quick-image-fallback">{icon_svg("price")}</div>'
+        medal='🥇' if i==1 else ('🥈' if i==2 else '🥉')
+        cards.append(f'''<a class="quick-item quick-rank-{i}" href="#rank-{i}"><div class="quick-top"><span class="quick-medal">{medal}</span><span>{i}位</span></div>{image}<strong>{yen(p["unit_price"])}<small> / {METRIC[p["unit_metric"]]}</small></strong><p>{esc(display_product_name(p["name"]))}</p><em>{total}・¥{p["price_yen"]:,}</em></a>''')
     return f'''<section class="quick-compare"><div class="quick-head"><div><div class="section-kicker">QUICK VIEW</div><h2>上位を早見</h2></div><span>タップで商品詳細へ</span></div><div class="quick-grid">{''.join(cards)}</div></section>'''
+
+
+def comparison_head_visual(category_id: str):
+    icon='diapers' if category_id=='diapers' else category_id
+    label={'diapers':'紙おむつ','wipes':'おしりふき','formula':'粉ミルク','diaper_bags':'防臭袋'}.get(category_id,'価格比較')
+    return f'''<div class="comparison-head-art comparison-head-art--{category_id}"><div class="comparison-head-icon">{icon_svg(icon)}</div><span>{esc(label)}</span><i>PRICE CHECK</i></div>'''
+
+def comparison_mascot_tip(category_id: str, count: int):
+    if category_id=='diapers':
+        text='サイズとタイプが確認できた商品だけを比べているよ'
+    elif category_id=='formula':
+        text='価格だけを比較。栄養や相性は順位に入れていないよ'
+    else:
+        text='数量を確認できた商品だけを同じ単位で比べているよ'
+    return f'''<div class="result-mascot-tip"><div class="result-mascot">{icon_svg('chick')}</div><div><b>{count}商品を比較中</b><span>{esc(text)}</span></div></div>'''
+
 
 def render_comparison(categories, category_id, category, segment, products, updated_at):
     label=segment['label']; metric=METRIC[category['metric']]; noindex=len(products)<2
@@ -150,7 +168,9 @@ def render_comparison(categories, category_id, category, segment, products, upda
     health_note=''
     if category_id=='formula':
         health_note='<p class="neutral-note">※ 粉ミルクは価格だけを比較しています。栄養・体質との相性などは順位付けしていません。</p>'
-    body=f'''<section class="page-head">{back}<div class="section-kicker">PRICE COMPARISON</div><h1>{esc(label)} コスパ比較</h1><p>{metric}あたりの価格を、同じ条件にそろえて比較します。</p>{meta}</section><section class="comparison" data-comparison data-category-id="{category_id}" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-result-count="{len(products)}">{answer}{quick_compare(products)}<h2 class="result-title">単価が安い順</h2><div class="products">{cards}</div></section>{health_note}{selector_html}<section class="method-note"><div class="section-kicker">HOW IT WORKS</div><h2>この順位に入る条件</h2><p>楽天APIで送料込み／送料無料条件に絞り、数量と条件を確認できた商品だけを単価換算しています。紙おむつはサイズ選択式やタイプ不明の商品を除外。ポイント・クーポンは順位に含めません。</p><a href="{SITE_URL}method/">詳しい比較方法を見る →</a></section><p class="updated">更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    head_visual=comparison_head_visual(category_id)
+    mascot_tip=comparison_mascot_tip(category_id,len(products))
+    body=f'''<section class="page-head comparison-page-head comparison-page-head--{category_id}">{back}{head_visual}<div class="section-kicker">PRICE COMPARISON</div><h1>{esc(label)}<br><span>コスパ比較</span></h1><p>{metric}あたりの価格を、同じ条件にそろえて比較します。</p>{meta}</section>{mascot_tip}<section class="comparison" data-comparison data-category-id="{category_id}" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-result-count="{len(products)}">{answer}{quick_compare(products)}<h2 class="result-title"><span>ランキング</span> 単価が安い順</h2><div class="products">{cards}</div></section>{health_note}{selector_html}<section class="method-note method-note-visual"><div class="method-note-icon">{icon_svg("check")}</div><div><div class="section-kicker">HOW IT WORKS</div><h2>この順位に入る条件</h2><p>楽天APIで送料込み／送料無料条件に絞り、数量と条件を確認できた商品だけを単価換算しています。紙おむつはサイズ選択式やタイプ不明の商品を除外。ポイント・クーポンは順位に含めません。</p><a href="{SITE_URL}method/">詳しい比較方法を見る →</a></div></section><p class="updated">更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     title=f'{label} 1{ "枚" if category["metric"]=="per_piece" else "00g"}あたり価格比較'
     return shell(title,f'{label}を{metric}あたりに換算して価格比較。',body,segment_url(category,segment),noindex)
 

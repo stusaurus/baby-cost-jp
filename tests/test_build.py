@@ -77,6 +77,13 @@ class BuildTests(unittest.TestCase):
         self.assertIn("3ステップで、すぐ比較", text)
         self.assertIn("HOW TO USE", text)
 
+    def test_comparison_pages_have_category_visuals_and_mascot_tip(self):
+        text = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
+        self.assertIn("comparison-head-art--diapers", text)
+        self.assertIn("result-mascot-tip", text)
+        self.assertIn("quick-image", text)
+        self.assertIn("ランキング", text)
+
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {
             "quantity":{"total":108,"base_unit":"piece","pack_count":3,"evidence":"36枚×3個"},
