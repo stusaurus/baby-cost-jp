@@ -187,3 +187,67 @@
   });
   sync();
 })();
+
+
+(() => {
+  document.querySelectorAll('[data-view-switcher]').forEach((switcher) => {
+    const comparison = switcher.closest('.comparison');
+    const list = comparison?.querySelector('[data-sortable-products]');
+    const label = comparison?.querySelector('[data-result-sort-label]');
+    const buttons = [...switcher.querySelectorAll('[data-sort-mode]')];
+    if (!list || !buttons.length || !label) return;
+
+    const labels = {
+      unit: '単価が安い順',
+      price: '支払総額が安い順',
+      quantity: '大容量順'
+    };
+
+    const apply = (mode) => {
+      const cards = [...list.querySelectorAll('.product')];
+      const get = (card) => Number(
+        mode === 'unit' ? card.dataset.sortUnit :
+        mode === 'price' ? card.dataset.sortPrice :
+        card.dataset.sortQuantity
+      ) || 0;
+
+      cards.sort((a,b) => {
+        const av=get(a), bv=get(b);
+        if (mode === 'quantity') return bv-av || Number(a.dataset.originalRank||0)-Number(b.dataset.originalRank||0);
+        return av-bv || Number(a.dataset.originalRank||0)-Number(b.dataset.originalRank||0);
+      });
+
+      cards.forEach((card,index) => {
+        list.appendChild(card);
+        const rank=index+1;
+        const rankEl=card.querySelector('.rank');
+        const badge=card.querySelector('.rank-badge');
+        if (rankEl) {
+          rankEl.textContent=String(rank);
+          rankEl.className='rank rank-' + rank;
+        }
+        card.classList.remove(...[...card.classList].filter((x)=>/^product-rank-\d+$/.test(x)));
+        card.classList.add('product-rank-' + rank);
+        if (badge) {
+          badge.textContent =
+            mode === 'unit' ? (rank === 1 ? '最安' : rank + '位') :
+            mode === 'price' ? (rank === 1 ? '総額最安' : '総額 ' + rank + '位') :
+            (rank === 1 ? '最大容量' : '容量 ' + rank + '位');
+        }
+      });
+
+      buttons.forEach((button) => {
+        const active=button.dataset.sortMode===mode;
+        button.classList.toggle('is-active',active);
+        button.setAttribute('aria-pressed',active?'true':'false');
+      });
+      label.textContent=labels[mode] || labels.unit;
+      window.babyCostEvent?.('comparison_sort', {
+        category_id: comparison?.dataset.categoryId || '',
+        sort_mode: mode
+      });
+    };
+
+    buttons.forEach((button) => button.addEventListener('click', () => apply(button.dataset.sortMode || 'unit')));
+  });
+})();

@@ -120,6 +120,16 @@ class BuildTests(unittest.TestCase):
         self.assertGreaterEqual(len(latest["featured_deals"]), 1)
         self.assertIn("gap_percent", latest["featured_deals"][0])
 
+    def test_purpose_sort_controls_are_rendered(self):
+        text = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
+        self.assertIn("比べ方を切り替える", text)
+        self.assertIn('data-sort-mode="unit"', text)
+        self.assertIn('data-sort-mode="price"', text)
+        self.assertIn('data-sort-mode="quantity"', text)
+        self.assertIn("支払総額が安い", text)
+        self.assertIn("大容量", text)
+        self.assertIn("data-sortable-products", text)
+
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {
             "quantity":{"total":108,"base_unit":"piece","pack_count":3,"evidence":"36枚×3個"},
