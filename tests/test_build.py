@@ -216,7 +216,7 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(price_history_sparkline([{"price_yen":1000}]), "")
 
     def test_history_trend_requires_three_points_and_price_drop(self):
-        category={"name":"紙おむつ","metric":"per_piece","path":"diapers"}
+        category={"name":"紙おむつ","metric":"per_piece","path":"diapers","parser":"diapers"}
         segment={"id":"pants-m","label":"パンツ・M","type":"pants","size":"m"}
         product={"name":"A","price_history":[
             {"price_yen":1200},{"price_yen":1100},{"price_yen":900}
