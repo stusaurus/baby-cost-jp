@@ -101,6 +101,14 @@ class BuildTests(unittest.TestCase):
         self.assertIn("PRICE SNAPSHOT", wipes)
         self.assertNotIn("SAVINGS SIMULATOR", wipes)
 
+    def test_product_compare_ui_is_rendered(self):
+        text = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
+        self.assertIn("比較に追加", text)
+        self.assertIn("data-compare-add", text)
+        self.assertIn("data-compare-dock", text)
+        self.assertIn("data-compare-modal", text)
+        self.assertIn("選んだ商品を比較", text)
+
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {
             "quantity":{"total":108,"base_unit":"piece","pack_count":3,"evidence":"36枚×3個"},

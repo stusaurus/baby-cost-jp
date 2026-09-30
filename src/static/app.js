@@ -85,3 +85,105 @@
     buttons.forEach((button) => button.addEventListener('click', () => update(Number(button.dataset.usage || 5))));
   });
 })();
+
+
+(() => {
+  const buttons = [...document.querySelectorAll('[data-compare-add]')];
+  const dock = document.querySelector('[data-compare-dock]');
+  const count = document.querySelector('[data-compare-count]');
+  const open = document.querySelector('[data-compare-open]');
+  const clear = document.querySelector('[data-compare-clear]');
+  const modal = document.querySelector('[data-compare-modal]');
+  const table = document.querySelector('[data-compare-table]');
+  const closeButtons = [...document.querySelectorAll('[data-compare-close]')];
+  if (!buttons.length || !dock || !count || !open || !modal || !table) return;
+
+  const selected = new Map();
+  const parse = (button) => ({
+    id: button.dataset.compareId || button.dataset.compareName || String(Math.random()),
+    name: button.dataset.compareName || '',
+    unit: Number(button.dataset.compareUnit || 0),
+    unitLabel: button.dataset.compareUnitLabel || '',
+    price: Number(button.dataset.comparePrice || 0),
+    quantity: button.dataset.compareQuantity || '',
+    image: button.dataset.compareImage || '',
+    rank: Number(button.dataset.compareRank || 0)
+  });
+
+  const sync = () => {
+    buttons.forEach((button) => {
+      const item = parse(button);
+      const active = selected.has(item.id);
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      button.innerHTML = active ? '<span>✓</span> 比較中' : '<span>＋</span> 比較に追加';
+    });
+    count.textContent = selected.size + '件選択';
+    dock.hidden = selected.size === 0;
+    open.disabled = selected.size < 2;
+    open.textContent = selected.size < 2 ? 'もう1商品選ぶ' : '選んだ商品を比較';
+  };
+
+  const renderTable = () => {
+    const items = [...selected.values()];
+    const bestUnit = Math.min(...items.map((x) => x.unit || Infinity));
+    table.innerHTML = items.map((item) => {
+      const image = item.image
+        ? '<div class="compare-cell-image"><img src="' + item.image.replace(/"/g,'&quot;') + '" alt="" loading="lazy"></div>'
+        : '<div class="compare-cell-image compare-cell-image--empty">商品</div>';
+      const best = Math.abs(item.unit - bestUnit) < 0.0001;
+      return '<article class="compare-column' + (best ? ' is-best' : '') + '">' +
+        '<div class="compare-column-badge">' + (best ? 'この中で最安' : item.rank + '位') + '</div>' +
+        image +
+        '<h3>' + item.name.replace(/[&<>"']/g,(m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])) + '</h3>' +
+        '<dl><div><dt>単価</dt><dd>¥' + (item.unit < 100 ? item.unit.toFixed(1) : Math.round(item.unit).toLocaleString('ja-JP')) + '<small> / ' + item.unitLabel + '</small></dd></div>' +
+        '<div><dt>販売価格</dt><dd>¥' + Math.round(item.price).toLocaleString('ja-JP') + '</dd></div>' +
+        '<div><dt>内容量</dt><dd>' + item.quantity + '</dd></div></dl></article>';
+    }).join('');
+  };
+
+  buttons.forEach((button) => {
+    button.setAttribute('aria-pressed','false');
+    button.addEventListener('click', () => {
+      const item = parse(button);
+      if (selected.has(item.id)) {
+        selected.delete(item.id);
+      } else {
+        if (selected.size >= 3) {
+          dock.classList.remove('compare-dock-shake');
+          void dock.offsetWidth;
+          dock.classList.add('compare-dock-shake');
+          count.textContent = '3商品までです';
+          return;
+        }
+        selected.set(item.id, item);
+        window.babyCostEvent?.('product_compare_select', {product_id:item.id, rank:String(item.rank)});
+      }
+      sync();
+    });
+  });
+
+  open.addEventListener('click', () => {
+    if (selected.size < 2) return;
+    renderTable();
+    modal.hidden = false;
+    document.body.classList.add('compare-modal-open');
+    modal.querySelector('.compare-close')?.focus();
+    window.babyCostEvent?.('product_compare_open', {selected_count:String(selected.size)});
+  });
+
+  const closeModal = () => {
+    modal.hidden = true;
+    document.body.classList.remove('compare-modal-open');
+    open.focus();
+  };
+  closeButtons.forEach((button) => button.addEventListener('click', closeModal));
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !modal.hidden) closeModal();
+  });
+  clear?.addEventListener('click', () => {
+    selected.clear();
+    sync();
+  });
+  sync();
+})();
