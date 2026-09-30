@@ -147,6 +147,15 @@ class BuildTests(unittest.TestCase):
         self.assertIn("単価◎", text)
         self.assertTrue("総額◎" in text or "大容量◎" in text)
 
+    def test_buying_guide_is_rendered_on_comparison_pages(self):
+        text = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
+        self.assertIn("どれを選ぶか迷ったら", text)
+        self.assertIn('data-buy-goal="unit"', text)
+        self.assertIn('data-buy-goal="price"', text)
+        self.assertIn('data-buy-goal="quantity"', text)
+        self.assertIn("まとめ買いしたい", text)
+        self.assertIn("data-buy-guide-result", text)
+
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {
             "quantity":{"total":108,"base_unit":"piece","pack_count":3,"evidence":"36枚×3個"},

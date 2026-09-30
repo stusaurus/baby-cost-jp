@@ -251,3 +251,45 @@
     buttons.forEach((button) => button.addEventListener('click', () => apply(button.dataset.sortMode || 'unit')));
   });
 })();
+
+
+(() => {
+  document.querySelectorAll('[data-buying-guide]').forEach((guide) => {
+    const comparison = guide.closest('.comparison');
+    const result = guide.querySelector('[data-buy-guide-result]');
+    const buttons = [...guide.querySelectorAll('[data-buy-goal]')];
+    if (!comparison || !result || !buttons.length) return;
+
+    const copy = {
+      unit: ['単価重視で並べます','1枚・100gあたりが安い順に切り替えました。'],
+      price: ['支払総額重視で並べます','販売価格そのものが安い順に切り替えました。'],
+      quantity: ['まとめ買い重視で並べます','内容量が多い順に切り替えました。']
+    };
+
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const goal = button.dataset.buyGoal || 'unit';
+        buttons.forEach((b) => b.classList.toggle('is-active', b === button));
+        const sortButton = comparison.querySelector('[data-sort-mode="' + goal + '"]');
+        sortButton?.click();
+
+        const [title, text] = copy[goal] || copy.unit;
+        result.hidden = false;
+        const strong = result.querySelector('strong');
+        const span = result.querySelector('span');
+        if (strong) strong.textContent = title;
+        if (span) span.textContent = text;
+
+        window.babyCostEvent?.('buying_guide_select', {
+          category_id: comparison.dataset.categoryId || '',
+          goal
+        });
+
+        comparison.querySelector('[data-result-sort-label]')?.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'center'
+        });
+      });
+    });
+  });
+})();
