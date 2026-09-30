@@ -97,7 +97,18 @@ def featured_deals_section(deals):
     return f'''<section class="featured-deals"><div class="featured-deals-head"><div><div class="section-kicker">TODAY'S PICKS</div><h2>今日の買い候補</h2><p>現在取得できる同条件商品の中で、中央値との差が大きい候補です。</p></div><div class="featured-deals-mascot">{icon_svg("chick")}</div></div><div class="deal-grid">{''.join(cards)}</div><p class="deal-disclaimer">※ 過去価格との比較ではありません。現在の比較対象内での相対的な価格差です。</p></section>'''
 
 
-def render_home(categories, snapshots, deals, updated_at):
+def price_drops_section(rows):
+    if not rows:
+        return ''
+    cards=[]
+    for row in rows:
+        p=row["product"]
+        image=f'<div class="drop-image"><img src="{esc(p.get("image"))}" alt="" loading="lazy" decoding="async"></div>' if p.get("image") else f'<div class="drop-image drop-image-fallback">{icon_svg("price")}</div>'
+        cards.append(f'''<a class="drop-card" href="{esc(row["url"])}" data-nav-source="price_drop" data-category-id="{esc(row["category_id"])}"><div class="drop-badge">前回より ¥{row["drop_yen"]:,}↓</div>{image}<div class="drop-copy"><small>{esc(row["category_label"])} / {esc(row["segment_label"])}</small><strong>¥{p["price_yen"]:,}</strong><p>{esc(display_product_name(p["name"]))}</p><span>{row["drop_percent"]:.0f}%ダウン・比較を見る →</span></div></a>''')
+    return f'''<section class="price-drops"><div class="price-drops-head"><div><div class="section-kicker">PRICE DROP</div><h2>前回より安くなった商品</h2><p>前回公開時と同じ商品・同じ内容量だけを比較しています。</p></div><div class="price-drops-icon">{icon_svg("price")}</div></div><div class="drop-grid">{''.join(cards)}</div><p class="drop-note">※ 前回取得時との比較です。長期的な最安値やセールを示すものではありません。</p></section>'''
+
+
+def render_home(categories, snapshots, deals, price_drops, updated_at):
     cards=[]
     info=[
         ('diapers','紙おむつ','サイズ・タイプ別 / 1枚','サイズを選んで比較','diapers'),
@@ -109,7 +120,7 @@ def render_home(categories, snapshots, deals, updated_at):
         href=f'{SITE_URL}{categories[cid]["path"]}/'
         live='' if cid=='diapers' else _home_price(snapshots.get(cid),categories[cid]['metric'])
         cards.append(f'''<a class="cat cat--{cid}" data-nav-source="home_category" data-category-id="{cid}" href="{href}"><div class="cat-icon">{icon_svg(icon)}</div><div class="cat-copy"><span class="cat-kicker">{esc(metric)}</span><strong>{esc(name)}</strong><span>{esc(desc)}</span>{live}<b>比較を見る <i>→</i></b></div></a>''')
-    body=f'''<section class="hero hero-visual"><div class="hero-copy"><p class="eyebrow">BABY COST CHECK</p><h1>ベビー用品、<br><span>ちゃんと比べて</span>選ぼう。</h1><p>セット数や容量の違いをそろえて、1枚・100gなど同じ単位で比較。見かけの価格に迷わないためのシンプルな比較サイトです。</p>{trust_strip()}</div>{hero_visual()}</section>{selector(categories)}{featured_deals_section(deals)}<section class="home-section category-section"><div class="section-kicker">COMPARE</div><h2>なにを比べる？</h2><p class="section-lead">気になるカテゴリから、いちばん安い候補をすぐチェック。</p><div class="cats">{''.join(cards)}</div></section>{how_visual()}<section class="quality-card quality-visual"><div class="quality-icon">{icon_svg('check')}</div><div><div class="section-kicker">QUALITY FILTER</div><h2>「安いけど条件が違う」を入れません</h2><p>紙おむつはテープ／パンツとサイズを分離。販売ページでサイズを選ぶ商品や、数量を安全に読み取れない商品は除外します。</p></div><a href="{SITE_URL}method/">比較ルールを見る →</a></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    body=f'''<section class="hero hero-visual"><div class="hero-copy"><p class="eyebrow">BABY COST CHECK</p><h1>ベビー用品、<br><span>ちゃんと比べて</span>選ぼう。</h1><p>セット数や容量の違いをそろえて、1枚・100gなど同じ単位で比較。見かけの価格に迷わないためのシンプルな比較サイトです。</p>{trust_strip()}</div>{hero_visual()}</section>{selector(categories)}{featured_deals_section(deals)}{price_drops_section(price_drops)}<section class="home-section category-section"><div class="section-kicker">COMPARE</div><h2>なにを比べる？</h2><p class="section-lead">気になるカテゴリから、いちばん安い候補をすぐチェック。</p><div class="cats">{''.join(cards)}</div></section>{how_visual()}<section class="quality-card quality-visual"><div class="quality-icon">{icon_svg('check')}</div><div><div class="section-kicker">QUALITY FILTER</div><h2>「安いけど条件が違う」を入れません</h2><p>紙おむつはテープ／パンツとサイズを分離。販売ページでサイズを選ぶ商品や、数量を安全に読み取れない商品は除外します。</p></div><a href="{SITE_URL}method/">比較ルールを見る →</a></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     return shell('ベビー用品コスパ比較 | 1枚・100g単価で比較','紙おむつ、おしりふき、粉ミルクなどを単価換算して比較します。',body,SITE_URL)
 def render_diaper_index(categories, updated_at):
     rows=[]
@@ -152,13 +163,23 @@ def product_card(p, rank, category_id, segment, best_unit_price=None, strength_t
     strength_tags=strength_tags or []
     strength_html=''.join(f'<span class="strength-tag strength-tag--{kind}">{esc(label)}</span>' for kind,label in strength_tags)
     strength_row=f'<div class="strength-tags">{strength_html}</div>' if strength_html else ''
+    change=p.get("price_change") or {}
+    trend_html=''
+    if change:
+        delta=int(change.get("price_delta_yen",0))
+        if delta<0:
+            trend_html=f'<span class="price-trend price-trend--down">前回より ¥{abs(delta):,}↓</span>'
+        elif delta>0:
+            trend_html=f'<span class="price-trend price-trend--up">前回より ¥{abs(delta):,}↑</span>'
+        else:
+            trend_html='<span class="price-trend price-trend--same">前回と同価格</span>'
     attrs=f'''data-affiliate="rakuten" data-category-id="{esc(category_id)}" data-product-name="{esc(p['name'])}" data-product-id="{esc(p.get('source_id'))}" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-unit-metric="{esc(p['unit_metric'])}" data-unit-price="{p['unit_price']:.4f}" data-rank="{rank}" data-click-position="comparison_card"'''
     full_name=f'''<details class="full-name"><summary>商品名全文</summary><p>{esc(p['name'])}</p></details>''' if display!=p['name'] else ''
     shop=f'<span class="shop">{esc(p.get("shop"))}</span>' if p.get('shop') else ''
     gap=(p['unit_price']-best_unit_price) if best_unit_price is not None else 0
     badge='最安' if rank==1 else (f'1位より +{yen(gap)} / {METRIC[p["unit_metric"]]}' if gap>0 else f'{rank}位')
     image=f'<div class="product-image"><img src="{esc(p.get("image"))}" alt="" loading="lazy" decoding="async"></div>' if p.get('image') else ''
-    return f'''<article class="product product-rank-{rank}" id="rank-{rank}" data-sort-unit="{p['unit_price']:.6f}" data-sort-price="{p['price_yen']}" data-sort-quantity="{q['total']:.6f}" data-original-rank="{rank}"><div class="rank rank-{rank}">{rank}</div><div class="product-main"><div class="product-overview">{image}<div class="product-info"><div class="maker-row"><div class="maker">{esc(p.get('brand') or p.get('manufacturer'))} {stage_html}</div>{shop}</div><h3 class="product-title" title="{esc(p['name'])}">{esc(display)}</h3>{strength_row}<div class="price-row"><div class="unit"><b>{yen(p['unit_price'])}</b><span> / {METRIC[p['unit_metric']]}</span></div><span class="rank-badge">{badge}</span></div></div></div><div class="facts"><span><small>内容量</small><b>合計 {total_txt}{pack}</b></span><span><small>販売価格</small><b>¥{p['price_yen']:,}</b></span></div>{full_name}<details><summary>単価の計算を見る</summary><p>¥{p['price_yen']:,} ÷ {total_txt}{' × 100' if p['unit_metric']=='per_100g' else ''} = {yen(p['unit_price'])} / {METRIC[p['unit_metric']]}</p><small>数量根拠: {esc(q.get('evidence'))}</small></details><div class="product-actions"><button type="button" class="compare-add" data-compare-add data-compare-id="{esc(p.get('source_id'))}" data-compare-name="{esc(display)}" data-compare-unit="{p['unit_price']:.4f}" data-compare-unit-label="{esc(METRIC[p['unit_metric']])}" data-compare-price="{p['price_yen']}" data-compare-quantity="{esc(total_txt)}" data-compare-image="{esc(p.get('image'))}" data-compare-rank="{rank}"><span>＋</span> 比較に追加</button><a class="cta" href="{esc(p.get('url'))}" target="_blank" rel="nofollow sponsored noopener" {attrs}>楽天で価格・在庫を見る</a></div></div></article>'''
+    return f'''<article class="product product-rank-{rank}" id="rank-{rank}" data-sort-unit="{p['unit_price']:.6f}" data-sort-price="{p['price_yen']}" data-sort-quantity="{q['total']:.6f}" data-original-rank="{rank}"><div class="rank rank-{rank}">{rank}</div><div class="product-main"><div class="product-overview">{image}<div class="product-info"><div class="maker-row"><div class="maker">{esc(p.get('brand') or p.get('manufacturer'))} {stage_html}</div>{shop}</div><h3 class="product-title" title="{esc(p['name'])}">{esc(display)}</h3>{strength_row}{trend_html}<div class="price-row"><div class="unit"><b>{yen(p['unit_price'])}</b><span> / {METRIC[p['unit_metric']]}</span></div><span class="rank-badge">{badge}</span></div></div></div><div class="facts"><span><small>内容量</small><b>合計 {total_txt}{pack}</b></span><span><small>販売価格</small><b>¥{p['price_yen']:,}</b></span></div>{full_name}<details><summary>単価の計算を見る</summary><p>¥{p['price_yen']:,} ÷ {total_txt}{' × 100' if p['unit_metric']=='per_100g' else ''} = {yen(p['unit_price'])} / {METRIC[p['unit_metric']]}</p><small>数量根拠: {esc(q.get('evidence'))}</small></details><div class="product-actions"><button type="button" class="compare-add" data-compare-add data-compare-id="{esc(p.get('source_id'))}" data-compare-name="{esc(display)}" data-compare-unit="{p['unit_price']:.4f}" data-compare-unit-label="{esc(METRIC[p['unit_metric']])}" data-compare-price="{p['price_yen']}" data-compare-quantity="{esc(total_txt)}" data-compare-image="{esc(p.get('image'))}" data-compare-rank="{rank}"><span>＋</span> 比較に追加</button><a class="cta" href="{esc(p.get('url'))}" target="_blank" rel="nofollow sponsored noopener" {attrs}>楽天で価格・在庫を見る</a></div></div></article>'''
 
 def quick_compare(products):
     if not products: return ''

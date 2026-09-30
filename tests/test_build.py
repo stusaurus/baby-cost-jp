@@ -3,7 +3,7 @@ import sys
 import unittest
 from pathlib import Path
 
-from scripts.build_site import normalize_products
+from scripts.build_site import attach_price_changes, normalize_products
 from src.render import display_product_name, product_card, product_strength_tags
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -155,6 +155,39 @@ class BuildTests(unittest.TestCase):
         self.assertIn('data-buy-goal="quantity"', text)
         self.assertIn("まとめ買いしたい", text)
         self.assertIn("data-buy-guide-result", text)
+
+    def test_price_changes_require_same_product_and_quantity(self):
+        current = [{
+            "source_id":"same","name":"A","price_yen":900,"unit_price":9.0,
+            "quantity":{"total":100,"base_unit":"piece"}
+        },{
+            "source_id":"changed-pack","name":"B","price_yen":1000,"unit_price":10.0,
+            "quantity":{"total":100,"base_unit":"piece"}
+        }]
+        previous = {"products":[
+            {"source_id":"same","price_yen":1000,"unit_price":10.0,"quantity":{"total":100,"base_unit":"piece"}},
+            {"source_id":"changed-pack","price_yen":1200,"unit_price":12.0,"quantity":{"total":90,"base_unit":"piece"}}
+        ]}
+        drops = attach_price_changes(current, previous)
+        self.assertEqual(current[0]["price_change"]["status"], "down")
+        self.assertEqual(current[0]["price_change"]["price_delta_yen"], -100)
+        self.assertNotIn("price_change", current[1])
+        self.assertEqual(len(drops), 1)
+
+    def test_product_card_renders_previous_price_trend(self):
+        product = {
+            "quantity":{"total":100,"base_unit":"piece","pack_count":1,"evidence":"100枚"},
+            "attributes":{},"name":"テスト商品 100枚","brand":"test","manufacturer":"test","shop":"shop",
+            "image":"","unit_price":9.0,"unit_metric":"per_piece","price_yen":900,
+            "url":"https://example.invalid","source_id":"trend-1",
+            "price_change":{"status":"down","previous_price_yen":1000,"price_delta_yen":-100,"previous_unit_price":10.0,"unit_delta":-1.0}
+        }
+        html = product_card(product, 1, "diapers", {"type":"pants","size":"m"}, best_unit_price=9.0)
+        self.assertIn("前回より ¥100↓", html)
+        self.assertIn("price-trend--down", html)
+
+    def test_price_changes_json_is_generated(self):
+        self.assertTrue((ROOT / "site/data/price-changes.json").exists())
 
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {

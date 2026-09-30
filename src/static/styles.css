@@ -239,3 +239,22 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid rgb
 .buying-goals b{font-size:12px}.buying-goals small{font-size:9px;color:var(--muted);margin-top:2px}
 .buying-guide-result{margin-top:11px;border-radius:14px;padding:10px 12px;background:#fff3c8;border:1px solid #ebd487}.buying-guide-result[hidden]{display:none}.buying-guide-result strong,.buying-guide-result span{display:block}.buying-guide-result strong{font-size:12px;color:#8f621c}.buying-guide-result span{font-size:10px;color:#78694c;margin-top:2px}
 @media(max-width:620px){.buying-guide{padding:15px}.buying-guide-head{align-items:flex-start}.buying-guide-mascot{width:48px;height:48px;border-radius:16px}.buying-goals{grid-template-columns:1fr}.buying-goals button{grid-template-columns:32px 1fr;padding:10px}.buying-goals button>span{font-size:22px}}
+
+
+/* Previous-update price changes */
+.price-trend{display:inline-flex;align-items:center;width:max-content;border-radius:999px;padding:4px 8px;font-size:9px;font-weight:900;margin:0 0 8px}
+.price-trend--down{background:#e4f5ee;color:#176954;border:1px solid #bfe3d5}
+.price-trend--up{background:#fff0ec;color:#a64e3f;border:1px solid #f0c9c0}
+.price-trend--same{background:#f1f3f2;color:#69736f;border:1px solid #dfe4e2}
+.price-drops{margin:30px 0;padding:22px;border-radius:26px;background:linear-gradient(145deg,#eef8f4,#fff);border:1px solid #d7e9e2;box-shadow:0 14px 34px rgba(48,76,68,.08)}
+.price-drops-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px}
+.price-drops-head h2{font-size:24px;margin:3px 0}.price-drops-head p{font-size:11px;color:var(--muted);margin:3px 0}
+.price-drops-icon{width:58px;height:58px;border-radius:18px;background:#dff3eb;color:var(--accent);padding:8px}
+.drop-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.drop-card{position:relative;background:#fff;border:1px solid var(--line);border-radius:18px;padding:10px;text-decoration:none;color:var(--text);overflow:hidden}
+.drop-badge{position:absolute;left:9px;top:9px;z-index:2;background:#1f765f;color:#fff;border-radius:999px;padding:4px 7px;font-size:9px;font-weight:900;box-shadow:0 4px 10px rgba(31,118,95,.16)}
+.drop-image{height:96px;border-radius:13px;background:#fafcfb;display:grid;place-items:center;overflow:hidden;border:1px solid #edf1ef}.drop-image img{width:100%;height:100%;object-fit:contain}.drop-image-fallback{padding:22px;color:#8ba79f}
+.drop-copy{padding:8px 2px 2px}.drop-copy small{font-size:9px;color:var(--muted);font-weight:800}.drop-copy strong{display:block;font-size:22px;color:var(--accent-deep);margin:2px 0}.drop-copy p{font-size:10px;line-height:1.45;color:var(--muted);margin:3px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:29px}.drop-copy span{font-size:10px;font-weight:900;color:var(--accent)}
+.drop-note{font-size:9px;color:var(--muted);margin:11px 1px 0}
+@media(max-width:820px){.drop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.price-drops{padding:17px;border-radius:22px}.drop-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory}.drop-card{min-width:76%;scroll-snap-align:start}.drop-image{height:128px}}

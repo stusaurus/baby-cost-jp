@@ -6,6 +6,7 @@ import json
 import re
 import shutil
 import sys
+from urllib.request import Request, urlopen
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -37,6 +38,65 @@ QUALITY_AUDIT_REASONS = {
 
 def load_fixtures() -> dict:
     return json.loads((DATA_DIR / "fixtures.json").read_text(encoding="utf-8"))
+
+
+def load_previous_latest(fixture: bool = False) -> dict:
+    if fixture:
+        return {}
+    try:
+        request = Request(f"{SITE_URL}data/latest.json", headers={"User-Agent": "baby-cost-jp-builder/1.0"})
+        with urlopen(request, timeout=8) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        print(f"PRICE_HISTORY previous snapshot unavailable: {exc}")
+        return {}
+
+
+def attach_price_changes(products: list[dict], previous_segment: dict | None) -> list[dict]:
+    if not previous_segment:
+        return []
+    previous_by_id = {
+        p.get("source_id"): p
+        for p in previous_segment.get("products", [])
+        if p.get("source_id")
+    }
+    drops = []
+    for product in products:
+        source_id = product.get("source_id")
+        previous = previous_by_id.get(source_id)
+        if not previous:
+            continue
+        current_q = product.get("quantity") or {}
+        previous_q = previous.get("quantity") or {}
+        if current_q.get("base_unit") != previous_q.get("base_unit"):
+            continue
+        try:
+            if abs(float(current_q.get("total", 0)) - float(previous_q.get("total", 0))) > 1e-9:
+                continue
+            current_price = int(product.get("price_yen", 0))
+            previous_price = int(previous.get("price_yen", 0))
+            current_unit = float(product.get("unit_price", 0))
+            previous_unit = float(previous.get("unit_price", 0))
+        except (TypeError, ValueError):
+            continue
+        delta_price = current_price - previous_price
+        delta_unit = current_unit - previous_unit
+        status = "down" if delta_price < 0 else ("up" if delta_price > 0 else "same")
+        change = {
+            "status": status,
+            "previous_price_yen": previous_price,
+            "price_delta_yen": delta_price,
+            "previous_unit_price": previous_unit,
+            "unit_delta": round(delta_unit, 4),
+        }
+        product["price_change"] = change
+        if delta_price < 0 and previous_price > 0:
+            drops.append({
+                "product": product,
+                "drop_yen": -delta_price,
+                "drop_percent": round((-delta_price / previous_price) * 100, 1),
+            })
+    return drops
 
 
 def featured_candidate(products: list[dict], category_id: str, category: dict, segment: dict) -> dict | None:
@@ -134,6 +194,8 @@ def main(fixture: bool = False, pages: int = 2):
     categories = load_categories()
     fixtures = load_fixtures() if fixture else {}
     updated_at = datetime.now(ZoneInfo("Asia/Tokyo"))
+    previous_latest = load_previous_latest(fixture=fixture)
+    previous_generated_at = previous_latest.get("generated_at")
 
     if SITE_DIR.exists():
         shutil.rmtree(SITE_DIR)
@@ -142,12 +204,14 @@ def main(fixture: bool = False, pages: int = 2):
 
     snapshots = {}
     featured_candidates = []
+    price_drop_candidates = []
     latest = {
         "schema_version": 1,
         "generated_at": updated_at.isoformat(),
         "site_url": SITE_URL,
         "pricing_scope": "rakuten_postage_included_or_free_shipping",
         "ranking_excludes": ["points", "coupons"],
+        "previous_generated_at": previous_generated_at,
         "categories": {},
     }
     quality_audit = {
@@ -171,6 +235,17 @@ def main(fixture: bool = False, pages: int = 2):
                     raw.extend(fetch_items(query, pages=pages))
             segment_audit: list[dict] = []
             products = normalize_products(raw, category_id, category, segment, audit=segment_audit)
+            previous_segment = (previous_latest.get("categories") or {}).get(segment["id"])
+            segment_drops = attach_price_changes(products, previous_segment)
+            for row in segment_drops:
+                row.update({
+                    "category_id": category_id,
+                    "category_label": category["name"],
+                    "segment_id": segment["id"],
+                    "segment_label": segment["label"],
+                    "url": segment_url(category, segment),
+                })
+                price_drop_candidates.append(row)
             candidate = featured_candidate(products, category_id, category, segment)
             if candidate:
                 featured_candidates.append(candidate)
@@ -192,6 +267,7 @@ def main(fixture: bool = False, pages: int = 2):
                         "price_yen": p["price_yen"], "shop": p.get("shop", ""), "affiliate_url": p.get("url", ""),
                         "unit_price": p["unit_price"], "unit_metric": p["unit_metric"], "quantity": p["quantity"],
                         "manufacturer": p["manufacturer"], "brand": p["brand"], "attributes": p["attributes"],
+                        "price_change": p.get("price_change"),
                     } for p in products
                 ],
             }
@@ -232,13 +308,36 @@ def main(fixture: bool = False, pages: int = 2):
         for row in featured_deals
     ]
 
-    write_page(SITE_DIR / "index.html", render_home(categories, snapshots, featured_deals, updated_at))
+    price_drop_candidates.sort(key=lambda row: (row["drop_percent"], row["drop_yen"]), reverse=True)
+    price_drops = price_drop_candidates[:4]
+    latest["price_drop_count"] = len(price_drop_candidates)
+
+    write_page(SITE_DIR / "index.html", render_home(categories, snapshots, featured_deals, price_drops, updated_at))
     write_page(SITE_DIR / "diapers" / "index.html", render_diaper_index(categories, updated_at))
     write_page(SITE_DIR / "method" / "index.html", render_method())
 
     (SITE_DIR / "data").mkdir(parents=True, exist_ok=True)
     (SITE_DIR / "data" / "latest.json").write_text(json.dumps(latest, ensure_ascii=False, indent=2), encoding="utf-8")
     (SITE_DIR / "data" / "quality-audit.json").write_text(json.dumps(quality_audit, ensure_ascii=False, indent=2), encoding="utf-8")
+    price_changes = {
+        "generated_at": updated_at.isoformat(),
+        "previous_generated_at": previous_generated_at,
+        "drop_count": len(price_drop_candidates),
+        "drops": [
+            {
+                "category_id": row["category_id"],
+                "segment_id": row["segment_id"],
+                "source_id": row["product"].get("source_id", ""),
+                "name": row["product"].get("name", ""),
+                "drop_yen": row["drop_yen"],
+                "drop_percent": row["drop_percent"],
+                "current_price_yen": row["product"].get("price_yen", 0),
+                "previous_price_yen": row["product"].get("price_change", {}).get("previous_price_yen", 0),
+            }
+            for row in price_drop_candidates
+        ],
+    }
+    (SITE_DIR / "data" / "price-changes.json").write_text(json.dumps(price_changes, ensure_ascii=False, indent=2), encoding="utf-8")
     (SITE_DIR / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}sitemap.xml\n", encoding="utf-8")
     unique_urls = list(dict.fromkeys(sitemap_urls))
     lastmod = updated_at.date().isoformat()
