@@ -16,6 +16,7 @@ def icon_svg(name: str, cls: str=''):
         'diaper_bags': f'''<svg {common}><path d="M30 31h36l5 46H25l5-46Z" fill="currentColor" opacity=".16"/><path d="M30 31h36l5 46H25l5-46Zm9 0c0-10 18-10 18 0" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>''',
         'price': f'''<svg {common}><path d="M24 23h30l19 19-31 31-19-19V23Z" fill="currentColor" opacity=".16"/><path d="M24 23h30l19 19-31 31-19-19V23Zm12 13h.1M49 38c-8 0-8 10 0 10s8 10 0 10m0-24v28" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>''',
         'check': f'''<svg {common}><circle cx="48" cy="48" r="30" fill="currentColor" opacity=".14"/><path d="m34 48 9 9 20-22" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>''',
+        'chick': f'''<svg {common}><circle cx="48" cy="51" r="27" fill="currentColor" opacity=".18"/><path d="M27 52c0-15 9-28 21-28s21 13 21 28c0 15-9 25-21 25S27 67 27 52Z" fill="currentColor" opacity=".25"/><circle cx="40" cy="48" r="3.5" fill="currentColor"/><circle cx="56" cy="48" r="3.5" fill="currentColor"/><path d="M43 58h10l-5 5-5-5Z" fill="currentColor"/><path d="M30 55c-7 1-10 5-11 10m47-10c7 1 10 5 11 10M42 23l6-8 6 8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>''',
     }
     return icons.get(name, icons['price'])
 
@@ -26,6 +27,7 @@ def hero_visual():
       <div class="hero-art-card hero-art-wipes"><div class="hero-art-icon">{icon_svg('wipes')}</div><span>おしりふき</span></div>
       <div class="hero-art-card hero-art-formula"><div class="hero-art-icon">{icon_svg('formula')}</div><span>粉ミルク</span></div>
       <div class="hero-art-tag">{icon_svg('price')}<b>単価で比較</b></div>
+      <div class="hero-mascot">{icon_svg('chick')}<span>くらべる！</span></div>
       <div class="hero-spark s1">✦</div><div class="hero-spark s2">●</div><div class="hero-spark s3">✦</div>
     </div>'''
 
@@ -52,6 +54,10 @@ def display_product_name(name: str) -> str:
     text=re.sub(r'\s*[【\[](?:D|iris_[^】\]]+|smtb-s|△)[】\]]\s*$', '', text, flags=re.I).strip()
     return re.sub(r'\s+',' ',text) or str(name or '').strip()
 
+
+def how_visual():
+    return f'''<section class="how-visual"><div class="how-intro"><div class="how-mascot">{icon_svg('chick')}</div><div><div class="section-kicker">HOW TO USE</div><h2>3ステップで、すぐ比較</h2><p>欲しいものを選んだら、あとは単価順に見るだけ。</p></div></div><div class="how-steps"><div class="how-step"><span>01</span><div class="how-step-icon">{icon_svg('diapers')}</div><b>条件を選ぶ</b><small>サイズやカテゴリを選択</small></div><div class="how-arrow">→</div><div class="how-step"><span>02</span><div class="how-step-icon">{icon_svg('price')}</div><b>単価で比べる</b><small>1枚・100gで同条件化</small></div><div class="how-arrow">→</div><div class="how-step"><span>03</span><div class="how-step-icon">{icon_svg('check')}</div><b>楽天で確認</b><small>価格・在庫を最終チェック</small></div></div></section>'''
+
 def analytics_head():
     if not GA_MEASUREMENT_ID: return ''
     gid=esc(GA_MEASUREMENT_ID)
@@ -59,7 +65,7 @@ def analytics_head():
 
 def shell(title, desc, body, canonical, noindex=False):
     robots='noindex,follow' if noindex else 'index,follow'
-    return f'''<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(title)}</title><meta name="description" content="{esc(desc)}"><meta name="robots" content="{robots}"><link rel="canonical" href="{esc(canonical)}"><link rel="stylesheet" href="{SITE_URL}static/styles.css">{analytics_head()}</head><body><header class="top"><a class="brand" href="{SITE_URL}">{SITE_NAME}</a><a href="{SITE_URL}method/">比較方法</a></header><main>{body}</main><footer>価格・枚数等は取得時点の情報です。購入前に販売ページで最新情報をご確認ください。</footer><script src="{SITE_URL}static/analytics.js"></script><script src="{SITE_URL}static/app.js"></script></body></html>'''
+    return f'''<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(title)}</title><meta name="description" content="{esc(desc)}"><meta name="robots" content="{robots}"><link rel="canonical" href="{esc(canonical)}"><link rel="stylesheet" href="{SITE_URL}static/styles.css">{analytics_head()}</head><body><header class="top"><a class="brand" href="{SITE_URL}"><span class="brand-mark">{icon_svg('chick')}</span><span>{SITE_NAME}</span></a><a href="{SITE_URL}method/">比較方法</a></header><main>{body}</main><footer>価格・枚数等は取得時点の情報です。購入前に販売ページで最新情報をご確認ください。</footer><script src="{SITE_URL}static/analytics.js"></script><script src="{SITE_URL}static/app.js"></script></body></html>'''
 
 def trust_strip():
     return f'''<div class="trust-strip" aria-label="比較方針"><span>{icon_svg('check')}送料込み対象</span><span>{icon_svg('check')}選択式商品は除外</span><span>{icon_svg('check')}単価を自動計算</span><span>{icon_svg('check')}毎日更新</span></div>'''
@@ -91,7 +97,7 @@ def render_home(categories, snapshots, updated_at):
         href=f'{SITE_URL}{categories[cid]["path"]}/'
         live='' if cid=='diapers' else _home_price(snapshots.get(cid),categories[cid]['metric'])
         cards.append(f'''<a class="cat cat--{cid}" data-nav-source="home_category" data-category-id="{cid}" href="{href}"><div class="cat-icon">{icon_svg(icon)}</div><div class="cat-copy"><span class="cat-kicker">{esc(metric)}</span><strong>{esc(name)}</strong><span>{esc(desc)}</span>{live}<b>比較を見る <i>→</i></b></div></a>''')
-    body=f'''<section class="hero hero-visual"><div class="hero-copy"><p class="eyebrow">BABY COST CHECK</p><h1>ベビー用品、<br><span>ちゃんと比べて</span>選ぼう。</h1><p>セット数や容量の違いをそろえて、1枚・100gなど同じ単位で比較。見かけの価格に迷わないためのシンプルな比較サイトです。</p>{trust_strip()}</div>{hero_visual()}</section>{selector(categories)}<section class="home-section category-section"><div class="section-kicker">COMPARE</div><h2>なにを比べる？</h2><p class="section-lead">気になるカテゴリから、いちばん安い候補をすぐチェック。</p><div class="cats">{''.join(cards)}</div></section><section class="quality-card quality-visual"><div class="quality-icon">{icon_svg('check')}</div><div><div class="section-kicker">QUALITY FILTER</div><h2>「安いけど条件が違う」を入れません</h2><p>紙おむつはテープ／パンツとサイズを分離。販売ページでサイズを選ぶ商品や、数量を安全に読み取れない商品は除外します。</p></div><a href="{SITE_URL}method/">比較ルールを見る →</a></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    body=f'''<section class="hero hero-visual"><div class="hero-copy"><p class="eyebrow">BABY COST CHECK</p><h1>ベビー用品、<br><span>ちゃんと比べて</span>選ぼう。</h1><p>セット数や容量の違いをそろえて、1枚・100gなど同じ単位で比較。見かけの価格に迷わないためのシンプルな比較サイトです。</p>{trust_strip()}</div>{hero_visual()}</section>{selector(categories)}<section class="home-section category-section"><div class="section-kicker">COMPARE</div><h2>なにを比べる？</h2><p class="section-lead">気になるカテゴリから、いちばん安い候補をすぐチェック。</p><div class="cats">{''.join(cards)}</div></section>{how_visual()}<section class="quality-card quality-visual"><div class="quality-icon">{icon_svg('check')}</div><div><div class="section-kicker">QUALITY FILTER</div><h2>「安いけど条件が違う」を入れません</h2><p>紙おむつはテープ／パンツとサイズを分離。販売ページでサイズを選ぶ商品や、数量を安全に読み取れない商品は除外します。</p></div><a href="{SITE_URL}method/">比較ルールを見る →</a></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     return shell('ベビー用品コスパ比較 | 1枚・100g単価で比較','紙おむつ、おしりふき、粉ミルクなどを単価換算して比較します。',body,SITE_URL)
 def render_diaper_index(categories, updated_at):
     rows=[]

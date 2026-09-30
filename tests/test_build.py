@@ -70,6 +70,13 @@ class BuildTests(unittest.TestCase):
         self.assertIn("size-chips", text)
         self.assertNotIn('id="diaper-type"', text)
 
+    def test_brand_mascot_and_three_step_flow_render(self):
+        text = (ROOT / "site/index.html").read_text(encoding="utf-8")
+        self.assertIn("brand-mark", text)
+        self.assertIn("hero-mascot", text)
+        self.assertIn("3ステップで、すぐ比較", text)
+        self.assertIn("HOW TO USE", text)
+
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {
             "quantity":{"total":108,"base_unit":"piece","pack_count":3,"evidence":"36枚×3個"},
