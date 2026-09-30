@@ -265,3 +265,13 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid rgb
 .mini-history>div{display:flex;flex-direction:column}.mini-history span{font-size:9px;color:var(--muted);font-weight:800}.mini-history b{font-size:11px;color:var(--text);margin-top:1px}.mini-history svg{width:112px;height:34px;overflow:visible}.mini-history small{font-size:9px;color:var(--muted);white-space:nowrap}
 .mini-history--down{color:#1f8168;background:#f1faf6;border-color:#d5ebe3}.mini-history--up{color:#b45d4c;background:#fff8f5;border-color:#f0ddd8}.mini-history--same{color:#7c8884}
 @media(max-width:620px){.mini-history{grid-template-columns:1fr 96px}.mini-history svg{width:96px}.mini-history small{grid-column:1/-1}}
+
+
+/* Price-drop ranking + recent trend */
+.drop-card{padding-top:36px}.drop-rank{position:absolute;left:10px;top:8px;font-size:18px;font-weight:900;z-index:2}
+.drop-rank-1{border:2px solid #e4bb4f}.drop-rank-1 .drop-rank{font-size:22px}
+.drop-rank-2{border-color:#cfd6d4}.drop-rank-3{border-color:#d9b08b}
+.recent-trends{margin:30px 0;padding:22px;border-radius:26px;background:linear-gradient(145deg,#fff8ed,#fff);border:1px solid #eadbc0;box-shadow:0 14px 34px rgba(98,73,32,.08)}
+.recent-trends-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px}.recent-trends-head h2{font-size:24px;margin:3px 0}.recent-trends-head p{font-size:11px;color:var(--muted);margin:3px 0}.recent-trends-head>svg{width:58px;height:58px;color:#c08a2f;background:#fff1cf;border-radius:18px;padding:8px}
+.trend-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.trend-card{display:block;background:#fff;border:1px solid var(--line);border-radius:18px;padding:13px;text-decoration:none;color:var(--text)}.trend-card-head{display:flex;justify-content:space-between;gap:8px}.trend-card-head span,.trend-card-head b{font-size:9px}.trend-card-head span{color:var(--muted);font-weight:800}.trend-card-head b{color:#a76c1f;background:#fff2d2;border-radius:999px;padding:3px 6px}.trend-card h3{font-size:12px;line-height:1.45;margin:8px 0}.trend-card .mini-history{margin:7px 0}.trend-card-foot{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:8px}.trend-card-foot strong{font-size:20px;color:#1f7a62}.trend-card-foot span{font-size:9px;color:var(--muted)}
+@media(max-width:620px){.trend-grid{grid-template-columns:1fr}.recent-trends{padding:17px;border-radius:22px}}

@@ -3,7 +3,7 @@ import sys
 import unittest
 from pathlib import Path
 
-from scripts.build_site import attach_price_changes, attach_price_history, normalize_products
+from scripts.build_site import attach_price_changes, attach_price_history, history_trend_candidate, normalize_products
 from src.render import display_product_name, price_history_sparkline, product_card, product_strength_tags
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -214,6 +214,24 @@ class BuildTests(unittest.TestCase):
         self.assertIn("<polyline", html)
         self.assertIn("直近3回で ¥100↓", html)
         self.assertEqual(price_history_sparkline([{"price_yen":1000}]), "")
+
+    def test_history_trend_requires_three_points_and_price_drop(self):
+        category={"name":"紙おむつ","metric":"per_piece","path":"diapers"}
+        segment={"id":"pants-m","label":"パンツ・M","type":"pants","size":"m"}
+        product={"name":"A","price_history":[
+            {"price_yen":1200},{"price_yen":1100},{"price_yen":900}
+        ]}
+        row=history_trend_candidate(product,"diapers",category,segment)
+        self.assertIsNotNone(row)
+        self.assertEqual(row["drop_yen"],300)
+        self.assertEqual(row["points"],3)
+        self.assertIsNone(history_trend_candidate({"price_history":[{"price_yen":1000},{"price_yen":900}]},"diapers",category,segment))
+        self.assertIsNone(history_trend_candidate({"price_history":[{"price_yen":900},{"price_yen":950},{"price_yen":1000}]},"diapers",category,segment))
+
+    def test_home_has_price_drop_ranking_copy(self):
+        text=(ROOT / "site/index.html").read_text(encoding="utf-8")
+        # Fixture builds do not have a previous snapshot, so the section may be absent.
+        self.assertNotIn("長期的な最安値", text) if "値下がりランキング" not in text else self.assertIn("PRICE DROP RANKING", text)
 
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {

@@ -101,14 +101,25 @@ def price_drops_section(rows):
     if not rows:
         return ''
     cards=[]
-    for row in rows:
+    for i,row in enumerate(rows, start=1):
         p=row["product"]
         image=f'<div class="drop-image"><img src="{esc(p.get("image"))}" alt="" loading="lazy" decoding="async"></div>' if p.get("image") else f'<div class="drop-image drop-image-fallback">{icon_svg("price")}</div>'
-        cards.append(f'''<a class="drop-card" href="{esc(row["url"])}" data-nav-source="price_drop" data-category-id="{esc(row["category_id"])}"><div class="drop-badge">前回より ¥{row["drop_yen"]:,}↓</div>{image}<div class="drop-copy"><small>{esc(row["category_label"])} / {esc(row["segment_label"])}</small><strong>¥{p["price_yen"]:,}</strong><p>{esc(display_product_name(p["name"]))}</p><span>{row["drop_percent"]:.0f}%ダウン・比較を見る →</span></div></a>''')
-    return f'''<section class="price-drops"><div class="price-drops-head"><div><div class="section-kicker">PRICE DROP</div><h2>前回より安くなった商品</h2><p>前回公開時と同じ商品・同じ内容量だけを比較しています。</p></div><div class="price-drops-icon">{icon_svg("price")}</div></div><div class="drop-grid">{''.join(cards)}</div><p class="drop-note">※ 前回取得時との比較です。長期的な最安値やセールを示すものではありません。</p></section>'''
+        medal='🥇' if i==1 else ('🥈' if i==2 else ('🥉' if i==3 else f'{i}'))
+        cards.append(f'''<a class="drop-card drop-rank-{i}" href="{esc(row["url"])}" data-nav-source="price_drop" data-category-id="{esc(row["category_id"])}"><div class="drop-rank">{medal}</div><div class="drop-badge">前回より {row["drop_percent"]:.0f}%↓</div>{image}<div class="drop-copy"><small>{esc(row["category_label"])} / {esc(row["segment_label"])}</small><strong>¥{p["price_yen"]:,}</strong><p>{esc(display_product_name(p["name"]))}</p><span>¥{row["drop_yen"]:,}安い・比較を見る →</span></div></a>''')
+    return f'''<section class="price-drops"><div class="price-drops-head"><div><div class="section-kicker">PRICE DROP RANKING</div><h2>値下がりランキング</h2><p>前回公開時と同じ商品・同じ内容量だけを比較し、値下がり率順に並べています。</p></div><div class="price-drops-icon">{icon_svg("price")}</div></div><div class="drop-grid">{''.join(cards)}</div><p class="drop-note">※ 前回取得時との比較です。長期的な最安値やセールを示すものではありません。</p></section>'''
+
+def recent_trends_section(rows):
+    if not rows:
+        return ''
+    cards=[]
+    for row in rows:
+        p=row["product"]
+        spark=price_history_sparkline(p.get("price_history") or [])
+        cards.append(f'''<a class="trend-card" href="{esc(row["url"])}" data-nav-source="recent_price_trend" data-category-id="{esc(row["category_id"])}"><div class="trend-card-head"><span>{esc(row["category_label"])}</span><b>{row["points"]}回分</b></div><h3>{esc(display_product_name(p["name"]))}</h3>{spark}<div class="trend-card-foot"><strong>{row["drop_percent"]:.0f}%↓</strong><span>¥{row["start_price_yen"]:,} → ¥{row["current_price_yen"]:,}</span></div></a>''')
+    return f'''<section class="recent-trends"><div class="recent-trends-head"><div><div class="section-kicker">RECENT TREND</div><h2>最近安くなっている商品</h2><p>3回以上の履歴がある商品のうち、最初の記録より現在価格が下がっているものです。</p></div>{icon_svg("price")}</div><div class="trend-grid">{''.join(cards)}</div></section>'''
 
 
-def render_home(categories, snapshots, deals, price_drops, updated_at):
+def render_home(categories, snapshots, deals, price_drops, recent_trends, updated_at):
     cards=[]
     info=[
         ('diapers','紙おむつ','サイズ・タイプ別 / 1枚','サイズを選んで比較','diapers'),
@@ -120,7 +131,7 @@ def render_home(categories, snapshots, deals, price_drops, updated_at):
         href=f'{SITE_URL}{categories[cid]["path"]}/'
         live='' if cid=='diapers' else _home_price(snapshots.get(cid),categories[cid]['metric'])
         cards.append(f'''<a class="cat cat--{cid}" data-nav-source="home_category" data-category-id="{cid}" href="{href}"><div class="cat-icon">{icon_svg(icon)}</div><div class="cat-copy"><span class="cat-kicker">{esc(metric)}</span><strong>{esc(name)}</strong><span>{esc(desc)}</span>{live}<b>比較を見る <i>→</i></b></div></a>''')
-    body=f'''<section class="hero hero-visual"><div class="hero-copy"><p class="eyebrow">BABY COST CHECK</p><h1>ベビー用品、<br><span>ちゃんと比べて</span>選ぼう。</h1><p>セット数や容量の違いをそろえて、1枚・100gなど同じ単位で比較。見かけの価格に迷わないためのシンプルな比較サイトです。</p>{trust_strip()}</div>{hero_visual()}</section>{selector(categories)}{featured_deals_section(deals)}{price_drops_section(price_drops)}<section class="home-section category-section"><div class="section-kicker">COMPARE</div><h2>なにを比べる？</h2><p class="section-lead">気になるカテゴリから、いちばん安い候補をすぐチェック。</p><div class="cats">{''.join(cards)}</div></section>{how_visual()}<section class="quality-card quality-visual"><div class="quality-icon">{icon_svg('check')}</div><div><div class="section-kicker">QUALITY FILTER</div><h2>「安いけど条件が違う」を入れません</h2><p>紙おむつはテープ／パンツとサイズを分離。販売ページでサイズを選ぶ商品や、数量を安全に読み取れない商品は除外します。</p></div><a href="{SITE_URL}method/">比較ルールを見る →</a></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    body=f'''<section class="hero hero-visual"><div class="hero-copy"><p class="eyebrow">BABY COST CHECK</p><h1>ベビー用品、<br><span>ちゃんと比べて</span>選ぼう。</h1><p>セット数や容量の違いをそろえて、1枚・100gなど同じ単位で比較。見かけの価格に迷わないためのシンプルな比較サイトです。</p>{trust_strip()}</div>{hero_visual()}</section>{selector(categories)}{featured_deals_section(deals)}{price_drops_section(price_drops)}{recent_trends_section(recent_trends)}<section class="home-section category-section"><div class="section-kicker">COMPARE</div><h2>なにを比べる？</h2><p class="section-lead">気になるカテゴリから、いちばん安い候補をすぐチェック。</p><div class="cats">{''.join(cards)}</div></section>{how_visual()}<section class="quality-card quality-visual"><div class="quality-icon">{icon_svg('check')}</div><div><div class="section-kicker">QUALITY FILTER</div><h2>「安いけど条件が違う」を入れません</h2><p>紙おむつはテープ／パンツとサイズを分離。販売ページでサイズを選ぶ商品や、数量を安全に読み取れない商品は除外します。</p></div><a href="{SITE_URL}method/">比較ルールを見る →</a></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     return shell('ベビー用品コスパ比較 | 1枚・100g単価で比較','紙おむつ、おしりふき、粉ミルクなどを単価換算して比較します。',body,SITE_URL)
 def render_diaper_index(categories, updated_at):
     rows=[]

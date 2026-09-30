@@ -211,6 +211,33 @@ def featured_candidate(products: list[dict], category_id: str, category: dict, s
     }
 
 
+def history_trend_candidate(product: dict, category_id: str, category: dict, segment: dict) -> dict | None:
+    points = product.get("price_history") or []
+    if len(points) < 3:
+        return None
+    try:
+        first = int(points[0]["price_yen"])
+        last = int(points[-1]["price_yen"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if first <= 0 or last >= first:
+        return None
+    drop_yen = first - last
+    return {
+        "category_id": category_id,
+        "category_label": category["name"],
+        "segment_id": segment["id"],
+        "segment_label": segment["label"],
+        "url": segment_url(category, segment),
+        "product": product,
+        "points": len(points),
+        "drop_yen": drop_yen,
+        "drop_percent": round((drop_yen / first) * 100, 1),
+        "start_price_yen": first,
+        "current_price_yen": last,
+    }
+
+
 def _canonical_product_name(name: str) -> str:
     text = norm(name).lower()
     return re.sub(r"[^0-9a-zぁ-んァ-ヶ一-龯]+", "", text)
@@ -293,6 +320,7 @@ def main(fixture: bool = False, pages: int = 2):
     snapshots = {}
     featured_candidates = []
     price_drop_candidates = []
+    history_trend_candidates = []
     history_segments = {}
     latest = {
         "schema_version": 1,
@@ -343,6 +371,10 @@ def main(fixture: bool = False, pages: int = 2):
                     "url": segment_url(category, segment),
                 })
                 price_drop_candidates.append(row)
+            for product in products:
+                trend = history_trend_candidate(product, category_id, category, segment)
+                if trend:
+                    history_trend_candidates.append(trend)
             candidate = featured_candidate(products, category_id, category, segment)
             if candidate:
                 featured_candidates.append(candidate)
@@ -407,10 +439,38 @@ def main(fixture: bool = False, pages: int = 2):
     ]
 
     price_drop_candidates.sort(key=lambda row: (row["drop_percent"], row["drop_yen"]), reverse=True)
-    price_drops = price_drop_candidates[:4]
+    price_drops = price_drop_candidates[:5]
     latest["price_drop_count"] = len(price_drop_candidates)
+    latest["price_drop_ranking"] = [
+        {
+            "rank": i + 1,
+            "category_id": row["category_id"],
+            "segment_id": row["segment_id"],
+            "source_id": row["product"].get("source_id", ""),
+            "drop_yen": row["drop_yen"],
+            "drop_percent": row["drop_percent"],
+            "current_price_yen": row["product"].get("price_yen", 0),
+        }
+        for i, row in enumerate(price_drops)
+    ]
 
-    write_page(SITE_DIR / "index.html", render_home(categories, snapshots, featured_deals, price_drops, updated_at))
+    history_trend_candidates.sort(key=lambda row: (row["drop_percent"], row["drop_yen"]), reverse=True)
+    recent_trends = history_trend_candidates[:4]
+    latest["recent_price_trends"] = [
+        {
+            "category_id": row["category_id"],
+            "segment_id": row["segment_id"],
+            "source_id": row["product"].get("source_id", ""),
+            "points": row["points"],
+            "drop_yen": row["drop_yen"],
+            "drop_percent": row["drop_percent"],
+            "start_price_yen": row["start_price_yen"],
+            "current_price_yen": row["current_price_yen"],
+        }
+        for row in recent_trends
+    ]
+
+    write_page(SITE_DIR / "index.html", render_home(categories, snapshots, featured_deals, price_drops, recent_trends, updated_at))
     write_page(SITE_DIR / "diapers" / "index.html", render_diaper_index(categories, updated_at))
     write_page(SITE_DIR / "method" / "index.html", render_method())
 
