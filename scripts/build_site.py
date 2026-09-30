@@ -40,9 +40,24 @@ def load_fixtures() -> dict:
     return json.loads((DATA_DIR / "fixtures.json").read_text(encoding="utf-8"))
 
 
+def _load_cached_json(filename: str) -> dict:
+    path = ROOT / ".price-cache" / filename
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"PRICE_HISTORY cache read failed {filename}: {exc}")
+        return {}
+
+
 def load_previous_latest(fixture: bool = False) -> dict:
     if fixture:
         return {}
+    cached = _load_cached_json("latest.json")
+    if cached:
+        print("PRICE_HISTORY previous snapshot source=cache")
+        return cached
     try:
         request = Request(f"{SITE_URL}data/latest.json", headers={"User-Agent": "baby-cost-jp-builder/1.0"})
         with urlopen(request, timeout=8) as response:
@@ -55,6 +70,10 @@ def load_previous_latest(fixture: bool = False) -> dict:
 def load_previous_history(fixture: bool = False) -> dict:
     if fixture:
         return {}
+    cached = _load_cached_json("price-history.json")
+    if cached:
+        print("PRICE_HISTORY archive source=cache")
+        return cached
     try:
         request = Request(f"{SITE_URL}data/price-history.json", headers={"User-Agent": "baby-cost-jp-builder/1.0"})
         with urlopen(request, timeout=8) as response:
@@ -503,6 +522,10 @@ def main(fixture: bool = False, pages: int = 2):
         "segments": history_segments,
     }
     (SITE_DIR / "data" / "price-history.json").write_text(json.dumps(price_history, ensure_ascii=False, indent=2), encoding="utf-8")
+    cache_dir = ROOT / ".price-cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    (cache_dir / "latest.json").write_text(json.dumps(latest, ensure_ascii=False, indent=2), encoding="utf-8")
+    (cache_dir / "price-history.json").write_text(json.dumps(price_history, ensure_ascii=False, indent=2), encoding="utf-8")
     (SITE_DIR / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}sitemap.xml\n", encoding="utf-8")
     unique_urls = list(dict.fromkeys(sitemap_urls))
     lastmod = updated_at.date().isoformat()
