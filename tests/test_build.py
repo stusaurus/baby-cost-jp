@@ -57,6 +57,19 @@ class BuildTests(unittest.TestCase):
         pack = "【3個セット】メリーズ パンツ Mサイズ 52枚"
         self.assertEqual(display_product_name(pack), pack)
 
+    def test_home_has_original_visual_illustrations(self):
+        text = (ROOT / "site/index.html").read_text(encoding="utf-8")
+        self.assertIn("hero-art", text)
+        self.assertIn("cat-icon", text)
+        self.assertIn("<svg", text)
+        self.assertIn("DIAPER FINDER", text)
+
+    def test_diaper_selector_uses_visual_chips(self):
+        text = (ROOT / "site/diapers/index.html").read_text(encoding="utf-8")
+        self.assertIn("type-chip", text)
+        self.assertIn("size-chips", text)
+        self.assertNotIn('id="diaper-type"', text)
+
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {
             "quantity":{"total":108,"base_unit":"piece","pack_count":3,"evidence":"36枚×3個"},
