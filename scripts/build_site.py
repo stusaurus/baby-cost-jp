@@ -522,10 +522,11 @@ def main(fixture: bool = False, pages: int = 2):
         "segments": history_segments,
     }
     (SITE_DIR / "data" / "price-history.json").write_text(json.dumps(price_history, ensure_ascii=False, indent=2), encoding="utf-8")
-    cache_dir = ROOT / ".price-cache"
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    (cache_dir / "latest.json").write_text(json.dumps(latest, ensure_ascii=False, indent=2), encoding="utf-8")
-    (cache_dir / "price-history.json").write_text(json.dumps(price_history, ensure_ascii=False, indent=2), encoding="utf-8")
+    if not fixture:
+        cache_dir = ROOT / ".price-cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        (cache_dir / "latest.json").write_text(json.dumps(latest, ensure_ascii=False, indent=2), encoding="utf-8")
+        (cache_dir / "price-history.json").write_text(json.dumps(price_history, ensure_ascii=False, indent=2), encoding="utf-8")
     (SITE_DIR / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}sitemap.xml\n", encoding="utf-8")
     unique_urls = list(dict.fromkeys(sitemap_urls))
     lastmod = updated_at.date().isoformat()
