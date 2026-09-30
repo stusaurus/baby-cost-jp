@@ -214,3 +214,13 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid rgb
 .view-buttons{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.view-buttons button{appearance:none;border:1px solid #d5e2de;background:#fff;color:#465650;border-radius:999px;padding:8px 11px;font-size:11px;font-weight:900;cursor:pointer}.view-buttons button.is-active{background:#244f44;color:#fff;border-color:#244f44;box-shadow:0 6px 16px rgba(36,79,68,.16)}
 .result-title b{font-size:inherit;font-weight:inherit}
 @media(max-width:620px){.view-switcher{align-items:stretch;flex-direction:column;padding:15px}.view-buttons{justify-content:flex-start}.view-buttons button{flex:1 1 auto;min-width:30%}}
+
+
+/* Product strength tags */
+.strength-tags{display:flex;flex-wrap:wrap;gap:5px;margin:1px 0 8px}
+.strength-tag{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:9px;font-weight:900;letter-spacing:.02em;border:1px solid transparent}
+.strength-tag--unit{background:#e4f5ee;color:#176954;border-color:#bfe3d5}
+.strength-tag--price{background:#eef3fb;color:#4f72a3;border-color:#d5e0f0}
+.strength-tag--quantity{background:#fff1dc;color:#9d671c;border-color:#f1d7a9}
+.product-rank-1 .strength-tag--unit{box-shadow:0 4px 10px rgba(23,105,84,.08)}
+@media(max-width:620px){.strength-tags{margin-bottom:6px}.strength-tag{font-size:8px;padding:3px 7px}}

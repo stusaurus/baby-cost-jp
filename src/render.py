@@ -123,18 +123,42 @@ def compare_panel():
     return '''<div class="compare-dock" data-compare-dock hidden><div class="compare-dock-copy"><span data-compare-count>0件選択</span><small>最大3商品</small></div><div class="compare-dock-actions"><button type="button" class="compare-clear" data-compare-clear>クリア</button><button type="button" class="compare-open" data-compare-open disabled>選んだ商品を比較</button></div></div><div class="compare-modal" data-compare-modal hidden><div class="compare-modal-backdrop" data-compare-close></div><section class="compare-dialog" role="dialog" aria-modal="true" aria-labelledby="compare-dialog-title"><div class="compare-dialog-head"><div><div class="section-kicker">SIDE BY SIDE</div><h2 id="compare-dialog-title">選んだ商品を比較</h2></div><button type="button" class="compare-close" data-compare-close aria-label="閉じる">×</button></div><div class="compare-table" data-compare-table></div><p class="compare-note">価格・在庫は変動します。購入前に楽天の商品ページで最新情報をご確認ください。</p></section></div>'''
 
 
-def product_card(p, rank, category_id, segment, best_unit_price=None):
+
+def product_strength_tags(products):
+    if not products:
+        return {}
+    best_unit=min(float(p['unit_price']) for p in products)
+    best_price=min(int(p['price_yen']) for p in products)
+    max_quantity=max(float(p['quantity']['total']) for p in products)
+    result={}
+    for p in products:
+        key=p.get('source_id') or p.get('name')
+        tags=[]
+        if abs(float(p['unit_price'])-best_unit)<1e-9:
+            tags.append(('unit','単価◎'))
+        if int(p['price_yen'])==best_price:
+            tags.append(('price','総額◎'))
+        if abs(float(p['quantity']['total'])-max_quantity)<1e-9:
+            tags.append(('quantity','大容量◎'))
+        if tags:
+            result[key]=tags
+    return result
+
+def product_card(p, rank, category_id, segment, best_unit_price=None, strength_tags=None):
     q=p['quantity']; total=q['total']; unit='g' if q['base_unit']=='g' else '枚'; total_txt=f'{total:g}{unit}'
     packs=q.get('pack_count',1); pack=f' / {packs}パック相当' if packs>1 else ''
     stage=p.get('attributes',{}).get('fit_stage',''); stage_html=f'<span class="tag">{esc(stage)}</span>' if stage else ''
     display=display_product_name(p['name'])
+    strength_tags=strength_tags or []
+    strength_html=''.join(f'<span class="strength-tag strength-tag--{kind}">{esc(label)}</span>' for kind,label in strength_tags)
+    strength_row=f'<div class="strength-tags">{strength_html}</div>' if strength_html else ''
     attrs=f'''data-affiliate="rakuten" data-category-id="{esc(category_id)}" data-product-name="{esc(p['name'])}" data-product-id="{esc(p.get('source_id'))}" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-unit-metric="{esc(p['unit_metric'])}" data-unit-price="{p['unit_price']:.4f}" data-rank="{rank}" data-click-position="comparison_card"'''
     full_name=f'''<details class="full-name"><summary>商品名全文</summary><p>{esc(p['name'])}</p></details>''' if display!=p['name'] else ''
     shop=f'<span class="shop">{esc(p.get("shop"))}</span>' if p.get('shop') else ''
     gap=(p['unit_price']-best_unit_price) if best_unit_price is not None else 0
     badge='最安' if rank==1 else (f'1位より +{yen(gap)} / {METRIC[p["unit_metric"]]}' if gap>0 else f'{rank}位')
     image=f'<div class="product-image"><img src="{esc(p.get("image"))}" alt="" loading="lazy" decoding="async"></div>' if p.get('image') else ''
-    return f'''<article class="product product-rank-{rank}" id="rank-{rank}" data-sort-unit="{p['unit_price']:.6f}" data-sort-price="{p['price_yen']}" data-sort-quantity="{q['total']:.6f}" data-original-rank="{rank}"><div class="rank rank-{rank}">{rank}</div><div class="product-main"><div class="product-overview">{image}<div class="product-info"><div class="maker-row"><div class="maker">{esc(p.get('brand') or p.get('manufacturer'))} {stage_html}</div>{shop}</div><h3 class="product-title" title="{esc(p['name'])}">{esc(display)}</h3><div class="price-row"><div class="unit"><b>{yen(p['unit_price'])}</b><span> / {METRIC[p['unit_metric']]}</span></div><span class="rank-badge">{badge}</span></div></div></div><div class="facts"><span><small>内容量</small><b>合計 {total_txt}{pack}</b></span><span><small>販売価格</small><b>¥{p['price_yen']:,}</b></span></div>{full_name}<details><summary>単価の計算を見る</summary><p>¥{p['price_yen']:,} ÷ {total_txt}{' × 100' if p['unit_metric']=='per_100g' else ''} = {yen(p['unit_price'])} / {METRIC[p['unit_metric']]}</p><small>数量根拠: {esc(q.get('evidence'))}</small></details><div class="product-actions"><button type="button" class="compare-add" data-compare-add data-compare-id="{esc(p.get('source_id'))}" data-compare-name="{esc(display)}" data-compare-unit="{p['unit_price']:.4f}" data-compare-unit-label="{esc(METRIC[p['unit_metric']])}" data-compare-price="{p['price_yen']}" data-compare-quantity="{esc(total_txt)}" data-compare-image="{esc(p.get('image'))}" data-compare-rank="{rank}"><span>＋</span> 比較に追加</button><a class="cta" href="{esc(p.get('url'))}" target="_blank" rel="nofollow sponsored noopener" {attrs}>楽天で価格・在庫を見る</a></div></div></article>'''
+    return f'''<article class="product product-rank-{rank}" id="rank-{rank}" data-sort-unit="{p['unit_price']:.6f}" data-sort-price="{p['price_yen']}" data-sort-quantity="{q['total']:.6f}" data-original-rank="{rank}"><div class="rank rank-{rank}">{rank}</div><div class="product-main"><div class="product-overview">{image}<div class="product-info"><div class="maker-row"><div class="maker">{esc(p.get('brand') or p.get('manufacturer'))} {stage_html}</div>{shop}</div><h3 class="product-title" title="{esc(p['name'])}">{esc(display)}</h3>{strength_row}<div class="price-row"><div class="unit"><b>{yen(p['unit_price'])}</b><span> / {METRIC[p['unit_metric']]}</span></div><span class="rank-badge">{badge}</span></div></div></div><div class="facts"><span><small>内容量</small><b>合計 {total_txt}{pack}</b></span><span><small>販売価格</small><b>¥{p['price_yen']:,}</b></span></div>{full_name}<details><summary>単価の計算を見る</summary><p>¥{p['price_yen']:,} ÷ {total_txt}{' × 100' if p['unit_metric']=='per_100g' else ''} = {yen(p['unit_price'])} / {METRIC[p['unit_metric']]}</p><small>数量根拠: {esc(q.get('evidence'))}</small></details><div class="product-actions"><button type="button" class="compare-add" data-compare-add data-compare-id="{esc(p.get('source_id'))}" data-compare-name="{esc(display)}" data-compare-unit="{p['unit_price']:.4f}" data-compare-unit-label="{esc(METRIC[p['unit_metric']])}" data-compare-price="{p['price_yen']}" data-compare-quantity="{esc(total_txt)}" data-compare-image="{esc(p.get('image'))}" data-compare-rank="{rank}"><span>＋</span> 比較に追加</button><a class="cta" href="{esc(p.get('url'))}" target="_blank" rel="nofollow sponsored noopener" {attrs}>楽天で価格・在庫を見る</a></div></div></article>'''
 
 def quick_compare(products):
     if not products: return ''
@@ -195,7 +219,8 @@ def render_comparison(categories, category_id, category, segment, products, upda
             gap=products[1]['unit_price']-best['unit_price']
             delta=f'<span class="delta">2位と同単価</span>' if abs(gap)<0.0001 else f'<span class="delta">2位より {yen(gap)} / {metric} 安い</span>'
         answer=f'''<section class="answer"><div class="answer-medal">★</div><div class="answer-content"><div class="answer-label"><span>取得対象内の最安単価</span>{delta}</div><strong>{yen(best['unit_price'])}<small> / {metric}</small></strong><p>{esc(display_product_name(best['name']))}</p></div></section>'''
-        cards=''.join(product_card(p,i+1,category_id,segment,best['unit_price']) for i,p in enumerate(products))
+        strengths=product_strength_tags(products)
+        cards=''.join(product_card(p,i+1,category_id,segment,best['unit_price'],strengths.get(p.get('source_id') or p.get('name'),[])) for i,p in enumerate(products))
     else:
         answer='<section class="answer empty"><strong>比較できる商品が不足しています</strong><p>数量と条件を安全に確認できた商品だけを表示しています。</p></section>'
         cards=''

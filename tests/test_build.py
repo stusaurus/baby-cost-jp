@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from scripts.build_site import normalize_products
-from src.render import display_product_name, product_card
+from src.render import display_product_name, product_card, product_strength_tags
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -129,6 +129,23 @@ class BuildTests(unittest.TestCase):
         self.assertIn("支払総額が安い", text)
         self.assertIn("大容量", text)
         self.assertIn("data-sortable-products", text)
+
+    def test_product_strength_tags_identify_unit_price_total_price_and_capacity(self):
+        products = [
+            {"source_id":"a","name":"A","unit_price":18.0,"price_yen":3600,"quantity":{"total":200}},
+            {"source_id":"b","name":"B","unit_price":20.0,"price_yen":3000,"quantity":{"total":150}},
+            {"source_id":"c","name":"C","unit_price":19.0,"price_yen":3800,"quantity":{"total":220}},
+        ]
+        tags = product_strength_tags(products)
+        self.assertIn(("unit","単価◎"), tags["a"])
+        self.assertIn(("price","総額◎"), tags["b"])
+        self.assertIn(("quantity","大容量◎"), tags["c"])
+
+    def test_strength_tags_render_on_product_cards(self):
+        text = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
+        self.assertIn("strength-tags", text)
+        self.assertIn("単価◎", text)
+        self.assertTrue("総額◎" in text or "大容量◎" in text)
 
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {
