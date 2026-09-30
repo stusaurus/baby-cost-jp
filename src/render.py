@@ -184,7 +184,27 @@ def product_brand_label(product):
     return raw[:24] if raw else 'その他'
 
 
-def brand_comparison_section(products, category_id, metric):
+BRAND_SLUGS={
+    'パンパース':'pampers',
+    'メリーズ':'merries',
+    'ムーニー':'moony',
+    'マミーポコ':'mamypoko',
+    'グーン':'goon',
+    'Genki!':'genki',
+    'Whito':'whito',
+}
+
+def brand_slug(label):
+    return BRAND_SLUGS.get(label,'')
+
+def brand_page_url(segment, label):
+    slug=brand_slug(label)
+    if not slug:
+        return ''
+    return f"{SITE_URL}diapers/{segment['type']}/{segment['size']}/{slug}/"
+
+
+def brand_comparison_section(products, category_id, metric, segment=None):
     if category_id!='diapers' or len(products)<2:
         return ''
     groups={}
@@ -210,7 +230,9 @@ def brand_comparison_section(products, category_id, metric):
     cards=[]
     for i,row in enumerate(rows[:6],start=1):
         image=f'<div class="brand-card-image"><img src="{esc(row["image"])}" alt="" loading="lazy" decoding="async"></div>' if row['image'] else f'<div class="brand-card-image brand-card-image--empty">{icon_svg("diapers")}</div>'
-        cards.append(f'''<button type="button" class="brand-card" data-brand-filter="{esc(row['label'])}"><span class="brand-card-rank">{i}</span>{image}<strong>{esc(row['label'])}</strong><div class="brand-card-stats"><span><small>最安単価</small><b>{yen(row['best_unit'])}<em> / {metric}</em></b></span><span><small>最安総額</small><b>¥{row['best_price']:,}</b></span><span><small>最大容量</small><b>{row['max_quantity']:g}枚</b></span></div><small class="brand-card-count">{row['count']}商品掲載</small><i>このブランドだけ見る →</i></button>''')
+        dedicated=brand_page_url(segment,row['label']) if segment and row['count']>=2 else ''
+        dedicated_html=f'<a class="brand-page-link" href="{esc(dedicated)}">専用比較ページ →</a>' if dedicated else ''
+        cards.append(f'''<div class="brand-card"><button type="button" class="brand-card-filter" data-brand-filter="{esc(row['label'])}"><span class="brand-card-rank">{i}</span>{image}<strong>{esc(row['label'])}</strong><div class="brand-card-stats"><span><small>最安単価</small><b>{yen(row['best_unit'])}<em> / {metric}</em></b></span><span><small>最安総額</small><b>¥{row['best_price']:,}</b></span><span><small>最大容量</small><b>{row['max_quantity']:g}枚</b></span></div><small class="brand-card-count">{row['count']}商品掲載</small><i>このブランドだけ見る →</i></button>{dedicated_html}</div>''')
 
     return f'''<section class="brand-compare" data-brand-compare><div class="brand-compare-head"><div><div class="section-kicker">BRAND COMPARE</div><h2>ブランド別に比べる</h2><p>同じタイプ・サイズの掲載商品から、ブランドごとの価格と容量を比較します。</p></div><button type="button" class="brand-filter-clear" data-brand-filter-clear hidden>全ブランド表示</button></div><div class="brand-grid">{''.join(cards)}</div><p class="brand-note">※ 品質・肌との相性などの優劣ではなく、現在掲載している商品の価格・容量のみを比較しています。</p></section>'''
 
@@ -316,6 +338,24 @@ def comparison_mascot_tip(category_id: str, count: int):
     return f'''<div class="result-mascot-tip"><div class="result-mascot">{icon_svg('chick')}</div><div><b>{count}商品を比較中</b><span>{esc(text)}</span></div></div>'''
 
 
+def render_brand_page(categories, category, segment, brand_label, products, updated_at):
+    metric=METRIC[category['metric']]
+    canonical=brand_page_url(segment,brand_label)
+    best=min(products,key=lambda p:p['unit_price'])
+    min_price=min(int(p['price_yen']) for p in products)
+    max_price=max(int(p['price_yen']) for p in products)
+    min_qty=min(float(p['quantity']['total']) for p in products)
+    max_qty=max(float(p['quantity']['total']) for p in products)
+    strengths=product_strength_tags(products)
+    cards=''.join(product_card(p,i+1,'diapers',segment,best['unit_price'],strengths.get(p.get('source_id') or p.get('name'),[])) for i,p in enumerate(sorted(products,key=lambda p:p['unit_price'])))
+    summary=f'''<section class="brand-page-summary"><div><small>掲載商品</small><strong>{len(products)}商品</strong></div><div><small>最安単価</small><strong>{yen(best['unit_price'])}<em> / {metric}</em></strong></div><div><small>販売価格帯</small><strong>¥{min_price:,}〜¥{max_price:,}</strong></div><div><small>容量</small><strong>{min_qty:g}〜{max_qty:g}枚</strong></div></section>'''
+    answer=f'''<section class="answer"><div class="answer-medal">★</div><div class="answer-content"><div class="answer-label"><span>{esc(brand_label)}内の最安単価</span></div><strong>{yen(best['unit_price'])}<small> / {metric}</small></strong><p>{esc(display_product_name(best['name']))}</p></div></section>'''
+    body=f'''<section class="page-head brand-page-head comparison-page-head comparison-page-head--diapers"><a href="{segment_url(category,segment)}">← {esc(segment['label'])}の全ブランド比較</a>{comparison_head_visual('diapers')}<div class="section-kicker">BRAND × SIZE</div><h1>{esc(brand_label)}<br><span>{esc(segment['label'])} 価格比較</span></h1><p>同じブランド・同じタイプ・同じサイズにそろえ、{metric}あたりの価格を比較します。</p><div class="compare-meta"><span>{TYPE[segment['type']]}</span><span>{SIZE[segment['size']]}</span><span>{len(products)}商品を比較</span></div></section><section class="comparison brand-page-comparison" data-comparison data-category-id="diapers" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-result-count="{len(products)}">{summary}{answer}{price_snapshot(products,metric)}{diaper_savings_simulator(products)}{quick_compare(products)}{buying_guide()}<section class="view-switcher" data-view-switcher><div><div class="section-kicker">VIEW</div><h2>{esc(brand_label)}を目的別に比べる</h2><p>このブランドの掲載商品だけを並べ替えます。</p></div><div class="view-buttons" role="group" aria-label="商品の並べ替え"><button type="button" class="is-active" data-sort-mode="unit">単価が安い</button><button type="button" data-sort-mode="price">支払総額が安い</button><button type="button" data-sort-mode="quantity">大容量</button></div></section><h2 class="result-title"><span>{esc(brand_label)}</span> <b data-result-sort-label>単価が安い順</b></h2><div class="products" data-sortable-products>{cards}</div>{compare_panel()}</section><section class="brand-page-seo-note"><div class="section-kicker">ABOUT THIS PAGE</div><h2>{esc(brand_label)} {esc(segment['label'])}を同条件で比較</h2><p>このページは、楽天から取得した商品のうち「{esc(brand_label)}」「{esc(segment['label'])}」と数量を安全に確認できた商品だけを掲載しています。ポイント・クーポンは順位に含めず、送料込み／送料無料条件の価格から単価を算出しています。</p></section><p class="updated">更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    title=f'{brand_label} {segment["label"]} 価格比較｜{metric}あたり'
+    desc=f'{brand_label}の{segment["label"]}を{metric}あたりで価格比較。販売価格・容量・現在の価格推移も確認できます。'
+    return shell(title,desc,body,canonical,False)
+
+
 def render_comparison(categories, category_id, category, segment, products, updated_at):
     label=segment['label']; metric=METRIC[category['metric']]; noindex=len(products)<2
     if products:
@@ -344,7 +384,7 @@ def render_comparison(categories, category_id, category, segment, products, upda
     mascot_tip=comparison_mascot_tip(category_id,len(products))
     snapshot=price_snapshot(products,metric)
     savings=diaper_savings_simulator(products) if category_id=='diapers' else ''
-    body=f'''<section class="page-head comparison-page-head comparison-page-head--{category_id}">{back}{head_visual}<div class="section-kicker">PRICE COMPARISON</div><h1>{esc(label)}<br><span>コスパ比較</span></h1><p>{metric}あたりの価格を、同じ条件にそろえて比較します。</p>{meta}</section>{mascot_tip}<section class="comparison" data-comparison data-category-id="{category_id}" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-result-count="{len(products)}">{answer}{snapshot}{savings}{quick_compare(products)}{brand_comparison_section(products,category_id,metric)}{buying_guide()}<section class="view-switcher" data-view-switcher><div><div class="section-kicker">VIEW</div><h2>比べ方を切り替える</h2><p>同じ掲載商品を、目的に合わせて並べ替えます。</p></div><div class="view-buttons" role="group" aria-label="商品の並べ替え"><button type="button" class="is-active" data-sort-mode="unit">単価が安い</button><button type="button" data-sort-mode="price">支払総額が安い</button><button type="button" data-sort-mode="quantity">大容量</button></div></section><h2 class="result-title"><span>ランキング</span> <b data-result-sort-label>単価が安い順</b></h2><div class="products" data-sortable-products>{cards}</div>{compare_panel()}</section>{health_note}{selector_html}<section class="method-note method-note-visual"><div class="method-note-icon">{icon_svg("check")}</div><div><div class="section-kicker">HOW IT WORKS</div><h2>この順位に入る条件</h2><p>楽天APIで送料込み／送料無料条件に絞り、数量と条件を確認できた商品だけを単価換算しています。紙おむつはサイズ選択式やタイプ不明の商品を除外。ポイント・クーポンは順位に含めません。</p><a href="{SITE_URL}method/">詳しい比較方法を見る →</a></div></section><p class="updated">更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    body=f'''<section class="page-head comparison-page-head comparison-page-head--{category_id}">{back}{head_visual}<div class="section-kicker">PRICE COMPARISON</div><h1>{esc(label)}<br><span>コスパ比較</span></h1><p>{metric}あたりの価格を、同じ条件にそろえて比較します。</p>{meta}</section>{mascot_tip}<section class="comparison" data-comparison data-category-id="{category_id}" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-result-count="{len(products)}">{answer}{snapshot}{savings}{quick_compare(products)}{brand_comparison_section(products,category_id,metric,segment)}{buying_guide()}<section class="view-switcher" data-view-switcher><div><div class="section-kicker">VIEW</div><h2>比べ方を切り替える</h2><p>同じ掲載商品を、目的に合わせて並べ替えます。</p></div><div class="view-buttons" role="group" aria-label="商品の並べ替え"><button type="button" class="is-active" data-sort-mode="unit">単価が安い</button><button type="button" data-sort-mode="price">支払総額が安い</button><button type="button" data-sort-mode="quantity">大容量</button></div></section><h2 class="result-title"><span>ランキング</span> <b data-result-sort-label>単価が安い順</b></h2><div class="products" data-sortable-products>{cards}</div>{compare_panel()}</section>{health_note}{selector_html}<section class="method-note method-note-visual"><div class="method-note-icon">{icon_svg("check")}</div><div><div class="section-kicker">HOW IT WORKS</div><h2>この順位に入る条件</h2><p>楽天APIで送料込み／送料無料条件に絞り、数量と条件を確認できた商品だけを単価換算しています。紙おむつはサイズ選択式やタイプ不明の商品を除外。ポイント・クーポンは順位に含めません。</p><a href="{SITE_URL}method/">詳しい比較方法を見る →</a></div></section><p class="updated">更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     title=f'{label} 1{ "枚" if category["metric"]=="per_piece" else "00g"}あたり価格比較'
     return shell(title,f'{label}を{metric}あたりに換算して価格比較。',body,segment_url(category,segment),noindex)
 

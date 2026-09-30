@@ -19,6 +19,9 @@ from src.config import DATA_DIR, SITE_DIR, SITE_URL, load_categories  # noqa: E4
 from src.parsing import norm, parse_for_segment_detailed, unit_price  # noqa: E402
 from src.rakuten import fetch_items  # noqa: E402
 from src.render import (  # noqa: E402
+    brand_slug,
+    product_brand_label,
+    render_brand_page,
     render_comparison,
     render_diaper_index,
     render_home,
@@ -317,6 +320,21 @@ def normalize_products(raw_items: list[dict], category_id: str, category: dict, 
     return rows[:10]
 
 
+def brand_page_groups(products: list[dict]) -> dict[str, list[dict]]:
+    groups: dict[str, list[dict]] = {}
+    for product in products:
+        label = product_brand_label(product)
+        if not brand_slug(label):
+            continue
+        groups.setdefault(label, []).append(product)
+    return {label: rows for label, rows in groups.items() if len(rows) >= 2}
+
+
+def brand_output_path(segment: dict, label: str) -> Path:
+    slug = brand_slug(label)
+    return SITE_DIR / "diapers" / segment["type"] / segment["size"] / slug / "index.html"
+
+
 def output_path(category: dict, segment: dict) -> Path:
     if category["parser"] == "diapers":
         return SITE_DIR / "diapers" / segment["type"] / segment["size"] / "index.html"
@@ -341,6 +359,7 @@ def main(fixture: bool = False, pages: int = 2):
     price_drop_candidates = []
     history_trend_candidates = []
     history_segments = {}
+    brand_pages = []
     latest = {
         "schema_version": 1,
         "generated_at": updated_at.isoformat(),
@@ -403,6 +422,22 @@ def main(fixture: bool = False, pages: int = 2):
             write_page(output_path(category, segment), render_comparison(categories, category_id, category, segment, products, updated_at))
             if len(products) >= 2:
                 sitemap_urls.append(url)
+            if category_id == "diapers":
+                for brand_label, brand_products in brand_page_groups(products).items():
+                    brand_url = f"{SITE_URL}diapers/{segment['type']}/{segment['size']}/{brand_slug(brand_label)}/"
+                    write_page(
+                        brand_output_path(segment, brand_label),
+                        render_brand_page(categories, category, segment, brand_label, brand_products, updated_at),
+                    )
+                    sitemap_urls.append(brand_url)
+                    brand_pages.append({
+                        "brand": brand_label,
+                        "slug": brand_slug(brand_label),
+                        "segment_id": segment["id"],
+                        "label": segment["label"],
+                        "product_count": len(brand_products),
+                        "url": brand_url,
+                    })
             latest["categories"][segment["id"]] = {
                 "category_id": category_id,
                 "label": segment["label"],
@@ -489,6 +524,8 @@ def main(fixture: bool = False, pages: int = 2):
         for row in recent_trends
     ]
 
+    latest["brand_pages"] = brand_pages
+
     write_page(SITE_DIR / "index.html", render_home(categories, snapshots, featured_deals, price_drops, recent_trends, updated_at))
     write_page(SITE_DIR / "diapers" / "index.html", render_diaper_index(categories, updated_at))
     write_page(SITE_DIR / "method" / "index.html", render_method())
@@ -545,6 +582,7 @@ def main(fixture: bool = False, pages: int = 2):
             print(f"QUALITY_PUBLISHED segment={segment_id} source_id={row['source_id']} name={row['name']}")
     for row in quality_audit["excluded_problem_products"]:
         print(f"QUALITY_EXCLUDED segment={row['segment_id']} reason={row['reason']} source_id={row['source_id']} name={row['name']}")
+    print(f"BRAND_PAGES generated={len(brand_pages)}")
     print(f"Built {len(unique_urls)} indexable URLs at {SITE_DIR} ({'fixture' if fixture else 'live'})")
 
 

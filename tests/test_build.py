@@ -3,8 +3,8 @@ import sys
 import unittest
 from pathlib import Path
 
-from scripts.build_site import attach_price_changes, attach_price_history, history_trend_candidate, normalize_products
-from src.render import brand_comparison_section, display_product_name, price_history_sparkline, product_brand_label, product_card, product_strength_tags
+from scripts.build_site import attach_price_changes, attach_price_history, brand_page_groups, history_trend_candidate, normalize_products
+from src.render import brand_comparison_section, brand_page_url, display_product_name, price_history_sparkline, product_brand_label, product_card, product_strength_tags, render_brand_page
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -250,6 +250,41 @@ class BuildTests(unittest.TestCase):
     def test_brand_compare_not_rendered_for_non_diapers(self):
         products=[{"name":"A","unit_price":1.0,"price_yen":100,"quantity":{"total":100}}]
         self.assertEqual(brand_comparison_section(products,"wipes","1枚"), "")
+
+    def test_brand_page_groups_only_include_known_brands_with_two_products(self):
+        products = [
+            {"name":"パンパース パンツ M 100枚"},
+            {"name":"パンパース パンツ M 120枚"},
+            {"name":"メリーズ パンツ M 90枚"},
+            {"name":"謎ブランド パンツ M 90枚","brand":"謎ブランド"},
+        ]
+        groups = brand_page_groups(products)
+        self.assertIn("パンパース", groups)
+        self.assertEqual(len(groups["パンパース"]), 2)
+        self.assertNotIn("メリーズ", groups)
+        self.assertNotIn("謎ブランド", groups)
+
+    def test_brand_page_url_is_stable(self):
+        segment={"type":"pants","size":"m"}
+        self.assertTrue(brand_page_url(segment,"パンパース").endswith("/diapers/pants/m/pampers/"))
+        self.assertEqual(brand_page_url(segment,"その他"), "")
+
+    def test_brand_dedicated_page_has_unique_copy_and_canonical(self):
+        category={"name":"紙おむつ","metric":"per_piece","parser":"diapers","path":"diapers"}
+        segment={"id":"pants-m","type":"pants","size":"m","label":"パンツ・M"}
+        products=[
+            {"source_id":"a","name":"パンパース パンツ M 100枚","brand":"パンパース","manufacturer":"P&G","shop":"A","image":"","unit_price":20.0,"unit_metric":"per_piece","price_yen":2000,"url":"https://example.invalid/a","quantity":{"total":100,"base_unit":"piece","pack_count":1,"evidence":"100枚"},"attributes":{}},
+            {"source_id":"b","name":"パンパース パンツ M 120枚","brand":"パンパース","manufacturer":"P&G","shop":"B","image":"","unit_price":19.0,"unit_metric":"per_piece","price_yen":2280,"url":"https://example.invalid/b","quantity":{"total":120,"base_unit":"piece","pack_count":1,"evidence":"120枚"},"attributes":{}},
+        ]
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        html=render_brand_page({},category,segment,"パンパース",products,datetime(2026,9,30,12,0,tzinfo=ZoneInfo("Asia/Tokyo")))
+        self.assertIn("パンパース",html)
+        self.assertIn("BRAND × SIZE",html)
+        self.assertIn("2商品",html)
+        self.assertIn("販売価格帯",html)
+        self.assertIn("/diapers/pants/m/pampers/",html)
+        self.assertIn('meta name="robots" content="index,follow"',html)
 
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {
