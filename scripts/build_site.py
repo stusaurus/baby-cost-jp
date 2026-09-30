@@ -52,6 +52,87 @@ def load_previous_latest(fixture: bool = False) -> dict:
         return {}
 
 
+def load_previous_history(fixture: bool = False) -> dict:
+    if fixture:
+        return {}
+    try:
+        request = Request(f"{SITE_URL}data/price-history.json", headers={"User-Agent": "baby-cost-jp-builder/1.0"})
+        with urlopen(request, timeout=8) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        print(f"PRICE_HISTORY archive unavailable: {exc}")
+        return {}
+
+
+def _same_quantity(current: dict, previous: dict) -> bool:
+    current_q = current.get("quantity") or {}
+    previous_q = previous.get("quantity") or {}
+    if current_q.get("base_unit") != previous_q.get("base_unit"):
+        return False
+    try:
+        return abs(float(current_q.get("total", 0)) - float(previous_q.get("total", 0))) <= 1e-9
+    except (TypeError, ValueError):
+        return False
+
+
+def attach_price_history(
+    products: list[dict],
+    segment_id: str,
+    previous_history: dict,
+    previous_segment: dict | None,
+    previous_generated_at: str | None,
+    generated_at: str,
+) -> dict:
+    old_segment = ((previous_history.get("segments") or {}).get(segment_id) or {})
+    old_products = old_segment.get("products") or {}
+    previous_products = {
+        p.get("source_id"): p
+        for p in (previous_segment or {}).get("products", [])
+        if p.get("source_id")
+    }
+    new_products = {}
+
+    for product in products:
+        source_id = product.get("source_id")
+        if not source_id:
+            continue
+
+        points = []
+        old_entry = old_products.get(source_id)
+        if old_entry and _same_quantity(product, old_entry):
+            points = list(old_entry.get("points") or [])[-13:]
+        else:
+            previous = previous_products.get(source_id)
+            if previous and previous_generated_at and _same_quantity(product, previous):
+                points = [{
+                    "at": previous_generated_at,
+                    "price_yen": int(previous.get("price_yen", 0)),
+                    "unit_price": float(previous.get("unit_price", 0)),
+                }]
+
+        current_point = {
+            "at": generated_at,
+            "price_yen": int(product.get("price_yen", 0)),
+            "unit_price": float(product.get("unit_price", 0)),
+        }
+        if not points or points[-1].get("at") != generated_at:
+            points.append(current_point)
+        points = points[-14:]
+
+        if len(points) >= 2:
+            product["price_history"] = points
+
+        quantity = product.get("quantity") or {}
+        new_products[source_id] = {
+            "name": product.get("name", ""),
+            "base_unit": quantity.get("base_unit"),
+            "total": quantity.get("total"),
+            "points": points,
+        }
+
+    return {"products": new_products}
+
+
 def attach_price_changes(products: list[dict], previous_segment: dict | None) -> list[dict]:
     if not previous_segment:
         return []
@@ -66,13 +147,9 @@ def attach_price_changes(products: list[dict], previous_segment: dict | None) ->
         previous = previous_by_id.get(source_id)
         if not previous:
             continue
-        current_q = product.get("quantity") or {}
-        previous_q = previous.get("quantity") or {}
-        if current_q.get("base_unit") != previous_q.get("base_unit"):
+        if not _same_quantity(product, previous):
             continue
         try:
-            if abs(float(current_q.get("total", 0)) - float(previous_q.get("total", 0))) > 1e-9:
-                continue
             current_price = int(product.get("price_yen", 0))
             previous_price = int(previous.get("price_yen", 0))
             current_unit = float(product.get("unit_price", 0))
@@ -195,6 +272,7 @@ def main(fixture: bool = False, pages: int = 2):
     fixtures = load_fixtures() if fixture else {}
     updated_at = datetime.now(ZoneInfo("Asia/Tokyo"))
     previous_latest = load_previous_latest(fixture=fixture)
+    previous_history = load_previous_history(fixture=fixture)
     previous_generated_at = previous_latest.get("generated_at")
 
     if SITE_DIR.exists():
@@ -205,6 +283,7 @@ def main(fixture: bool = False, pages: int = 2):
     snapshots = {}
     featured_candidates = []
     price_drop_candidates = []
+    history_segments = {}
     latest = {
         "schema_version": 1,
         "generated_at": updated_at.isoformat(),
@@ -237,6 +316,14 @@ def main(fixture: bool = False, pages: int = 2):
             products = normalize_products(raw, category_id, category, segment, audit=segment_audit)
             previous_segment = (previous_latest.get("categories") or {}).get(segment["id"])
             segment_drops = attach_price_changes(products, previous_segment)
+            history_segments[segment["id"]] = attach_price_history(
+                products,
+                segment["id"],
+                previous_history,
+                previous_segment,
+                previous_generated_at,
+                updated_at.isoformat(),
+            )
             for row in segment_drops:
                 row.update({
                     "category_id": category_id,
@@ -268,6 +355,7 @@ def main(fixture: bool = False, pages: int = 2):
                         "unit_price": p["unit_price"], "unit_metric": p["unit_metric"], "quantity": p["quantity"],
                         "manufacturer": p["manufacturer"], "brand": p["brand"], "attributes": p["attributes"],
                         "price_change": p.get("price_change"),
+                        "history_points": len(p.get("price_history") or []),
                     } for p in products
                 ],
             }
@@ -338,6 +426,13 @@ def main(fixture: bool = False, pages: int = 2):
         ],
     }
     (SITE_DIR / "data" / "price-changes.json").write_text(json.dumps(price_changes, ensure_ascii=False, indent=2), encoding="utf-8")
+    price_history = {
+        "schema_version": 1,
+        "generated_at": updated_at.isoformat(),
+        "max_points": 14,
+        "segments": history_segments,
+    }
+    (SITE_DIR / "data" / "price-history.json").write_text(json.dumps(price_history, ensure_ascii=False, indent=2), encoding="utf-8")
     (SITE_DIR / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}sitemap.xml\n", encoding="utf-8")
     unique_urls = list(dict.fromkeys(sitemap_urls))
     lastmod = updated_at.date().isoformat()

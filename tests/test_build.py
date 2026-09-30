@@ -3,8 +3,8 @@ import sys
 import unittest
 from pathlib import Path
 
-from scripts.build_site import attach_price_changes, normalize_products
-from src.render import display_product_name, product_card, product_strength_tags
+from scripts.build_site import attach_price_changes, attach_price_history, normalize_products
+from src.render import display_product_name, price_history_sparkline, product_card, product_strength_tags
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -188,6 +188,32 @@ class BuildTests(unittest.TestCase):
 
     def test_price_changes_json_is_generated(self):
         self.assertTrue((ROOT / "site/data/price-changes.json").exists())
+
+    def test_price_history_accumulates_only_same_quantity(self):
+        products = [{
+            "source_id":"same","name":"A","price_yen":900,"unit_price":9.0,
+            "quantity":{"total":100,"base_unit":"piece"}
+        },{
+            "source_id":"changed","name":"B","price_yen":950,"unit_price":9.5,
+            "quantity":{"total":100,"base_unit":"piece"}
+        }]
+        old_history = {"segments":{"pants-m":{"products":{
+            "same":{"name":"A","base_unit":"piece","total":100,"points":[{"at":"2026-09-29T00:00:00+09:00","price_yen":1000,"unit_price":10.0}]},
+            "changed":{"name":"B","base_unit":"piece","total":90,"points":[{"at":"2026-09-29T00:00:00+09:00","price_yen":1000,"unit_price":11.1}]}
+        }}}}
+        out = attach_price_history(products,"pants-m",old_history,None,None,"2026-09-30T00:00:00+09:00")
+        self.assertEqual(len(products[0]["price_history"]),2)
+        self.assertNotIn("price_history",products[1])
+        self.assertEqual(len(out["products"]["changed"]["points"]),1)
+
+    def test_sparkline_renders_for_two_or_more_points(self):
+        html = price_history_sparkline([
+            {"price_yen":1000},{"price_yen":950},{"price_yen":900}
+        ])
+        self.assertIn("mini-history--down", html)
+        self.assertIn("<polyline", html)
+        self.assertIn("直近3回で ¥100↓", html)
+        self.assertEqual(price_history_sparkline([{"price_yen":1000}]), "")
 
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {
