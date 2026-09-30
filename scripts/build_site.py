@@ -75,6 +75,16 @@ def _same_quantity(current: dict, previous: dict) -> bool:
         return False
 
 
+def _same_history_quantity(current: dict, history_entry: dict) -> bool:
+    current_q = current.get("quantity") or {}
+    if current_q.get("base_unit") != history_entry.get("base_unit"):
+        return False
+    try:
+        return abs(float(current_q.get("total", 0)) - float(history_entry.get("total", 0))) <= 1e-9
+    except (TypeError, ValueError):
+        return False
+
+
 def attach_price_history(
     products: list[dict],
     segment_id: str,
@@ -99,7 +109,7 @@ def attach_price_history(
 
         points = []
         old_entry = old_products.get(source_id)
-        if old_entry and _same_quantity(product, old_entry):
+        if old_entry and _same_history_quantity(product, old_entry):
             points = list(old_entry.get("points") or [])[-13:]
         else:
             previous = previous_products.get(source_id)
