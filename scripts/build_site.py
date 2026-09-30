@@ -52,7 +52,7 @@ def featured_candidate(products: list[dict], category_id: str, category: dict, s
     pct = gap / median * 100
     return {
         "category_id": category_id,
-        "category_label": category["label"],
+        "category_label": category["name"],
         "segment_id": segment["id"],
         "segment_label": segment["label"],
         "url": segment_url(category, segment),
