@@ -293,3 +293,38 @@
     });
   });
 })();
+
+
+(() => {
+  document.querySelectorAll('[data-brand-compare]').forEach((section) => {
+    const comparison = section.closest('.comparison');
+    const products = [...(comparison?.querySelectorAll('[data-sortable-products] .product') || [])];
+    const buttons = [...section.querySelectorAll('[data-brand-filter]')];
+    const clear = section.querySelector('[data-brand-filter-clear]');
+    if (!comparison || !products.length || !buttons.length || !clear) return;
+
+    const apply = (brand) => {
+      products.forEach((card) => {
+        card.hidden = !!brand && card.dataset.brand !== brand;
+      });
+      buttons.forEach((button) => button.classList.toggle('is-active', button.dataset.brandFilter === brand));
+      clear.hidden = !brand;
+      if (brand) {
+        window.babyCostEvent?.('brand_filter_select', {
+          category_id: comparison.dataset.categoryId || '',
+          brand
+        });
+        comparison.querySelector('[data-sortable-products]')?.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'start'
+        });
+      }
+    };
+
+    buttons.forEach((button) => button.addEventListener('click', () => {
+      const brand = button.dataset.brandFilter || '';
+      apply(button.classList.contains('is-active') ? '' : brand);
+    }));
+    clear.addEventListener('click', () => apply(''));
+  });
+})();

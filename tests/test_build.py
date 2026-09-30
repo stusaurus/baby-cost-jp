@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from scripts.build_site import attach_price_changes, attach_price_history, history_trend_candidate, normalize_products
-from src.render import display_product_name, price_history_sparkline, product_card, product_strength_tags
+from src.render import brand_comparison_section, display_product_name, price_history_sparkline, product_brand_label, product_card, product_strength_tags
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -232,6 +232,24 @@ class BuildTests(unittest.TestCase):
         text=(ROOT / "site/index.html").read_text(encoding="utf-8")
         # Fixture builds do not have a previous snapshot, so the section may be absent.
         self.assertNotIn("長期的な最安値", text) if "値下がりランキング" not in text else self.assertIn("PRICE DROP RANKING", text)
+
+    def test_diaper_brand_comparison_groups_known_brands(self):
+        products = [
+            {"name":"パンパース パンツ M 100枚","brand":"P&G","manufacturer":"P&G","unit_price":20.0,"price_yen":2000,"quantity":{"total":100},"image":""},
+            {"name":"メリーズ パンツ M 90枚","brand":"花王","manufacturer":"花王","unit_price":21.0,"price_yen":1890,"quantity":{"total":90},"image":""},
+            {"name":"パンパース パンツ M 120枚","brand":"P&G","manufacturer":"P&G","unit_price":19.0,"price_yen":2280,"quantity":{"total":120},"image":""},
+        ]
+        self.assertEqual(product_brand_label(products[0]), "パンパース")
+        html = brand_comparison_section(products,"diapers","1枚")
+        self.assertIn("ブランド別に比べる", html)
+        self.assertIn("パンパース", html)
+        self.assertIn("メリーズ", html)
+        self.assertIn("2商品掲載", html)
+        self.assertIn('data-brand-filter="パンパース"', html)
+
+    def test_brand_compare_not_rendered_for_non_diapers(self):
+        products=[{"name":"A","unit_price":1.0,"price_yen":100,"quantity":{"total":100}}]
+        self.assertEqual(brand_comparison_section(products,"wipes","1枚"), "")
 
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {

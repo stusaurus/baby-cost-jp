@@ -170,6 +170,51 @@ def price_history_sparkline(points):
     return f'''<div class="mini-history mini-history--{kind}"><div><span>価格推移</span><b>{esc(label)}</b></div><svg viewBox="0 0 {width} {height}" role="img" aria-label="{esc(label)}"><polyline points="{' '.join(coords)}" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="{coords[-1].split(',')[0]}" cy="{coords[-1].split(',')[1]}" r="2.6" fill="currentColor"/></svg><small>¥{int(round(first)):,} → ¥{int(round(last)):,}</small></div>'''
 
 
+def product_brand_label(product):
+    name=product.get('name','')
+    known=[
+        ('パンパース','パンパース'),('メリーズ','メリーズ'),('ムーニー','ムーニー'),
+        ('マミーポコ','マミーポコ'),('グーン','グーン'),('GOO.N','グーン'),
+        ('Genki','Genki!'),('ゲンキ','Genki!'),('Whito','Whito'),
+    ]
+    for needle,label in known:
+        if needle.lower() in name.lower():
+            return label
+    raw=(product.get('brand') or product.get('manufacturer') or '').strip()
+    return raw[:24] if raw else 'その他'
+
+
+def brand_comparison_section(products, category_id, metric):
+    if category_id!='diapers' or len(products)<2:
+        return ''
+    groups={}
+    for p in products:
+        label=product_brand_label(p)
+        groups.setdefault(label,[]).append(p)
+    if len(groups)<2:
+        return ''
+
+    rows=[]
+    for label,items in groups.items():
+        best=min(items,key=lambda p:p['unit_price'])
+        rows.append({
+            'label':label,
+            'count':len(items),
+            'best_unit':min(float(p['unit_price']) for p in items),
+            'best_price':min(int(p['price_yen']) for p in items),
+            'max_quantity':max(float(p['quantity']['total']) for p in items),
+            'image':best.get('image',''),
+        })
+    rows.sort(key=lambda row:(row['best_unit'],row['best_price'],row['label']))
+
+    cards=[]
+    for i,row in enumerate(rows[:6],start=1):
+        image=f'<div class="brand-card-image"><img src="{esc(row["image"])}" alt="" loading="lazy" decoding="async"></div>' if row['image'] else f'<div class="brand-card-image brand-card-image--empty">{icon_svg("diapers")}</div>'
+        cards.append(f'''<button type="button" class="brand-card" data-brand-filter="{esc(row['label'])}"><span class="brand-card-rank">{i}</span>{image}<strong>{esc(row['label'])}</strong><div class="brand-card-stats"><span><small>最安単価</small><b>{yen(row['best_unit'])}<em> / {metric}</em></b></span><span><small>最安総額</small><b>¥{row['best_price']:,}</b></span><span><small>最大容量</small><b>{row['max_quantity']:g}枚</b></span></div><small class="brand-card-count">{row['count']}商品掲載</small><i>このブランドだけ見る →</i></button>''')
+
+    return f'''<section class="brand-compare" data-brand-compare><div class="brand-compare-head"><div><div class="section-kicker">BRAND COMPARE</div><h2>ブランド別に比べる</h2><p>同じタイプ・サイズの掲載商品から、ブランドごとの価格と容量を比較します。</p></div><button type="button" class="brand-filter-clear" data-brand-filter-clear hidden>全ブランド表示</button></div><div class="brand-grid">{''.join(cards)}</div><p class="brand-note">※ 品質・肌との相性などの優劣ではなく、現在掲載している商品の価格・容量のみを比較しています。</p></section>'''
+
+
 def product_strength_tags(products):
     if not products:
         return {}
@@ -215,7 +260,7 @@ def product_card(p, rank, category_id, segment, best_unit_price=None, strength_t
     gap=(p['unit_price']-best_unit_price) if best_unit_price is not None else 0
     badge='最安' if rank==1 else (f'1位より +{yen(gap)} / {METRIC[p["unit_metric"]]}' if gap>0 else f'{rank}位')
     image=f'<div class="product-image"><img src="{esc(p.get("image"))}" alt="" loading="lazy" decoding="async"></div>' if p.get('image') else ''
-    return f'''<article class="product product-rank-{rank}" id="rank-{rank}" data-sort-unit="{p['unit_price']:.6f}" data-sort-price="{p['price_yen']}" data-sort-quantity="{q['total']:.6f}" data-original-rank="{rank}"><div class="rank rank-{rank}">{rank}</div><div class="product-main"><div class="product-overview">{image}<div class="product-info"><div class="maker-row"><div class="maker">{esc(p.get('brand') or p.get('manufacturer'))} {stage_html}</div>{shop}</div><h3 class="product-title" title="{esc(p['name'])}">{esc(display)}</h3>{strength_row}{trend_html}<div class="price-row"><div class="unit"><b>{yen(p['unit_price'])}</b><span> / {METRIC[p['unit_metric']]}</span></div><span class="rank-badge">{badge}</span></div></div></div><div class="facts"><span><small>内容量</small><b>合計 {total_txt}{pack}</b></span><span><small>販売価格</small><b>¥{p['price_yen']:,}</b></span></div>{history_html}{full_name}<details><summary>単価の計算を見る</summary><p>¥{p['price_yen']:,} ÷ {total_txt}{' × 100' if p['unit_metric']=='per_100g' else ''} = {yen(p['unit_price'])} / {METRIC[p['unit_metric']]}</p><small>数量根拠: {esc(q.get('evidence'))}</small></details><div class="product-actions"><button type="button" class="compare-add" data-compare-add data-compare-id="{esc(p.get('source_id'))}" data-compare-name="{esc(display)}" data-compare-unit="{p['unit_price']:.4f}" data-compare-unit-label="{esc(METRIC[p['unit_metric']])}" data-compare-price="{p['price_yen']}" data-compare-quantity="{esc(total_txt)}" data-compare-image="{esc(p.get('image'))}" data-compare-rank="{rank}"><span>＋</span> 比較に追加</button><a class="cta" href="{esc(p.get('url'))}" target="_blank" rel="nofollow sponsored noopener" {attrs}>楽天で価格・在庫を見る</a></div></div></article>'''
+    return f'''<article class="product product-rank-{rank}" id="rank-{rank}" data-sort-unit="{p['unit_price']:.6f}" data-sort-price="{p['price_yen']}" data-sort-quantity="{q['total']:.6f}" data-original-rank="{rank}" data-brand="{esc(product_brand_label(p))}"><div class="rank rank-{rank}">{rank}</div><div class="product-main"><div class="product-overview">{image}<div class="product-info"><div class="maker-row"><div class="maker">{esc(p.get('brand') or p.get('manufacturer'))} {stage_html}</div>{shop}</div><h3 class="product-title" title="{esc(p['name'])}">{esc(display)}</h3>{strength_row}{trend_html}<div class="price-row"><div class="unit"><b>{yen(p['unit_price'])}</b><span> / {METRIC[p['unit_metric']]}</span></div><span class="rank-badge">{badge}</span></div></div></div><div class="facts"><span><small>内容量</small><b>合計 {total_txt}{pack}</b></span><span><small>販売価格</small><b>¥{p['price_yen']:,}</b></span></div>{history_html}{full_name}<details><summary>単価の計算を見る</summary><p>¥{p['price_yen']:,} ÷ {total_txt}{' × 100' if p['unit_metric']=='per_100g' else ''} = {yen(p['unit_price'])} / {METRIC[p['unit_metric']]}</p><small>数量根拠: {esc(q.get('evidence'))}</small></details><div class="product-actions"><button type="button" class="compare-add" data-compare-add data-compare-id="{esc(p.get('source_id'))}" data-compare-name="{esc(display)}" data-compare-unit="{p['unit_price']:.4f}" data-compare-unit-label="{esc(METRIC[p['unit_metric']])}" data-compare-price="{p['price_yen']}" data-compare-quantity="{esc(total_txt)}" data-compare-image="{esc(p.get('image'))}" data-compare-rank="{rank}"><span>＋</span> 比較に追加</button><a class="cta" href="{esc(p.get('url'))}" target="_blank" rel="nofollow sponsored noopener" {attrs}>楽天で価格・在庫を見る</a></div></div></article>'''
 
 def quick_compare(products):
     if not products: return ''
@@ -299,7 +344,7 @@ def render_comparison(categories, category_id, category, segment, products, upda
     mascot_tip=comparison_mascot_tip(category_id,len(products))
     snapshot=price_snapshot(products,metric)
     savings=diaper_savings_simulator(products) if category_id=='diapers' else ''
-    body=f'''<section class="page-head comparison-page-head comparison-page-head--{category_id}">{back}{head_visual}<div class="section-kicker">PRICE COMPARISON</div><h1>{esc(label)}<br><span>コスパ比較</span></h1><p>{metric}あたりの価格を、同じ条件にそろえて比較します。</p>{meta}</section>{mascot_tip}<section class="comparison" data-comparison data-category-id="{category_id}" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-result-count="{len(products)}">{answer}{snapshot}{savings}{quick_compare(products)}{buying_guide()}<section class="view-switcher" data-view-switcher><div><div class="section-kicker">VIEW</div><h2>比べ方を切り替える</h2><p>同じ掲載商品を、目的に合わせて並べ替えます。</p></div><div class="view-buttons" role="group" aria-label="商品の並べ替え"><button type="button" class="is-active" data-sort-mode="unit">単価が安い</button><button type="button" data-sort-mode="price">支払総額が安い</button><button type="button" data-sort-mode="quantity">大容量</button></div></section><h2 class="result-title"><span>ランキング</span> <b data-result-sort-label>単価が安い順</b></h2><div class="products" data-sortable-products>{cards}</div>{compare_panel()}</section>{health_note}{selector_html}<section class="method-note method-note-visual"><div class="method-note-icon">{icon_svg("check")}</div><div><div class="section-kicker">HOW IT WORKS</div><h2>この順位に入る条件</h2><p>楽天APIで送料込み／送料無料条件に絞り、数量と条件を確認できた商品だけを単価換算しています。紙おむつはサイズ選択式やタイプ不明の商品を除外。ポイント・クーポンは順位に含めません。</p><a href="{SITE_URL}method/">詳しい比較方法を見る →</a></div></section><p class="updated">更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    body=f'''<section class="page-head comparison-page-head comparison-page-head--{category_id}">{back}{head_visual}<div class="section-kicker">PRICE COMPARISON</div><h1>{esc(label)}<br><span>コスパ比較</span></h1><p>{metric}あたりの価格を、同じ条件にそろえて比較します。</p>{meta}</section>{mascot_tip}<section class="comparison" data-comparison data-category-id="{category_id}" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-result-count="{len(products)}">{answer}{snapshot}{savings}{quick_compare(products)}{brand_comparison_section(products,category_id,metric)}{buying_guide()}<section class="view-switcher" data-view-switcher><div><div class="section-kicker">VIEW</div><h2>比べ方を切り替える</h2><p>同じ掲載商品を、目的に合わせて並べ替えます。</p></div><div class="view-buttons" role="group" aria-label="商品の並べ替え"><button type="button" class="is-active" data-sort-mode="unit">単価が安い</button><button type="button" data-sort-mode="price">支払総額が安い</button><button type="button" data-sort-mode="quantity">大容量</button></div></section><h2 class="result-title"><span>ランキング</span> <b data-result-sort-label>単価が安い順</b></h2><div class="products" data-sortable-products>{cards}</div>{compare_panel()}</section>{health_note}{selector_html}<section class="method-note method-note-visual"><div class="method-note-icon">{icon_svg("check")}</div><div><div class="section-kicker">HOW IT WORKS</div><h2>この順位に入る条件</h2><p>楽天APIで送料込み／送料無料条件に絞り、数量と条件を確認できた商品だけを単価換算しています。紙おむつはサイズ選択式やタイプ不明の商品を除外。ポイント・クーポンは順位に含めません。</p><a href="{SITE_URL}method/">詳しい比較方法を見る →</a></div></section><p class="updated">更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     title=f'{label} 1{ "枚" if category["metric"]=="per_piece" else "00g"}あたり価格比較'
     return shell(title,f'{label}を{metric}あたりに換算して価格比較。',body,segment_url(category,segment),noindex)
 
