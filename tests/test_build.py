@@ -84,6 +84,13 @@ class BuildTests(unittest.TestCase):
         self.assertIn("quick-image", text)
         self.assertIn("ランキング", text)
 
+    def test_method_page_uses_visual_cards_and_principle(self):
+        text = (ROOT / "site/method/index.html").read_text(encoding="utf-8")
+        self.assertIn("method-grid", text)
+        self.assertIn("method-principle", text)
+        self.assertIn("商品数を増やすために、曖昧な商品を載せません", text)
+        self.assertIn("footer-brand", text)
+
     def test_product_card_can_show_image_and_gap_from_first(self):
         product = {
             "quantity":{"total":108,"base_unit":"piece","pack_count":3,"evidence":"36枚×3個"},

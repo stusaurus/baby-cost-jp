@@ -65,7 +65,7 @@ def analytics_head():
 
 def shell(title, desc, body, canonical, noindex=False):
     robots='noindex,follow' if noindex else 'index,follow'
-    return f'''<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(title)}</title><meta name="description" content="{esc(desc)}"><meta name="robots" content="{robots}"><link rel="canonical" href="{esc(canonical)}"><link rel="stylesheet" href="{SITE_URL}static/styles.css">{analytics_head()}</head><body><header class="top"><a class="brand" href="{SITE_URL}"><span class="brand-mark">{icon_svg('chick')}</span><span>{SITE_NAME}</span></a><a href="{SITE_URL}method/">比較方法</a></header><main>{body}</main><footer>価格・枚数等は取得時点の情報です。購入前に販売ページで最新情報をご確認ください。</footer><script src="{SITE_URL}static/analytics.js"></script><script src="{SITE_URL}static/app.js"></script></body></html>'''
+    return f'''<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(title)}</title><meta name="description" content="{esc(desc)}"><meta name="robots" content="{robots}"><link rel="canonical" href="{esc(canonical)}"><link rel="stylesheet" href="{SITE_URL}static/styles.css">{analytics_head()}</head><body><header class="top"><a class="brand" href="{SITE_URL}"><span class="brand-mark">{icon_svg('chick')}</span><span>{SITE_NAME}</span></a><a href="{SITE_URL}method/">比較方法</a></header><main>{body}</main><footer><div class="footer-brand"><span>{icon_svg('chick')}</span><b>{SITE_NAME}</b></div><p>価格・枚数等は取得時点の情報です。購入前に販売ページで最新情報をご確認ください。</p></footer><script src="{SITE_URL}static/analytics.js"></script><script src="{SITE_URL}static/app.js"></script></body></html>'''
 
 def trust_strip():
     return f'''<div class="trust-strip" aria-label="比較方針"><span>{icon_svg('check')}送料込み対象</span><span>{icon_svg('check')}選択式商品は除外</span><span>{icon_svg('check')}単価を自動計算</span><span>{icon_svg('check')}毎日更新</span></div>'''
@@ -175,7 +175,15 @@ def render_comparison(categories, category_id, category, segment, products, upda
     return shell(title,f'{label}を{metric}あたりに換算して価格比較。',body,segment_url(category,segment),noindex)
 
 def render_method():
-    body=f'''<section class="page-head"><a href="{SITE_URL}">← トップ</a><div class="section-kicker">METHOD</div><h1>比較方法</h1><p>「安い」の前に、同じ条件で比べられることを優先します。</p></section><section class="prose"><h2>1. 単価をそろえる</h2><p>紙おむつ・おしりふき・防臭袋は1枚、粉ミルクは100gあたりで計算します。セット数が違っても同じ単位で比較できます。</p><h2>2. 条件違いを混ぜない</h2><p>紙おむつはテープ／パンツとサイズを一致させます。M・L・BIGなどを販売ページで選ぶ商品、タイプが混在する商品、数量を安全に解析できない商品はランキングから外します。</p><h2>3. 実質重複を整理する</h2><p>同じ商品名の候補が複数ある場合は、同一候補を整理して比較画面を読みやすくします。</p><h2>4. 価格以外を断定しない</h2><p>肌との相性、品質、栄養、健康効果などをサイト側で根拠なく順位付けしません。</p><h2>5. 最終確認は販売ページで</h2><p>価格・在庫・商品仕様は変わるため、購入前に楽天の商品ページで最新情報をご確認ください。</p></section>'''
+    steps=[
+        ('01','price','単価をそろえる','紙おむつ・おしりふき・防臭袋は1枚、粉ミルクは100gあたり。セット数が違っても同じ単位に換算します。'),
+        ('02','diapers','条件違いを混ぜない','紙おむつはテープ／パンツとサイズを一致。サイズ選択式やタイプ不明の商品はランキングから外します。'),
+        ('03','check','実質重複を整理','同じ商品名の候補が複数ある場合は整理し、同じ商品ばかり並ばないようにします。'),
+        ('04','chick','価格以外を断定しない','肌との相性・品質・栄養・健康効果などを、根拠なく順位付けしません。'),
+        ('05','check','最後は販売ページで確認','価格・在庫・商品仕様は変わるため、購入前に楽天の商品ページで最新情報をご確認ください。'),
+    ]
+    cards=''.join(f'''<article class="method-card"><span class="method-number">{num}</span><div class="method-card-icon">{icon_svg(icon)}</div><h2>{esc(title)}</h2><p>{esc(text)}</p></article>''' for num,icon,title,text in steps)
+    body=f'''<section class="page-head method-head"><a href="{SITE_URL}">← トップ</a><div class="method-hero-art"><div>{icon_svg("chick")}</div><span>ちゃんと比べる<br>ためのルール</span></div><div class="section-kicker">METHOD</div><h1>比較方法</h1><p>「安い」の前に、同じ条件で比べられることを優先します。</p></section><section class="method-grid">{cards}</section><section class="method-principle"><div class="method-principle-icon">{icon_svg("check")}</div><div><div class="section-kicker">OUR RULE</div><h2>商品数を増やすために、曖昧な商品を載せません</h2><p>候補が少なくなっても、サイズ・タイプ・数量を安全に確認できる商品を優先します。</p></div></section>'''
     return shell('比較方法 | ベビー用品コスパ比較','単価計算と比較対象の選び方。',body,f'{SITE_URL}method/')
 
 def write_page(path: Path, content: str):
