@@ -49,7 +49,7 @@ class BuildTests(unittest.TestCase):
         text = (ROOT / "site/index.html").read_text(encoding="utf-8")
         self.assertIn("選択式商品は除外", text)
         self.assertIn("取得対象内", text)
-        self.assertIn("安さだけでなく、比較条件もそろえます", text)
+        self.assertIn("「安いけど条件が違う」を入れません", text)
 
     def test_display_name_removes_campaign_noise_but_keeps_pack_count(self):
         noisy = "【ポイント10倍！9/30迄】ユニチャーム おむつ BIG 36枚×3個【smtb-s】"
