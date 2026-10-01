@@ -643,3 +643,4 @@ footer{background:#f1eee5;padding:36px 24px 110px}
 
 .savings-sim{grid-template-columns:1fr}.savings-copy{min-width:0}.price-point-mid{background:#f2f3e9}.brand-card-stats span{background:#f6f5ee}
 @media(max-width:760px){.price-point-mid{order:0}.compare-dock-copy{min-width:95px}.compare-dock-copy span{font-size:12px}}
+.hero-mascot{animation:none;transform:none}.compare-dock-shake{animation:none;border-color:#aa9471}
