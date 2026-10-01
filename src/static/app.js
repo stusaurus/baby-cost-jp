@@ -134,7 +134,15 @@
         const item = items[index];
         return item ? '<button type="button" class="tray-slot is-filled" data-tray-remove="' + escapeHtml(item.id) + '" aria-label="' + escapeHtml(item.name) + 'をトレーから外す">' + (item.image ? '<img src="' + escapeHtml(item.image) + '" alt="">' : '<span>' + escapeHtml(item.unitLabel) + '</span>') + '<span class="tray-remove" aria-hidden="true">×</span></button>' : '<span class="tray-slot" aria-hidden="true">' + (index+1) + '</span>';
       }).join('');
-      traySlots.querySelectorAll('[data-tray-remove]').forEach(button => button.addEventListener('click', () => {selected.delete(button.dataset.trayRemove); sync();}));
+      traySlots.querySelectorAll('[data-tray-remove]').forEach((button, index) => button.addEventListener('click', () => {
+        const id = button.dataset.trayRemove;
+        selected.delete(id);
+        sync();
+        const remainingSlots = [...traySlots.querySelectorAll('[data-tray-remove]')];
+        const next = remainingSlots[Math.min(index, remainingSlots.length - 1)]
+          || buttons.find(button => parse(button).id === id);
+        next?.focus();
+      }));
     }
     try { sessionStorage.setItem(storageKey, JSON.stringify([...selected.keys()])); } catch (_) {}
   };
@@ -183,20 +191,30 @@
     if (Array.isArray(saved)) saved.slice(0,3).forEach(id => {const button=buttons.find(b => parse(b).id===id);if(button)selected.set(id,parse(button));});
   } catch (_) {}
 
+  let background = [];
   open.addEventListener('click', () => {
     if (selected.size < 2) return;
     renderTable();
     modal.hidden = false;
     document.body.classList.add('compare-modal-open');
     modal.querySelector('.compare-close')?.focus();
-    document.querySelectorAll('main,header,footer').forEach(el => {if (!el.contains(modal)) el.inert=true;});
+    background = [];
+    for (let branch = modal; branch.parentElement && branch !== document.body; branch = branch.parentElement) {
+      [...branch.parentElement.children].forEach(element => {
+        if (element !== branch) {
+          background.push({element, inert: element.inert});
+          element.inert = true;
+        }
+      });
+    }
     window.babyCostEvent?.('product_compare_open', {selected_count:String(selected.size)});
   });
 
   const closeModal = () => {
     modal.hidden = true;
     document.body.classList.remove('compare-modal-open');
-    document.querySelectorAll('main,header,footer').forEach(el => el.inert=false);
+    background.forEach(({element, inert}) => {element.inert = inert;});
+    background = [];
     open.focus();
   };
   closeButtons.forEach((button) => button.addEventListener('click', closeModal));
@@ -210,8 +228,10 @@
     }
   });
   clear?.addEventListener('click', () => {
+    const firstId = selected.keys().next().value;
     selected.clear();
     sync();
+    buttons.find(button => parse(button).id === firstId)?.focus();
   });
   sync();
 })();

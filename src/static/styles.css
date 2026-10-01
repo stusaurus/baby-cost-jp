@@ -26,3 +26,7 @@
 @media(max-width:600px){.room-gateway>em{font-size:8px}.room--diapers>small{margin-bottom:16px}}
 .product-overview>.product-info:only-child{grid-column:1/-1}.product-overview>.product-info:only-child .card-unit{margin-left:44px}
 @media(max-width:600px){.product-overview>.product-info:only-child .card-unit{margin-left:35px}}
+
+/* Keep intrinsic product images inside fixed grid frames. */
+:is(.deal-image,.product-image,.tray-slot,.compare-cell-image,.quick-image){grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+:is(.deal-image,.product-image,.tray-slot,.compare-cell-image,.quick-image)>img{min-width:0;min-height:0;max-height:100%}
