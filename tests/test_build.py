@@ -149,7 +149,7 @@ class BuildTests(unittest.TestCase):
 
     def test_buying_guide_is_rendered_on_comparison_pages(self):
         text = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
-        self.assertIn("どれを選ぶか迷ったら", text)
+        self.assertIn("あなたはどんな買い方？", text)
         self.assertIn('data-buy-goal="unit"', text)
         self.assertIn('data-buy-goal="price"', text)
         self.assertIn('data-buy-goal="quantity"', text)

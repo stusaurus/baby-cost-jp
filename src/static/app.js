@@ -115,10 +115,13 @@
       const item = parse(button);
       const active = selected.has(item.id);
       button.classList.toggle('is-active', active);
+      button.closest('.product')?.classList.toggle('is-selected', active);
       button.setAttribute('aria-pressed', active ? 'true' : 'false');
       button.innerHTML = active ? '<span>✓</span> 比較中' : '<span>＋</span> 比較に追加';
     });
-    count.textContent = selected.size + '件選択';
+    count.textContent = selected.size + ' / 3商品を選択';
+    const remaining = dock.querySelector('[data-compare-remaining]');
+    if (remaining) remaining.textContent = selected.size < 3 ? 'あと' + (3-selected.size) + '商品選べます' : '3商品を比較できます';
     dock.hidden = selected.size === 0;
     open.disabled = selected.size < 2;
     open.textContent = selected.size < 2 ? 'もう1商品選ぶ' : '選んだ商品を比較';
@@ -180,6 +183,12 @@
   closeButtons.forEach((button) => button.addEventListener('click', closeModal));
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !modal.hidden) closeModal();
+    if (event.key === 'Tab' && !modal.hidden) {
+      const focusable = [...modal.querySelectorAll('button:not([disabled]),a[href]')];
+      const first = focusable[0], last = focusable[focusable.length-1];
+      if (event.shiftKey && document.activeElement === first) {event.preventDefault(); last?.focus();}
+      else if (!event.shiftKey && document.activeElement === last) {event.preventDefault(); first?.focus();}
+    }
   });
   clear?.addEventListener('click', () => {
     selected.clear();
@@ -248,7 +257,7 @@
       });
     };
 
-    buttons.forEach((button) => button.addEventListener('click', () => apply(button.dataset.sortMode || 'unit')));
+    buttons.forEach((button) => {button.setAttribute('aria-pressed',button.classList.contains('is-active')?'true':'false'); button.addEventListener('click', () => apply(button.dataset.sortMode || 'unit'));});
   });
 })();
 
@@ -307,7 +316,7 @@
       products.forEach((card) => {
         card.hidden = !!brand && card.dataset.brand !== brand;
       });
-      buttons.forEach((button) => button.classList.toggle('is-active', button.dataset.brandFilter === brand));
+      buttons.forEach((button) => {button.classList.toggle('is-active', button.dataset.brandFilter === brand);button.setAttribute('aria-pressed',button.dataset.brandFilter === brand?'true':'false');});
       clear.hidden = !brand;
       if (brand) {
         window.babyCostEvent?.('brand_filter_select', {
@@ -328,3 +337,6 @@
     clear.addEventListener('click', () => apply(''));
   });
 })();
+
+// Expand the nearby condition selector before following its page link.
+document.querySelectorAll('a[href="#condition-change"]').forEach(link => link.addEventListener('click',()=>{const box=document.getElementById('condition-change');if(box)box.open=true;}));
