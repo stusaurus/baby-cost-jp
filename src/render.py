@@ -1,11 +1,14 @@
 from __future__ import annotations
-import html, json, re
+import html, json, re, hashlib
 from pathlib import Path
 from .config import GA_MEASUREMENT_ID, SITE_ID, SITE_NAME, SITE_URL
 
 METRIC={'per_piece':'1枚','per_100g':'100g'}
 SIZE={'newborn':'新生児','s':'S','m':'M','l':'L','big':'BIG','big_plus':'BIGより大きい'}
 TYPE={'tape':'テープ','pants':'パンツ'}
+
+def static_version(name):
+    return hashlib.sha256((Path(__file__).parent/'static'/name).read_bytes()).hexdigest()[:12]
 
 def icon_svg(name: str, cls: str=''):
     common=f'class="icon {esc(cls)}" viewBox="0 0 96 96" aria-hidden="true"'
@@ -57,7 +60,7 @@ def analytics_head():
 
 def shell(title, desc, body, canonical, noindex=False):
     robots='noindex,follow' if noindex else 'index,follow'
-    return f'''<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(title)}</title><meta name="description" content="{esc(desc)}"><meta name="robots" content="{robots}"><link rel="canonical" href="{esc(canonical)}"><link rel="stylesheet" href="{SITE_URL}static/styles.css">{analytics_head()}</head><body><header class="top"><a class="brand" href="{SITE_URL}"><span class="brand-mark">{icon_svg('chick')}</span><span>{SITE_NAME}</span></a><a href="{SITE_URL}method/">比較方法</a></header><main>{body}</main><footer><div class="footer-brand"><span>{icon_svg('chick')}</span><b>{SITE_NAME}</b></div><p>価格・枚数等は取得時点の情報です。購入前に販売ページで最新情報をご確認ください。</p></footer><script src="{SITE_URL}static/analytics.js"></script><script src="{SITE_URL}static/app.js"></script></body></html>'''
+    return f'''<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(title)}</title><meta name="description" content="{esc(desc)}"><meta name="robots" content="{robots}"><link rel="canonical" href="{esc(canonical)}"><link rel="stylesheet" href="{SITE_URL}static/styles.css?v={static_version("styles.css")}">{analytics_head()}</head><body><header class="top"><a class="brand" href="{SITE_URL}"><span class="brand-mark">{icon_svg('chick')}</span><span>{SITE_NAME}</span></a><a href="{SITE_URL}method/">比較方法</a></header><main>{body}</main><footer><div class="footer-brand"><span>{icon_svg('chick')}</span><b>{SITE_NAME}</b></div><p>価格・枚数等は取得時点の情報です。購入前に販売ページで最新情報をご確認ください。</p></footer><script src="{SITE_URL}static/analytics.js"></script><script src="{SITE_URL}static/app.js?v={static_version("app.js")}"></script></body></html>'''
 
 def trust_strip():
     return f'''<div class="trust-strip" aria-label="比較方針"><span>{icon_svg('check')}送料込み対象</span><span>{icon_svg('check')}選択式商品は除外</span><span>{icon_svg('check')}単価を自動計算</span><span>{icon_svg('check')}毎日更新</span></div>'''
