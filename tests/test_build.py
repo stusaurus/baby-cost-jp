@@ -57,11 +57,13 @@ class BuildTests(unittest.TestCase):
         pack = "【3個セット】メリーズ パンツ Mサイズ 52枚"
         self.assertEqual(display_product_name(pack), pack)
 
-    def test_home_has_original_visual_illustrations(self):
+    def test_home_uses_responsive_shop_art(self):
         text = (ROOT / "site/index.html").read_text(encoding="utf-8")
-        self.assertIn("hero-art", text)
-        self.assertIn("cat-icon", text)
-        self.assertIn("<svg", text)
+        self.assertIn("shop-wide.webp", text)
+        self.assertIn("shop-mobile.webp", text)
+        self.assertNotIn("<svg", text)
+        self.assertIn('fetchpriority="high"', text)
+        self.assertIn('aria-label="ベビー用品の売り場"', text)
         self.assertIn("DIAPER FINDER", text)
 
     def test_diaper_selector_uses_visual_chips(self):
@@ -70,16 +72,17 @@ class BuildTests(unittest.TestCase):
         self.assertIn("size-chips", text)
         self.assertNotIn('id="diaper-type"', text)
 
-    def test_brand_mascot_and_three_step_flow_render(self):
+    def test_brand_wordmark_and_three_step_flow_render(self):
         text = (ROOT / "site/index.html").read_text(encoding="utf-8")
         self.assertIn("brand-mark", text)
-        self.assertIn("hero-mascot", text)
+        self.assertIn("THE LITTLE BABY SHOP", text)
+        self.assertNotIn("hero-mascot", text)
         self.assertIn("3ステップで、すぐ比較", text)
         self.assertIn("HOW TO USE", text)
 
-    def test_comparison_pages_have_category_visuals_and_mascot_tip(self):
+    def test_comparison_pages_have_department_context(self):
         text = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
-        self.assertIn("comparison-head-art--diapers", text)
+        self.assertIn("department-label--diapers", text)
         self.assertIn("result-mascot-tip", text)
         self.assertIn("quick-image", text)
         self.assertIn("ランキング", text)
@@ -241,7 +244,7 @@ class BuildTests(unittest.TestCase):
         ]
         self.assertEqual(product_brand_label(products[0]), "パンパース")
         html = brand_comparison_section(products,"diapers","1枚")
-        self.assertIn("ブランドの本棚", html)
+        self.assertIn("ブランドの棚", html)
         self.assertIn("パンパース", html)
         self.assertIn("メリーズ", html)
         self.assertIn("2商品掲載", html)
@@ -280,7 +283,7 @@ class BuildTests(unittest.TestCase):
         from zoneinfo import ZoneInfo
         html=render_brand_page({},category,segment,"パンパース",products,datetime(2026,9,30,12,0,tzinfo=ZoneInfo("Asia/Tokyo")))
         self.assertIn("パンパース",html)
-        self.assertIn("THE LITTLE BRAND SHOWROOM",html)
+        self.assertIn("THE BRAND SHELF",html)
         self.assertIn("2商品",html)
         self.assertIn("販売価格帯",html)
         self.assertIn("/diapers/pants/m/pampers/",html)
