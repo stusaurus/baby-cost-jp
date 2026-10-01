@@ -79,7 +79,7 @@
     const update = (usage) => {
       const diff = Math.max(0, median - best);
       result.textContent = formatYen(diff * usage * 30);
-      buttons.forEach((b) => b.classList.toggle('is-active', Number(b.dataset.usage) === usage));
+      buttons.forEach((b) => {b.classList.toggle('is-active', Number(b.dataset.usage) === usage);b.setAttribute('aria-pressed',Number(b.dataset.usage)===usage?'true':'false');});
       window.babyCostEvent?.('savings_simulator_use', {category_id:'diapers', usage_per_day:String(usage)});
     };
     buttons.forEach((button) => button.addEventListener('click', () => update(Number(button.dataset.usage || 5))));
@@ -99,6 +99,9 @@
   if (!buttons.length || !dock || !count || !open || !modal || !table) return;
 
   const selected = new Map();
+  const traySlots = dock.querySelector('[data-tray-slots]');
+  const storageKey = 'baby_cost_tray_v1:' + location.pathname;
+  const escapeHtml = value => String(value || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const parse = (button) => ({
     id: button.dataset.compareId || button.dataset.compareName || String(Math.random()),
     name: button.dataset.compareName || '',
@@ -117,14 +120,23 @@
       button.classList.toggle('is-active', active);
       button.closest('.product')?.classList.toggle('is-selected', active);
       button.setAttribute('aria-pressed', active ? 'true' : 'false');
-      button.innerHTML = active ? '<span>✓</span> 比較中' : '<span>＋</span> 比較に追加';
+      button.innerHTML = active ? '<span>✓</span> トレーに入りました' : '<span>＋</span> 比較トレーに入れる';
     });
     count.textContent = selected.size + ' / 3商品を選択';
     const remaining = dock.querySelector('[data-compare-remaining]');
     if (remaining) remaining.textContent = selected.size < 3 ? 'あと' + (3-selected.size) + '商品選べます' : '3商品を比較できます';
     dock.hidden = selected.size === 0;
     open.disabled = selected.size < 2;
-    open.textContent = selected.size < 2 ? 'もう1商品選ぶ' : '選んだ商品を比較';
+    open.textContent = selected.size < 2 ? 'もう1つ選ぶ' : 'くらべてみる';
+    if (traySlots) {
+      const items = [...selected.values()];
+      traySlots.innerHTML = [0,1,2].map(index => {
+        const item = items[index];
+        return item ? '<button type="button" class="tray-slot is-filled" data-tray-remove="' + escapeHtml(item.id) + '" aria-label="' + escapeHtml(item.name) + 'をトレーから外す">' + (item.image ? '<img src="' + escapeHtml(item.image) + '" alt="">' : '<span>' + escapeHtml(item.unitLabel) + '</span>') + '<span class="tray-remove" aria-hidden="true">×</span></button>' : '<span class="tray-slot" aria-hidden="true">' + (index+1) + '</span>';
+      }).join('');
+      traySlots.querySelectorAll('[data-tray-remove]').forEach(button => button.addEventListener('click', () => {selected.delete(button.dataset.trayRemove); sync();}));
+    }
+    try { sessionStorage.setItem(storageKey, JSON.stringify([...selected.keys()])); } catch (_) {}
   };
 
   const renderTable = () => {
@@ -166,18 +178,25 @@
     });
   });
 
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(storageKey) || '[]');
+    if (Array.isArray(saved)) saved.slice(0,3).forEach(id => {const button=buttons.find(b => parse(b).id===id);if(button)selected.set(id,parse(button));});
+  } catch (_) {}
+
   open.addEventListener('click', () => {
     if (selected.size < 2) return;
     renderTable();
     modal.hidden = false;
     document.body.classList.add('compare-modal-open');
     modal.querySelector('.compare-close')?.focus();
+    document.querySelectorAll('main,header,footer').forEach(el => {if (!el.contains(modal)) el.inert=true;});
     window.babyCostEvent?.('product_compare_open', {selected_count:String(selected.size)});
   });
 
   const closeModal = () => {
     modal.hidden = true;
     document.body.classList.remove('compare-modal-open');
+    document.querySelectorAll('main,header,footer').forEach(el => el.inert=false);
     open.focus();
   };
   closeButtons.forEach((button) => button.addEventListener('click', closeModal));
@@ -278,7 +297,7 @@
     buttons.forEach((button) => {
       button.addEventListener('click', () => {
         const goal = button.dataset.buyGoal || 'unit';
-        buttons.forEach((b) => b.classList.toggle('is-active', b === button));
+        buttons.forEach((b) => {b.classList.toggle('is-active', b === button);b.setAttribute('aria-pressed',b===button?'true':'false');});
         const sortButton = comparison.querySelector('[data-sort-mode="' + goal + '"]');
         sortButton?.click();
 

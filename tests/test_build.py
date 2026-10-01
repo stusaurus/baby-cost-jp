@@ -103,11 +103,11 @@ class BuildTests(unittest.TestCase):
 
     def test_product_compare_ui_is_rendered(self):
         text = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
-        self.assertIn("比較に追加", text)
+        self.assertIn("比較トレーに入れる", text)
         self.assertIn("data-compare-add", text)
         self.assertIn("data-compare-dock", text)
         self.assertIn("data-compare-modal", text)
-        self.assertIn("選んだ商品を比較", text)
+        self.assertIn("トレーの中で、くらべてみよう。", text)
 
     def test_home_has_dynamic_featured_deals(self):
         import json
@@ -149,11 +149,11 @@ class BuildTests(unittest.TestCase):
 
     def test_buying_guide_is_rendered_on_comparison_pages(self):
         text = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
-        self.assertIn("あなたはどんな買い方？", text)
+        self.assertIn("今日はどんな買い方？", text)
         self.assertIn('data-buy-goal="unit"', text)
         self.assertIn('data-buy-goal="price"', text)
         self.assertIn('data-buy-goal="quantity"', text)
-        self.assertIn("まとめ買いしたい", text)
+        self.assertIn("ストック派", text)
         self.assertIn("data-buy-guide-result", text)
 
     def test_price_changes_require_same_product_and_quantity(self):
@@ -241,7 +241,7 @@ class BuildTests(unittest.TestCase):
         ]
         self.assertEqual(product_brand_label(products[0]), "パンパース")
         html = brand_comparison_section(products,"diapers","1枚")
-        self.assertIn("ブランド別に比べる", html)
+        self.assertIn("ブランドの本棚", html)
         self.assertIn("パンパース", html)
         self.assertIn("メリーズ", html)
         self.assertIn("2商品掲載", html)
@@ -280,7 +280,7 @@ class BuildTests(unittest.TestCase):
         from zoneinfo import ZoneInfo
         html=render_brand_page({},category,segment,"パンパース",products,datetime(2026,9,30,12,0,tzinfo=ZoneInfo("Asia/Tokyo")))
         self.assertIn("パンパース",html)
-        self.assertIn("BRAND × SIZE",html)
+        self.assertIn("THE LITTLE BRAND SHOWROOM",html)
         self.assertIn("2商品",html)
         self.assertIn("販売価格帯",html)
         self.assertIn("/diapers/pants/m/pampers/",html)
