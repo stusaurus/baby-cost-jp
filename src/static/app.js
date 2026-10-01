@@ -141,7 +141,7 @@
         const remainingSlots = [...traySlots.querySelectorAll('[data-tray-remove]')];
         const next = remainingSlots[Math.min(index, remainingSlots.length - 1)]
           || buttons.find(button => parse(button).id === id);
-        next?.focus();
+        next?.focus({preventScroll: true});
       }));
     }
     try { sessionStorage.setItem(storageKey, JSON.stringify([...selected.keys()])); } catch (_) {}
@@ -231,7 +231,7 @@
     const firstId = selected.keys().next().value;
     selected.clear();
     sync();
-    buttons.find(button => parse(button).id === firstId)?.focus();
+    buttons.find(button => parse(button).id === firstId)?.focus({preventScroll: true});
   });
   sync();
 })();
