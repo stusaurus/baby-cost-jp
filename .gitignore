@@ -5,3 +5,5 @@ __pycache__/
 .DS_Store
 
 .price-cache/
+
+node_modules/

@@ -4,6 +4,13 @@ import os
 from datetime import date
 from pathlib import Path
 from urllib.parse import quote
+from html.parser import HTMLParser
+
+class RobotsParser(HTMLParser):
+    noindex=False
+    def handle_starttag(self, tag, attrs):
+        a=dict(attrs)
+        if tag=="meta" and a.get("name", "").lower()=="robots" and "noindex" in a.get("content", "").lower(): self.noindex=True
 import xml.etree.ElementTree as ET
 
 SITE_DIR = Path("site")
@@ -17,7 +24,9 @@ if not SITE_DIR.exists():
 urls = []
 for html in sorted(SITE_DIR.rglob("*.html")):
     rel = html.relative_to(SITE_DIR).as_posix()
-    if rel == "404.html":
+    parser=RobotsParser()
+    parser.feed(html.read_text(encoding="utf-8"))
+    if parser.noindex or html.name.startswith("google") or rel == "404.html":
         continue
     if rel == "index.html":
         path = ""

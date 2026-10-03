@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import asdict, dataclass
 import re, unicodedata
+import math
 
 @dataclass(frozen=True)
 class Quantity:
@@ -16,32 +17,50 @@ def norm(v: str) -> str:
     return re.sub(r'\s+',' ',t).strip()
 
 def parse_piece_quantity(title: str):
+    return _parse_quantity(title, '枚', 'piece')
+
+def _parse_quantity(title: str, unit_pattern: str, base_unit: str):
+    """Accept one consistent total; never choose the largest selectable offer."""
     t=norm(title)
-    m=re.search(r'(\d+(?:\.\d+)?)\s*枚\s*[×xX]\s*(\d+)\s*(?:個|袋|パック|箱|セット)?',t)
-    if m:
-        a,b=float(m[1]),int(m[2]); return Quantity(a*b,'piece',m[0],.99,b)
-    m=re.search(r'(\d+(?:\.\d+)?)\s*枚.{0,10}?(\d+)\s*(?:個|袋|パック|箱)\s*(?:セット|組)?',t)
-    if m and int(m[2])>1:
-        a,b=float(m[1]),int(m[2]); return Quantity(a*b,'piece',m[0],.96,b)
-    vals=[(float(m[1]),m[0]) for m in re.finditer(r'(\d+(?:\.\d+)?)\s*枚',t)]
-    if vals:
-        n,e=max(vals,key=lambda x:x[0]); return Quantity(n,'piece',e,.89)
-    return None
+    counts=list(re.finditer(rf'(\d+(?:\.\d+)?)\s*({unit_pattern})',t,re.I))
+    if not counts: return None
+    entries=[]
+    prefix=set(int(m[1]) for m in re.finditer(r'(\d+)\s*(?:個|点|袋|パック|箱|缶)\s*セット',t))
+    for m in counts:
+        n=float(m[1])*(1000 if m[2].lower()=='kg' else 1)
+        if n<=0 or (base_unit=='piece' and not n.is_integer()): return None
+        tail=t[m.end():]
+        mult=re.match(r'(?:入り|入)?\s*[)）]?\s*([×xX]\s*\d+\s*(?:個|点|袋|パック|箱|缶|セット|P)?(?:入|入り)?(?:\s*[×xX]\s*\d+\s*(?:個|点|袋|パック|箱|缶|セット|P)?(?:入|入り)?)*)',tail)
+        p=1; end=0
+        if mult:
+            for a in re.findall(r'[×xX]\s*(\d+)',mult[1]): p*=int(a)
+            end=mult.end()
+        else:
+            bundle=re.match(r'(?:入り|入)?\s*(?:[/／]\s*缶)?\s*(?:[（(][^)]{0,20}[)）])?\s*(?:\d+\s*パック\s*)?[（(]?\s*(\d+)\s*(?:個|袋|パック|箱|缶)(?:セット|組|パック)?',tail)
+            if bundle:
+                p=int(bundle[1]); end=bundle.end()
+                chained=re.match(r'\s*[×xX]\s*(\d+)\s*(?:個|袋|パック|箱|セット)',tail[end:])
+                if chained: p*=int(chained[1]); end+=chained.end()
+        if p<=0: return None
+        entries.append((n,p,m[0]+tail[:end]))
+    explicit=[(n,p,e) for n,p,e in entries if p>1]
+    if explicit:
+        totals={n*p for n,p,e in explicit}
+        if len(totals)!=1: return None
+        total=next(iter(totals)); bases={n for n,p,e in explicit}
+        if any(p==1 and n not in bases and n!=total for n,p,e in entries): return None
+        n,p,e=explicit[0]
+    else:
+        vals={n for n,p,e in entries}
+        if len(vals)!=1 or len(prefix)>1: return None
+        n,_,e=entries[0]; p=next(iter(prefix)) if prefix else 1
+        total=n*p
+        if prefix: e=f'{e} / {p}個セット'
+    if (base_unit=='piece' and total>20000) or (base_unit=='g' and total>100000): return None
+    return Quantity(total,base_unit,e,.99 if p>1 else .89,p)
 
 def parse_weight_quantity(title: str):
-    t=norm(title)
-    m=re.search(r'(\d+(?:\.\d+)?)\s*(kg|g)\s*[×xX]\s*(\d+)\s*(?:個|缶|袋|箱|パック|セット)?',t,re.I)
-    if m:
-        n=float(m[1])*(1000 if m[2].lower()=='kg' else 1); p=int(m[3]); return Quantity(n*p,'g',m[0],.99,p)
-    m=re.search(r'(\d+(?:\.\d+)?)\s*(kg|g).{0,10}?(\d+)\s*(?:個|缶|袋|箱|パック)',t,re.I)
-    if m and int(m[3])>1:
-        n=float(m[1])*(1000 if m[2].lower()=='kg' else 1); p=int(m[3]); return Quantity(n*p,'g',m[0],.96,p)
-    vals=[]
-    for m in re.finditer(r'(\d+(?:\.\d+)?)\s*(kg|g)',t,re.I):
-        n=float(m[1])*(1000 if m[2].lower()=='kg' else 1); vals.append((n,m[0]))
-    if vals:
-        n,e=max(vals,key=lambda x:x[0]); return Quantity(n,'g',e,.89)
-    return None
+    return _parse_quantity(title, 'kg|g', 'g')
 
 BRANDS=[
  ('P&G','パンパース',['パンパース']),('花王','メリーズ',['メリーズ']),('ユニ・チャーム','ムーニー',['ムーニー','moony']),
@@ -163,9 +182,13 @@ def _diaper_selection_issue(title: str, supplemental_text: str='') -> str:
 
 def parse_for_segment_detailed(title: str, parser: str, segment: dict, supplemental_text: str=''):
     t=norm(title); low=t.lower()
+    combined=norm(f'{t} {supplemental_text}')
+    if re.search(r'定期(?:購入|便|コース)|初回(?:限定|価格)|初めての方限定|お試し|試供品|ふるさと納税|福袋',combined): return None,'conditional_offer'
+    if re.search(r'(?:枚数|個数|パック数|容量|数量).{0,12}(?:選べ|選択|お選び)|(?:選べ|選択|お選び).{0,12}(?:枚数|個数|パック数|容量|数量)',combined): return None,'selectable_quantity'
     if any(x in low for x in ['介護','大人用','犬用','猫用','ペット用']): return None,'excluded_scope'
     maker,brand=identify_brand(t); attrs={}
     if parser=='diapers':
+        if re.search(r'夜用|ぐっすり|水遊び|水あそび|トレーニング',t): return None,'special_diaper_variant'
         issue=_diaper_selection_issue(t, supplemental_text)
         if issue: return None,issue
         type_mentions=diaper_type_mentions(t); size_mentions=diaper_size_mentions(t); counted_sizes=diaper_size_count_mentions(t)
@@ -189,15 +212,16 @@ def parse_for_segment_detailed(title: str, parser: str, segment: dict, supplemen
         attrs={'type':got_type,'size':got_size,'fit_stage':stage}
     elif parser=='wipes':
         if 'おしりふき' not in t and 'おしり拭き' not in t: return None,'not_wipes'
-        if any(x in t for x in ['手口','手・口','除菌','トイレに流せる','流せるタイプ']): return None,'excluded_wipes_variant'
-        q=parse_piece_quantity(t); attrs={'variant':'standard'}
+        if any(x in t for x in ['手口','手・口','除菌','流せる']): return None,'excluded_wipes_variant'
+        q=parse_piece_quantity(t); attrs={'variant':'thick' if '厚手' in t else 'unspecified'}
     elif parser=='formula':
-        if 'ミルク' not in t and not brand: return None,'not_formula'
+        if not re.search(r'粉ミルク|乳児用(?:調整粉乳|ミルク)|ほほえみ|はぐくみ|はいはい|ぴゅあ|すこやか|E赤ちゃん|アイクレオ.*バランスミルク',t,re.I): return None,'not_formula'
         if any(x in low for x in ['液体','フォローアップ','ぐんぐん','チルミル','ステップ','たっち','アレルギー','特殊ミルク','治療用']): return None,'excluded_formula_variant'
-        q=parse_weight_quantity(t); attrs={'stage':'infant'}
+        q=parse_weight_quantity(t); attrs={'stage':'infant','product_type':'powder','age_note':'対象月齢・調乳方法は販売ページとメーカー表示を確認'}
     elif parser=='diaper_bags':
         if not (('おむつ' in t or 'オムツ' in t) and any(x in t for x in ['袋','バッグ','bag','BAG'])): return None,'not_diaper_bag'
         if any(x in t for x in ['カセット','ゴミ箱本体','本体のみ']): return None,'excluded_diaper_bag_variant'
+        if len(set(re.findall(r'(?<![A-Za-z])(?:SS|S|M|L|LL)\s*(?:サイズ)?(?=\s*\d+枚|サイズ)',t,re.I)))>1: return None,'selectable_bag_size'
         q=parse_piece_quantity(t)
     else: raise ValueError(parser)
     if not q: return None,'quantity_unparsed'
@@ -209,7 +233,7 @@ def parse_for_segment(title: str, parser: str, segment: dict, supplemental_text:
 
 def unit_price(price_yen, metric, quantity):
     price=float(price_yen or 0); total=float(quantity.get('total') or 0)
-    if price<=0 or total<=0: return None
+    if not math.isfinite(price) or not math.isfinite(total) or price<=0 or total<=0: return None
     if metric=='per_piece' and quantity.get('base_unit')=='piece': return price/total
     if metric=='per_100g' and quantity.get('base_unit')=='g': return price/total*100
     return None

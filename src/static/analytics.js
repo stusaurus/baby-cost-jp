@@ -48,6 +48,11 @@
     });
   }, true);
 
+  document.addEventListener('toggle', (event) => {
+    const stage = event.target;
+    if(stage.matches?.('[data-growth-stage]') && stage.open) send('growth_stage_select', {growth_stage:stage.dataset.growthStage, page_path:location.pathname});
+  }, true);
+
   function affiliate(event) {
     if (event.type === 'auxclick' && event.button !== 1) return;
     const target = event.target?.closest ? event.target : event.target?.parentElement;
@@ -57,7 +62,7 @@
       affiliate: link.dataset.affiliate || '', conversion_source: inheritedSource || 'comparison_result', category_id: link.dataset.categoryId || '',
       product_name: (link.dataset.productName || '').slice(0,100), product_id: link.dataset.productId || '',
       size: link.dataset.size || '', product_type: link.dataset.productType || '', unit_metric: link.dataset.unitMetric || '',
-      unit_price: Number(link.dataset.unitPrice || 0), rank: Number(link.dataset.rank || 0), click_position: link.dataset.clickPosition || '',
+      unit_price: Number(link.dataset.unitPrice || 0), rank: Number(link.closest('.product')?.querySelector('.rank')?.textContent || link.dataset.rank || 0), click_position: link.dataset.clickPosition || '',
       link_url: link.href, page_path: location.pathname, transport_type:'beacon'
     };
     send('product_result_click', data);

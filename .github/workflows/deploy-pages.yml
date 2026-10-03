@@ -33,6 +33,14 @@ jobs:
             baby-cost-price-history-
       - name: Run tests
         run: python -m unittest discover -s tests -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Test shopping interactions
+        run: |
+          npm ci --ignore-scripts
+          npm test
       - name: Build live comparison pages
         env:
           RAKUTEN_APPLICATION_ID: ${{ secrets.RAKUTEN_APPLICATION_ID }}
@@ -45,6 +53,8 @@ jobs:
         env:
           SITE_URL: https://stusaurus.github.io/baby-cost-jp/
         run: python scripts/generate_seo_files.py
+      - name: Validate generated pages and product quality
+        run: python scripts/validate_site.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

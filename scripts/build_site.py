@@ -266,7 +266,7 @@ def _canonical_product_name(name: str) -> str:
 
 
 def _audit_append(audit: list[dict] | None, reason: str, item: dict):
-    if audit is None or reason not in QUALITY_AUDIT_REASONS:
+    if audit is None:
         return
     audit.append({
         "reason": reason,
@@ -529,6 +529,7 @@ def main(fixture: bool = False, pages: int = 2):
     write_page(SITE_DIR / "index.html", render_home(categories, snapshots, featured_deals, price_drops, recent_trends, updated_at))
     write_page(SITE_DIR / "diapers" / "index.html", render_diaper_index(categories, updated_at))
     write_page(SITE_DIR / "method" / "index.html", render_method())
+    write_page(SITE_DIR / "404.html", '<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,follow"><title>ページが見つかりません</title><h1>ページが見つかりません</h1><p>比較条件をトップページから選び直してください。</p><a href="'+SITE_URL+'">ベビーコスパ比較へ</a></html>')
 
     (SITE_DIR / "data").mkdir(parents=True, exist_ok=True)
     (SITE_DIR / "data" / "latest.json").write_text(json.dumps(latest, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -571,6 +572,10 @@ def main(fixture: bool = False, pages: int = 2):
         f"  <url><loc>{url}</loc><lastmod>{lastmod}</lastmod></url>" for url in unique_urls
     ) + "\n</urlset>\n"
     (SITE_DIR / "sitemap.xml").write_text(sitemap, encoding="utf-8")
+
+    if not fixture:
+        from scripts.validate_site import validate
+        validate(SITE_DIR, previous=previous_latest)
 
     print("QUALITY_AUDIT_COUNTS")
     for segment_id, stats in quality_audit["segments"].items():

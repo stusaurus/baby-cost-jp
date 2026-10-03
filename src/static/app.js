@@ -353,7 +353,8 @@
 
     const apply = (brand) => {
       products.forEach((card) => {
-        card.hidden = !!brand && card.dataset.brand !== brand;
+        card.dataset.brandHidden = (!!brand && card.dataset.brand !== brand) ? '1' : '0';
+        card.hidden = card.dataset.brandHidden === '1' || card.dataset.savedHidden === '1';
       });
       buttons.forEach((button) => {button.classList.toggle('is-active', button.dataset.brandFilter === brand);button.setAttribute('aria-pressed',button.dataset.brandFilter === brand?'true':'false');});
       clear.hidden = !brand;
@@ -379,3 +380,33 @@
 
 // Expand the nearby condition selector before following its page link.
 document.querySelectorAll('a[href="#condition-change"]').forEach(link => link.addEventListener('click',()=>{const box=document.getElementById('condition-change');if(box)box.open=true;}));
+
+(() => {
+  const buttons = [...document.querySelectorAll('[data-save-id]')];
+  const filter = document.querySelector('[data-saved-only]');
+  const status = document.querySelector('[data-saved-status]');
+  const key = 'baby_cost_saved_v1';
+  let saved = new Set(), only = false, persisted = true;
+  try { const ids = JSON.parse(localStorage.getItem(key) || '[]'); if(Array.isArray(ids)) saved = new Set(ids.filter(id => typeof id === 'string').slice(-300)); } catch (_) { persisted = false; }
+  const sync = () => {
+    let present = 0;
+    buttons.forEach(button => {
+      const active = saved.has(button.dataset.saveId);
+      if(active) present++;
+      button.setAttribute('aria-pressed', String(active));
+      button.textContent = active ? '保存済み・外す' : '保存する';
+      const card = button.closest('.product');
+      if(card) {card.dataset.savedHidden = (only && !active) ? '1':'0'; card.hidden = card.dataset.savedHidden === '1' || card.dataset.brandHidden === '1';}
+    });
+    if(status) status.textContent = `${present}商品を保存中。${persisted ? 'この端末に保存・価格はページ更新時に確認。' : 'この画面の間だけ保存できます。'}${only && !present ? '保存した掲載商品はありません。全商品表示に戻して選べます。' : ''}`;
+  };
+  buttons.forEach(button => button.addEventListener('click', () => {
+    const id = button.dataset.saveId;
+    if(saved.has(id)) saved.delete(id); else saved.add(id);
+    try { localStorage.setItem(key,JSON.stringify([...saved].slice(-300))); } catch (_) { persisted = false; }
+    window.babyCostEvent?.('product_save', {product_id:id, saved:saved.has(id) ? '1':'0', page_path:location.pathname});
+    sync();
+  }));
+  filter?.addEventListener('click', () => { only = !only; filter.setAttribute('aria-pressed',String(only));filter.textContent=only?'全商品を表示する':'保存した商品だけ見る';sync(); });
+  sync();
+})();
