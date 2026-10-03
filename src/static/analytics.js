@@ -1,15 +1,30 @@
 (() => {
-  const ROOT = '/baby-cost-jp/';
   const TEST_KEY = 'baby_cost_operator_test_v1';
   const SITE_ID = window.BABY_COST?.siteId || 'baby_cost_jp';
   const NAV_KEY = 'baby_cost_feature_navigation_v1';
   const params = new URLSearchParams(location.search);
   let inheritedSource = '';
+  let journey = {};
   try {
     const nav = JSON.parse(sessionStorage.getItem(NAV_KEY) || 'null');
     sessionStorage.removeItem(NAV_KEY);
-    if (nav && nav.target === location.pathname && Date.now() - Number(nav.at || 0) < 30 * 60 * 1000) inheritedSource = String(nav.source || '');
+    const age = Date.now() - Number(nav?.at || 0);
+    if (nav && nav.target === location.pathname && age >= 0 && age < 30 * 60 * 1000) {
+      inheritedSource = String(nav.source || '');
+      const origin = String(nav.journey_origin || inheritedSource);
+      journey = {journey_origin:origin};
+      if (origin.startsWith('growth_')) journey.growth_stage = origin.slice(7);
+    }
   } catch (_) {}
+  // Carry attribution only along an explicit same-tab navigation, never all future visits.
+  window.babyCostNavigation = (source, href) => {
+    try {
+      const url = new URL(href, location.href);
+      if (url.origin !== location.origin) return;
+      const origin = source.startsWith('growth_') ? source : (journey.journey_origin || source);
+      sessionStorage.setItem(NAV_KEY, JSON.stringify({source, target:url.pathname, at:Date.now(), journey_origin:origin}));
+    } catch (_) {}
+  };
   let operator = window.BABY_COST_OPERATOR_TEST === true;
   if (!operator) { try { operator = localStorage.getItem(TEST_KEY) === '1'; } catch (_) {} }
   if (params.get('test') === '1' || params.get('test') === '0') {
@@ -20,7 +35,9 @@
   }
   const send = (name, data = {}) => {
     if (typeof window.gtag !== 'function') return;
-    const payload = {site_id:SITE_ID, ...data};
+    const comparison = document.querySelector('[data-comparison]');
+    const context = comparison ? {category_id:comparison.dataset.categoryId || '', size:comparison.dataset.size || '', product_type:comparison.dataset.productType || ''} : {};
+    const payload = {site_id:SITE_ID, page_path:location.pathname, ...context, ...journey, ...data};
     if (operator) payload.operator_test = '1';
     window.gtag('event', name, payload);
   };
@@ -37,12 +54,7 @@
     const link = target?.closest('a[data-nav-source]');
     if (!link) return;
     const source = link.dataset.navSource || '';
-    try {
-      const url = new URL(link.href, location.href);
-      if (url.origin === location.origin) {
-        sessionStorage.setItem(NAV_KEY, JSON.stringify({source, target:url.pathname, at:Date.now()}));
-      }
-    } catch (_) {}
+    window.babyCostNavigation(source, link.href);
     if (link.dataset.categoryId) send('category_select', {
       category_id: link.dataset.categoryId, conversion_source: source, page_path: location.pathname
     });

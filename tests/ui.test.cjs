@@ -3,10 +3,11 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {JSDOM}=require('jsdom');
 const base='https://stusaurus.github.io/baby-cost-jp/';
-function setup(path, storage={}) {
+function setup(path, storage={}, session={}) {
  const dom=new JSDOM(fs.readFileSync('site/'+path,'utf8'),{url:base+path.replace('index.html',''),runScripts:'outside-only'});
  const w=dom.window;const events=[];w.gtag=(...args)=>events.push(args);
  for(const [key,value] of Object.entries(storage))w.localStorage.setItem(key,value);
+ for(const [key,value] of Object.entries(session))w.sessionStorage.setItem(key,value);
  w.eval(fs.readFileSync('src/static/analytics.js','utf8'));w.eval(fs.readFileSync('src/static/app.js','utf8'));
  return {dom,w,doc:w.document,events};
 }
@@ -49,4 +50,24 @@ test('affiliate event carries attribution and operator test, once per click',()=
 test('growth selection tracked on disclosure open',()=>{
  const {w,doc,events}=setup('index.html');const details=doc.querySelector('[data-growth-stage]');details.open=true;details.dispatchEvent(new w.Event('toggle'));
  assert(events.some(x=>x[1]==='growth_stage_select' && x[2].growth_stage==='newborn'));w.close();
+});
+test('growth origin survives the category and selector journey, with save context',()=>{
+ const key='baby_cost_feature_navigation_v1';
+ const first=setup('diapers/index.html',{}, {[key]:JSON.stringify({source:'growth_early',target:'/baby-cost-jp/diapers/',at:Date.now()})});
+ first.w.babyCostNavigation('diaper_selector',base+'diapers/pants/m/');
+ const nav=first.w.sessionStorage.getItem(key);first.w.close();
+ const {w,doc,events}=setup('diapers/pants/m/index.html',{}, {[key]:nav});
+ assert.equal(w.sessionStorage.getItem(key),null);
+ doc.querySelector('[data-save-id]').click();
+ const a=doc.querySelector('[data-affiliate]');a.addEventListener('click',e=>e.preventDefault());a.click();
+ const click=events.find(x=>x[1]==='affiliate_click')[2];
+ assert.equal(click.conversion_source,'diaper_selector');assert.equal(click.journey_origin,'growth_early');assert.equal(click.growth_stage,'early');
+ const save=events.find(x=>x[1]==='product_save')[2];assert.equal(save.category_id,'diapers');assert.equal(save.size,'m');
+ w.close();
+});
+test('expired, future and wrong-target attribution does not contaminate direct visits',()=>{
+ for(const nav of [{at:Date.now()-1800001,target:'/baby-cost-jp/diapers/pants/m/'},{at:Date.now()+10000,target:'/baby-cost-jp/diapers/pants/m/'},{at:Date.now(),target:'/baby-cost-jp/wipes/'}]){
+  const {w,events}=setup('diapers/pants/m/index.html',{}, {'baby_cost_feature_navigation_v1':JSON.stringify({...nav,source:'growth_early'})});
+  assert.equal(events.find(x=>x[1]==='comparison_view')[2].growth_stage,undefined);w.close();
+ }
 });

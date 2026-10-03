@@ -55,7 +55,7 @@
       const row = segments.find((x) => x.type === selectedType && x.size === selectedSize);
       if (!row) return;
       window.babyCostEvent?.('comparison_filter_submit', {category_id:'diapers', product_type:selectedType, size:selectedSize, conversion_source:'diaper_selector'});
-      try { sessionStorage.setItem('baby_cost_feature_navigation_v1', JSON.stringify({source:'diaper_selector', target:new URL(row.url, location.href).pathname, at:Date.now()})); } catch (_) {}
+      window.babyCostNavigation?.('diaper_selector', row.url);
       location.href = row.url || root + 'diapers/' + selectedType + '/' + selectedSize + '/';
     });
 
@@ -358,6 +358,7 @@
       });
       buttons.forEach((button) => {button.classList.toggle('is-active', button.dataset.brandFilter === brand);button.setAttribute('aria-pressed',button.dataset.brandFilter === brand?'true':'false');});
       clear.hidden = !brand;
+      document.dispatchEvent(new Event('baby-cost-filter-change'));
       if (brand) {
         window.babyCostEvent?.('brand_filter_select', {
           category_id: comparison.dataset.categoryId || '',
@@ -398,7 +399,8 @@ document.querySelectorAll('a[href="#condition-change"]').forEach(link => link.ad
       const card = button.closest('.product');
       if(card) {card.dataset.savedHidden = (only && !active) ? '1':'0'; card.hidden = card.dataset.savedHidden === '1' || card.dataset.brandHidden === '1';}
     });
-    if(status) status.textContent = `${present}商品を保存中。${persisted ? 'この端末に保存・価格はページ更新時に確認。' : 'この画面の間だけ保存できます。'}${only && !present ? '保存した掲載商品はありません。全商品表示に戻して選べます。' : ''}`;
+    const visible = buttons.filter(button => !button.closest('.product')?.hidden).length;
+    if(status) status.textContent = `${present}商品を保存中。${persisted ? 'この端末に保存・価格はページ更新時に確認。' : 'この画面の間だけ保存できます。'}${!visible ? '現在の条件に合う商品はありません。保存表示・ブランドの絞り込みを解除して確認してください。' : ''}`;
   };
   buttons.forEach(button => button.addEventListener('click', () => {
     const id = button.dataset.saveId;
@@ -408,5 +410,6 @@ document.querySelectorAll('a[href="#condition-change"]').forEach(link => link.ad
     sync();
   }));
   filter?.addEventListener('click', () => { only = !only; filter.setAttribute('aria-pressed',String(only));filter.textContent=only?'全商品を表示する':'保存した商品だけ見る';sync(); });
+  document.addEventListener('baby-cost-filter-change', sync);
   sync();
 })();
