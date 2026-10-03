@@ -25,6 +25,7 @@ class CompletionTests(unittest.TestCase):
     def test_special_and_conditional_products_excluded(self):
         for title,parser,seg in [('おしりふき 流せる 60枚×15個','wipes',{}),('おしりふき 80枚×20個 初回限定','wipes',{}),('パンツ Mサイズ 夜用 32枚','diapers',{'type':'pants','size':'m'}),('ミルク泡立て器 800g','formula',{}),('おむつ 防臭袋 S100枚 L200枚','diaper_bags',{})]:
             self.assertIsNone(parse_for_segment(title,parser,seg),title)
+        self.assertIsNone(parse_for_segment('おむつ 新生児用 72枚','diapers',{'type':'tape','size':'newborn'}))
         self.assertIsNone(parse_for_segment('おしりふき 80枚×20個','wipes',{},'パック数を選べます'))
         self.assertEqual(parse_for_segment('おしりふき 厚手 80枚×20個','wipes',{})['attributes']['variant'],'thick')
 

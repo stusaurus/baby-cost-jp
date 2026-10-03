@@ -25,8 +25,8 @@ def display_product_name(name: str) -> str:
     """Remove obvious campaign noise for display without changing product identity/data."""
     text=str(name or '').strip()
     prefix_patterns=[
-        r'^\s*[【\[][^】\]]*(?:ポイント|クーポン|エントリー|最安値|激アツ|本日|サンプルCP)[^】\]]*[】\]]\s*',
-        r'^\s*＼[^／]*(?:ポイント|クーポン|エントリー|最安値|激アツ|本日|サンプルCP)[^／]*／\s*',
+        r'^\s*[【\[][^】\]]*(?:ポイント|クーポン|エントリー|最安値|激アツ|本日|サンプルCP|マラソン|スーパーSALE)[^】\]]*[】\]]\s*',
+        r'^\s*＼[^／]*(?:ポイント|クーポン|エントリー|最安値|激アツ|本日|サンプルCP|マラソン|スーパーSALE)[^／]*／\s*',
     ]
     changed=True
     while changed:

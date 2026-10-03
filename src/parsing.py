@@ -202,7 +202,6 @@ def parse_for_segment_detailed(title: str, parser: str, segment: dict, supplemen
             got_size='big_plus'
         else:
             got_size=''
-        if not got_type and exp_type=='tape' and got_size=='newborn': got_type='tape'
         if not got_type: return None,'missing_diaper_type'
         if not got_size: return None,'missing_diaper_size'
         if got_type!=exp_type: return None,'diaper_type_mismatch'
@@ -216,7 +215,7 @@ def parse_for_segment_detailed(title: str, parser: str, segment: dict, supplemen
         q=parse_piece_quantity(t); attrs={'variant':'thick' if '厚手' in t else 'unspecified'}
     elif parser=='formula':
         if not re.search(r'粉ミルク|乳児用(?:調整粉乳|ミルク)|ほほえみ|はぐくみ|はいはい|ぴゅあ|すこやか|E赤ちゃん|アイクレオ.*バランスミルク',t,re.I): return None,'not_formula'
-        if any(x in low for x in ['液体','フォローアップ','ぐんぐん','チルミル','ステップ','たっち','アレルギー','特殊ミルク','治療用']): return None,'excluded_formula_variant'
+        if any(x in low for x in ['液体','キューブ','スティック','フォローアップ','ぐんぐん','チルミル','ステップ','たっち','アレルギー','特殊ミルク','治療用']): return None,'excluded_formula_variant'
         q=parse_weight_quantity(t); attrs={'stage':'infant','product_type':'powder','age_note':'対象月齢・調乳方法は販売ページとメーカー表示を確認'}
     elif parser=='diaper_bags':
         if not (('おむつ' in t or 'オムツ' in t) and any(x in t for x in ['袋','バッグ','bag','BAG'])): return None,'not_diaper_bag'

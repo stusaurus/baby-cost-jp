@@ -19,6 +19,7 @@ from src.config import DATA_DIR, SITE_DIR, SITE_URL, load_categories  # noqa: E4
 from src.parsing import norm, parse_for_segment_detailed, unit_price  # noqa: E402
 from src.rakuten import fetch_items  # noqa: E402
 from src.render import (  # noqa: E402
+    display_product_name,
     brand_slug,
     product_brand_label,
     render_brand_page,
@@ -261,7 +262,7 @@ def history_trend_candidate(product: dict, category_id: str, category: dict, seg
 
 
 def _canonical_product_name(name: str) -> str:
-    text = norm(name).lower()
+    text = norm(display_product_name(name)).lower()
     return re.sub(r"[^0-9a-zぁ-んァ-ヶ一-龯]+", "", text)
 
 
@@ -560,11 +561,6 @@ def main(fixture: bool = False, pages: int = 2):
         "segments": history_segments,
     }
     (SITE_DIR / "data" / "price-history.json").write_text(json.dumps(price_history, ensure_ascii=False, indent=2), encoding="utf-8")
-    if not fixture:
-        cache_dir = ROOT / ".price-cache"
-        cache_dir.mkdir(parents=True, exist_ok=True)
-        (cache_dir / "latest.json").write_text(json.dumps(latest, ensure_ascii=False, indent=2), encoding="utf-8")
-        (cache_dir / "price-history.json").write_text(json.dumps(price_history, ensure_ascii=False, indent=2), encoding="utf-8")
     (SITE_DIR / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}sitemap.xml\n", encoding="utf-8")
     unique_urls = list(dict.fromkeys(sitemap_urls))
     lastmod = updated_at.date().isoformat()
@@ -576,6 +572,12 @@ def main(fixture: bool = False, pages: int = 2):
     if not fixture:
         from scripts.validate_site import validate
         validate(SITE_DIR, previous=previous_latest)
+
+    if not fixture:
+        cache_dir = ROOT / ".price-cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        (cache_dir / "latest.json").write_text(json.dumps(latest, ensure_ascii=False, indent=2), encoding="utf-8")
+        (cache_dir / "price-history.json").write_text(json.dumps(price_history, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print("QUALITY_AUDIT_COUNTS")
     for segment_id, stats in quality_audit["segments"].items():
