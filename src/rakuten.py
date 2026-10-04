@@ -16,7 +16,7 @@ AFFILIATE_ID = os.environ.get("RAKUTEN_AFFILIATE_ID", "").strip()
 _LAST_REQUEST_AT = 0.0
 
 
-def _throttle(min_interval: float = 1.05):
+def _throttle(min_interval: float = 1.35):
     global _LAST_REQUEST_AT
     elapsed = time.monotonic() - _LAST_REQUEST_AT
     if elapsed < min_interval:
@@ -106,20 +106,34 @@ def fetch_items(keyword: str, pages: int = 2) -> list[dict]:
             },
         )
         last_error = None
-        for attempt in range(3):
+        max_attempts = 5
+        for attempt in range(max_attempts):
             try:
                 with urllib.request.urlopen(request, timeout=30) as response:
                     payload = json.loads(response.read().decode("utf-8"))
                 last_error = None
                 break
             except urllib.error.HTTPError as exc:
-                # Parameter/auth errors are deterministic; keep the API response so the workflow is diagnosable.
+                # Rakuten may briefly rate-limit otherwise valid scheduled builds.
+                # Retry 429 and transient 5xx responses with conservative backoff;
+                # deterministic auth/parameter errors still fail immediately.
+                if exc.code == 429 or 500 <= exc.code < 600:
+                    if attempt < max_attempts - 1:
+                        retry_after = exc.headers.get("Retry-After", "") if exc.headers else ""
+                        try:
+                            retry_after_seconds = float(retry_after)
+                        except (TypeError, ValueError):
+                            retry_after_seconds = 0.0
+                        delay = max(retry_after_seconds, 1.5 * (attempt + 1))
+                        time.sleep(delay)
+                        _throttle(1.35)
+                        continue
                 last_error = _http_error(exc)
                 break
             except Exception as exc:  # network/API transient errors are retried by scheduled build
                 last_error = exc
-                if attempt < 2:
-                    time.sleep(1.2 * (attempt + 1))
+                if attempt < max_attempts - 1:
+                    time.sleep(1.5 * (attempt + 1))
         if last_error:
             raise last_error
         rows = payload.get("Items") or payload.get("items") or []
