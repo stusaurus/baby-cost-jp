@@ -22,6 +22,9 @@
       const url = new URL(href, location.href);
       if (url.origin !== location.origin) return;
       const origin = source.startsWith('growth_') ? source : (journey.journey_origin || source);
+      if (source.startsWith('growth_')) {
+        journey = {journey_origin:source, growth_stage:source.slice(7)};
+      }
       sessionStorage.setItem(NAV_KEY, JSON.stringify({source, target:url.pathname, at:Date.now(), journey_origin:origin}));
     } catch (_) {}
   };
