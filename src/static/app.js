@@ -110,7 +110,14 @@
     price: Number(button.dataset.comparePrice || 0),
     quantity: button.dataset.compareQuantity || '',
     image: button.dataset.compareImage || '',
-    rank: Number(button.dataset.compareRank || 0)
+    rank: Number(button.dataset.compareRank || 0),
+    url: button.dataset.compareUrl || '',
+    category: button.dataset.compareCategory || '',
+    productName: button.dataset.compareProductName || button.dataset.compareName || '',
+    productId: button.dataset.compareProductId || button.dataset.compareId || '',
+    size: button.dataset.compareSize || '',
+    productType: button.dataset.compareProductType || '',
+    unitMetric: button.dataset.compareUnitMetric || ''
   });
 
   const sync = () => {
@@ -161,7 +168,9 @@
         '<h3>' + item.name.replace(/[&<>"']/g,(m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])) + '</h3>' +
         '<dl><div><dt>単価</dt><dd>¥' + (item.unit < 100 ? item.unit.toFixed(1) : Math.round(item.unit).toLocaleString('ja-JP')) + '<small> / ' + item.unitLabel + '</small></dd></div>' +
         '<div><dt>販売価格</dt><dd>¥' + Math.round(item.price).toLocaleString('ja-JP') + '</dd></div>' +
-        '<div><dt>内容量</dt><dd>' + item.quantity + '</dd></div></dl></article>';
+        '<div><dt>内容量</dt><dd>' + escapeHtml(item.quantity) + '</dd></div></dl>' +
+        (item.url ? '<a class="compare-buy" href="' + escapeHtml(item.url) + '" target="_blank" rel="nofollow sponsored noopener" data-affiliate="rakuten" data-category-id="' + escapeHtml(item.category) + '" data-product-name="' + escapeHtml(item.productName) + '" data-product-id="' + escapeHtml(item.productId) + '" data-size="' + escapeHtml(item.size) + '" data-product-type="' + escapeHtml(item.productType) + '" data-unit-metric="' + escapeHtml(item.unitMetric) + '" data-unit-price="' + item.unit + '" data-rank="' + item.rank + '" data-click-position="compare_modal">楽天で価格・在庫を見る <span aria-hidden="true">→</span></a>' : '') +
+        '</article>';
     }).join('');
   };
 
@@ -412,4 +421,38 @@ document.querySelectorAll('a[href="#condition-change"]').forEach(link => link.ad
   filter?.addEventListener('click', () => { only = !only; filter.setAttribute('aria-pressed',String(only));filter.textContent=only?'全商品を表示する':'保存した商品だけ見る';sync(); });
   document.addEventListener('baby-cost-filter-change', sync);
   sync();
+})();
+
+
+(() => {
+  document.querySelectorAll('[data-growth-guide]').forEach((guide) => {
+    const buttons = [...guide.querySelectorAll('[data-growth-stage-button]')];
+    const panels = [...guide.querySelectorAll('[data-growth-panel]')];
+    const selection = guide.querySelector('[data-growth-selection]');
+    if (!buttons.length || !panels.length) return;
+
+    const choose = (button) => {
+      const stage = button.dataset.growthStageButton || '';
+      buttons.forEach((b) => {
+        const active = b === button;
+        b.classList.toggle('is-active', active);
+        b.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      panels.forEach((panel) => { panel.hidden = panel.dataset.growthPanel !== stage; });
+      if (selection) selection.textContent = button.querySelector('b')?.textContent || '選択中';
+      window.babyCostEvent?.('growth_stage_select', {growth_stage:stage, interaction:'guided_finder'});
+      guide.querySelector('[data-growth-panel="' + stage + '"]')?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'nearest'
+      });
+    };
+
+    buttons.forEach((button) => button.addEventListener('click', () => choose(button)));
+    guide.querySelectorAll('[data-growth-need]').forEach((link) => link.addEventListener('click', () => {
+      window.babyCostEvent?.('growth_need_select', {
+        growth_stage: link.dataset.growthStageValue || '',
+        category_id: link.dataset.growthNeed || ''
+      });
+    }));
+  });
 })();
