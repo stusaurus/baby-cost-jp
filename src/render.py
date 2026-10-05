@@ -123,7 +123,7 @@ def growth_finder():
     stage_buttons=[]
     panels=[]
     for key,label,heading,copy,show_formula in rows:
-        stage_buttons.append(f'''<button type="button" class="growth-stage-button" data-growth-stage-button="{key}" aria-controls="growth-panel-{key}" aria-pressed="false"><small>STEP 1</small><b>{label}</b><span>選ぶ →</span></button>''')
+        stage_buttons.append(f'''<button type="button" class="growth-stage-button" data-growth-stage-button="{key}" data-growth-stage="{key}" aria-controls="growth-panel-{key}" aria-pressed="false"><small>STEP 1</small><b>{label}</b><span>選ぶ →</span></button>''')
         needs=[
             ('diapers','#diaper-selector','紙おむつ','タイプ・サイズを選んで比較'),
             ('wipes',f'{SITE_URL}wipes/','おしりふき','1枚あたりの候補を見る'),
