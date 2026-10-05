@@ -30,12 +30,15 @@ test('save survives reopening and saved-only filter restores full listing',()=>{
  doc.querySelector('[data-saved-only]').click();
  assert.equal([...doc.querySelectorAll('.product')].filter(x=>!x.hidden).length,2);w.close();
 });
-test('comparison dialog opens, closes with Escape and restores focus',()=>{
- const {w,doc}=setup('diapers/pants/m/index.html');
+test('comparison dialog opens, offers Rakuten CTA, closes with Escape and restores focus',()=>{
+ const {w,doc,events}=setup('diapers/pants/m/index.html');
  [...doc.querySelectorAll('[data-compare-add]')].forEach(x=>x.click());
  doc.querySelector('[data-compare-open]').click();
  assert.equal(doc.querySelector('[data-compare-modal]').hidden,false);
  assert.equal(doc.querySelectorAll('.compare-column').length,2);
+ assert.equal(doc.querySelectorAll('.compare-buy[data-affiliate=rakuten]').length,2);
+ const buy=doc.querySelector('.compare-buy[data-affiliate=rakuten]');buy.addEventListener('click',e=>e.preventDefault());buy.click();
+ assert(events.some(x=>x[1]==='affiliate_click' && x[2].click_position==='compare_modal'));
  doc.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape'}));
  assert.equal(doc.querySelector('[data-compare-modal]').hidden,true);
  assert.equal(doc.activeElement,doc.querySelector('[data-compare-open]'));w.close();
@@ -47,8 +50,10 @@ test('affiliate event carries attribution and operator test, once per click',()=
  assert.equal(sent[0][2].operator_test,'1');assert.equal(sent[0][2].category_id,'diapers');assert.equal(sent[0][2].conversion_source,'comparison_result');
  w.close();
 });
-test('growth selection tracked on disclosure open',()=>{
- const {w,doc,events}=setup('index.html');const details=doc.querySelector('[data-growth-stage]');details.open=true;details.dispatchEvent(new w.Event('toggle'));
+test('guided growth selection reveals needs and is tracked',()=>{
+ const {w,doc,events}=setup('index.html');const button=doc.querySelector('[data-growth-stage-button=newborn]');button.click();
+ assert.equal(button.getAttribute('aria-pressed'),'true');
+ assert.equal(doc.querySelector('[data-growth-panel=newborn]').hidden,false);
  assert(events.some(x=>x[1]==='growth_stage_select' && x[2].growth_stage==='newborn'));w.close();
 });
 test('growth origin survives the category and selector journey, with save context',()=>{
