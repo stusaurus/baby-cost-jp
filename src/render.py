@@ -384,6 +384,33 @@ def render_brand_page(categories, category, segment, brand_label, products, upda
     return shell(title,desc,body,canonical,False)
 
 
+def comparison_decision_notes(category_id, products, metric):
+    """Offer data-backed reasons to distinguish per-unit price from checkout cost."""
+    if len(products) < 2:
+        return ''
+    unit_choice = min(products, key=lambda x: x['unit_price'])
+    checkout_choice = min(products, key=lambda x: int(x['price_yen']))
+    choice_note = (
+        'この条件では、最安単価の商品と支払総額が最小の商品は同じです。'
+        if unit_choice is checkout_choice
+        else '最安単価の商品と支払総額が最小の商品は異なります。必要な枚数・容量も確認してください。'
+    )
+    guidance = {
+        'diapers': ('同じテープ／パンツ・サイズにそろえた上で1枚単価を確認します。成長段階だけで判断せず、メーカーの体重目安やフィットも確認してください。', 'おしりふきの1枚単価も比べる', SITE_URL + 'wipes/'),
+        'wipes': ('厚手・薄手やシート寸法は1枚単価だけでは比較できません。用途の違いと購入する総枚数も確認してください。', '紙おむつのサイズ別比較を見る', SITE_URL + 'diapers/'),
+        'formula': ('100gあたりの価格は栄養面の評価ではありません。対象月齢、調乳方法、原材料はメーカー表示を確認してください。', '紙おむつのサイズ別比較を見る', SITE_URL + 'diapers/'),
+        'diaper_bags': ('1枚単価と袋の大きさは別の条件です。普段捨てる量に合う容量かも、商品仕様で確かめてください。', 'おしりふきの1枚単価も比べる', SITE_URL + 'wipes/'),
+    }
+    caution, related_label, related_url = guidance[category_id]
+    return f'''<section class="home-section comparison-decision-guide" aria-label="安さの見分け方">
+<div class="section-kicker">HOW TO CHOOSE</div>
+<h2>{esc(metric)}単価と、今回の支払総額を比べる</h2>
+<p>このページの掲載{len(products)}商品では、最も低い{esc(metric)}単価は<strong>{yen(unit_choice['unit_price'])}</strong>、今回の支払総額が最小の候補は<strong>¥{int(checkout_choice['price_yen']):,}</strong>です。{choice_note}</p>
+<p>{esc(caution)}</p>
+<p><a href="{esc(related_url)}">{esc(related_label)} →</a></p>
+</section>'''
+
+
 def render_comparison(categories, category_id, category, segment, products, updated_at):
     label=segment['label']; metric=METRIC[category['metric']]; noindex=len(products)<2
     if products:
@@ -412,7 +439,7 @@ def render_comparison(categories, category_id, category, segment, products, upda
     mascot_tip=comparison_mascot_tip(category_id,len(products))
     snapshot=price_snapshot(products,metric)
     savings=diaper_savings_simulator(products) if category_id=='diapers' else ''
-    body=f'''<section class="page-head comparison-page-head comparison-page-head--{category_id}">{back}{head_visual}<div class="section-kicker">PRICE COMPARISON</div><h1>{esc(label)}<br><span>コスパ比較</span></h1><p>{metric}あたりの価格を、同じ条件にそろえて比較します。</p>{meta}</section>{mascot_tip}{suitability_note(category_id,segment)}<section class="comparison" data-comparison data-category-id="{category_id}" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-result-count="{len(products)}">{answer}{snapshot}{'<details class="condition-disclosure" id="condition-change"><summary>条件を変更する</summary>'+selector_html+'</details>' if selector_html else ''}<nav class="comparison-nav" aria-label="比較ページ内"><a href="#products">商品を見る ↓</a>{'<a href="#condition-change">条件を変更</a><a href="#brand-section">ブランド</a>' if category_id=='diapers' else ''}</nav>{buying_guide()}<section class="view-switcher" data-view-switcher><div><div class="section-kicker">VIEW</div><h2>比べ方を切り替える</h2><p>同じ掲載商品を、目的に合わせて並べ替えます。</p></div><div class="view-buttons" role="group" aria-label="商品の並べ替え"><button type="button" class="is-active" data-sort-mode="unit">単価が安い</button><button type="button" data-sort-mode="price">支払総額が安い</button><button type="button" data-sort-mode="quantity">大容量</button></div></section><div class="saved-tools"><button type="button" data-saved-only aria-pressed="false">保存した商品だけ見る</button><span data-saved-status aria-live="polite">保存はこの端末で利用できます</span></div><h2 class="result-title"><span>ランキング</span> <b data-result-sort-label>単価が安い順</b></h2><div class="products" id="products" data-sortable-products>{cards}</div><div id="brand-section">{brand_comparison_section(products,category_id,metric,segment)}</div>{savings}<details class="extra-comparison"><summary>上位を早見・価格履歴を確認</summary>{quick_compare(products)}</details>{compare_panel()}</section>{health_note}<section class="method-note method-note-visual"><div><div class="section-kicker">HOW IT WORKS</div><h2>この順位に入る条件</h2><p>楽天APIで送料込み／送料無料条件に絞り、数量と条件を確認できた商品だけを単価換算しています。紙おむつはサイズ選択式やタイプ不明の商品を除外。ポイント・クーポンは順位に含めません。</p><a href="{SITE_URL}method/">詳しい比較方法を見る →</a></div></section><p class="updated">更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    body=f'''<section class="page-head comparison-page-head comparison-page-head--{category_id}">{back}{head_visual}<div class="section-kicker">PRICE COMPARISON</div><h1>{esc(label)}<br><span>コスパ比較</span></h1><p>{metric}あたりの価格を、同じ条件にそろえて比較します。</p>{meta}</section>{mascot_tip}{suitability_note(category_id,segment)}<section class="comparison" data-comparison data-category-id="{category_id}" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-result-count="{len(products)}">{answer}{snapshot}{comparison_decision_notes(category_id, products, metric)}{'<details class="condition-disclosure" id="condition-change"><summary>条件を変更する</summary>'+selector_html+'</details>' if selector_html else ''}<nav class="comparison-nav" aria-label="比較ページ内"><a href="#products">商品を見る ↓</a>{'<a href="#condition-change">条件を変更</a><a href="#brand-section">ブランド</a>' if category_id=='diapers' else ''}</nav>{buying_guide()}<section class="view-switcher" data-view-switcher><div><div class="section-kicker">VIEW</div><h2>比べ方を切り替える</h2><p>同じ掲載商品を、目的に合わせて並べ替えます。</p></div><div class="view-buttons" role="group" aria-label="商品の並べ替え"><button type="button" class="is-active" data-sort-mode="unit">単価が安い</button><button type="button" data-sort-mode="price">支払総額が安い</button><button type="button" data-sort-mode="quantity">大容量</button></div></section><div class="saved-tools"><button type="button" data-saved-only aria-pressed="false">保存した商品だけ見る</button><span data-saved-status aria-live="polite">保存はこの端末で利用できます</span></div><h2 class="result-title"><span>ランキング</span> <b data-result-sort-label>単価が安い順</b></h2><div class="products" id="products" data-sortable-products>{cards}</div><div id="brand-section">{brand_comparison_section(products,category_id,metric,segment)}</div>{savings}<details class="extra-comparison"><summary>上位を早見・価格履歴を確認</summary>{quick_compare(products)}</details>{compare_panel()}</section>{health_note}<section class="method-note method-note-visual"><div><div class="section-kicker">HOW IT WORKS</div><h2>この順位に入る条件</h2><p>楽天APIで送料込み／送料無料条件に絞り、数量と条件を確認できた商品だけを単価換算しています。紙おむつはサイズ選択式やタイプ不明の商品を除外。ポイント・クーポンは順位に含めません。</p><a href="{SITE_URL}method/">詳しい比較方法を見る →</a></div></section><p class="updated">更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     if category_id=='diapers':
         title=f'おむつ {TYPE[segment["type"]]}タイプ {SIZE[segment["size"]]}サイズ｜1枚あたり価格比較'
         desc=f'紙おむつの{TYPE[segment["type"]]}タイプ・{SIZE[segment["size"]]}サイズを、送料込み対象の1枚あたり価格で比較。枚数・支払総額・ブランド別の価格も確認できます。'

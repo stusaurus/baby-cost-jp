@@ -45,6 +45,13 @@ class BuildTests(unittest.TestCase):
         self.assertIn("サイズ選択式やタイプ不明の商品を除外", text)
         self.assertIn("楽天で価格・在庫を見る", text)
 
+    def test_comparison_explains_unit_cost_versus_checkout_and_links_related_category(self):
+        text = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
+        self.assertIn("単価と、今回の支払総額を比べる", text)
+        self.assertIn("おしりふきの1枚単価も比べる", text)
+        self.assertIn("今回の支払総額が最小の候補", text)
+        self.assertIn("https://stusaurus.github.io/baby-cost-jp/wipes/", text)
+
     def test_home_explains_quality_and_surfaces_live_price(self):
         text = (ROOT / "site/index.html").read_text(encoding="utf-8")
         self.assertIn("選択式商品は除外", text)
