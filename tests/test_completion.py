@@ -47,6 +47,9 @@ class CompletionTests(unittest.TestCase):
         self.assertIn('BreadcrumbList',m)
         sitemap=(ROOT/'site/sitemap.xml').read_text()
         self.assertNotIn('/diapers/tape/newborn/',sitemap)
+        self.assertNotIn('<lastmod>',sitemap)
+        wipes=(ROOT/'site/wipes/index.html').read_text()
+        self.assertIn('用途の異なる商品を混ぜずに比較',wipes)
         self.assertTrue((ROOT/'site/404.html').exists())
 
     def test_quality_gate_catches_mismatch(self):

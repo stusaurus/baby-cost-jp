@@ -418,7 +418,12 @@ def render_comparison(categories, category_id, category, segment, products, upda
         desc=f'紙おむつの{TYPE[segment["type"]]}タイプ・{SIZE[segment["size"]]}サイズを、送料込み対象の1枚あたり価格で比較。枚数・支払総額・ブランド別の価格も確認できます。'
     else:
         title=f'{label} 1{ "枚" if category["metric"]=="per_piece" else "00g"}あたり価格比較'
-        desc=f'{label}を{metric}あたりに換算して価格比較。'
+        search_notes = {
+            'wipes': 'シートの枚数と支払総額をそろえ、用途の異なる商品を混ぜずに比較します。',
+            'formula': '内容量と送料込み対象の価格をそろえます。栄養・体質との相性は価格順位に含めません。',
+            'diaper_bags': '袋の枚数と販売価格をそろえ、サイズ・容量を確認できた商品を比較します。',
+        }
+        desc=f'{label}を{metric}あたりで価格比較。{search_notes.get(category_id, "数量・送料条件を確認できた商品を比較します。")}'
     return shell(title,desc,body,segment_url(category,segment),noindex)
 
 def render_method():
