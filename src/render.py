@@ -71,7 +71,7 @@ def selector(categories, current_type='', current_size=''):
     return f'''<section class="selector visual-selector" id="diaper-selector" data-segments='{esc(json.dumps(segs,ensure_ascii=False))}' data-current-type="{esc(current_type)}" data-current-size="{esc(current_size)}">
       <div class="selector-heading"><div><div class="section-kicker">DIAPER FINDER</div><h2>紙おむつの売り場</h2><p class="section-lead">タイプとサイズをそろえて、1枚あたりで比べます。</p></div></div>
       <div class="filter-label">タイプ</div><div class="type-chips" role="group" aria-label="おむつタイプ"><button type="button" class="filter-chip type-chip" data-value="pants">{icon_svg("diapers")}<span>パンツ</span><small>はくタイプ</small></button><button type="button" class="filter-chip type-chip" data-value="tape">{icon_svg("diapers")}<span>テープ</span><small>とめるタイプ</small></button></div>
-      <div class="filter-label">サイズ</div><div class="size-chips" role="group" aria-label="おむつサイズ"></div><p class="fit-note">月齢だけでサイズは決まりません。メーカーの体重目安と、脚まわり・お腹のフィットを確認してください。</p><noscript><a href="{SITE_URL}diapers/">タイプ・サイズの一覧から選ぶ</a></noscript>
+      <div class="filter-label">サイズ</div><div class="size-chips" role="group" aria-label="おむつサイズ"></div><p class="fit-note">月齢だけでサイズは決まりません。メーカーの体重目安と、脚まわり・お腹のフィットを確認してください。</p><p class="fit-note"><a href="{SITE_URL}diapers/">タイプ・サイズ別の価格一覧を見る →</a></p>
       <button id="diaper-go" class="selector-go">この条件で比較する <span>→</span></button>
     </section>'''
 def _home_price(snapshot, metric):
@@ -159,12 +159,33 @@ def render_home(categories, snapshots, deals, price_drops, recent_trends, update
     return shell('ベビー用品コスパ比較 | 1枚・100g単価で比較','今のわが子に必要な消耗品を月齢・成長から発見。おむつはテープ・パンツとサイズ別、おしりふきは1枚、乳児用粉ミルクは100g単価で比較します。',body,SITE_URL)
 
 
-def render_diaper_index(categories, updated_at):
+def diaper_price_overview(categories, snapshots):
+    rows = []
+    for segment in categories['diapers']['segments']:
+        snapshot = (snapshots or {}).get(segment['id'])
+        products = snapshot.get('products', []) if snapshot is not None else []
+        count = str(len(products)) + '商品' if snapshot is not None else '未確認'
+        if len(products) >= 2:
+            unit = yen(min(p['unit_price'] for p in products)) + ' / 枚'
+            total = '¥' + format(min(int(p['price_yen']) for p in products), ',')
+        else:
+            unit = total = '比較準備中' if snapshot is not None else '未確認'
+        label = TYPE[segment['type']] + '・' + SIZE[segment['size']]
+        rows.append(f'<tr><th scope="row"><a href="{segment_url(categories["diapers"], segment)}">{esc(label)}</a></th><td>{count}</td><td>{unit}</td><td>{total}</td></tr>')
+    return f'''<section class="home-section diaper-price-overview">
+<div class="section-kicker">PRICE BY SIZE</div><h2>おむつのタイプ・サイズ別 価格早見表</h2>
+<p>今使っているタイプとサイズの行から、送料込み対象の1枚単価と支払総額を確認できます。異なるサイズ同士の安さランキングではありません。</p>
+<p class="small">表は横にスクロールできます。</p><div class="seo-table-scroll" role="region" aria-label="タイプ・サイズ別の価格表。横にスクロールできます" tabindex="0"><table class="seo-data-table"><caption>掲載商品内の最小値。1枚単価と支払総額は、別の商品になる場合があります。</caption><thead><tr><th scope="col">タイプ・サイズ</th><th scope="col">確認済み商品</th><th scope="col">最小1枚単価</th><th scope="col">最小支払総額</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>
+<p>1枚単価は「送料込み対象の価格 ÷ 総枚数」。商品が2件未満の条件では比較価格を表示しません。ポイント・クーポンは含みません。枚数・ブランド・フィットは各比較ページと販売店で確認してください。</p>
+</section>'''
+
+
+def render_diaper_index(categories, updated_at, snapshots=None):
     rows=[]
     for s in categories['diapers']['segments']:
         rows.append(f'<a class="choice choice--{s["type"]}" data-nav-source="diaper_index" data-category-id="diapers" href="{segment_url(categories["diapers"],s)}"><span class="choice-type">{TYPE[s["type"]]}</span><b>{SIZE[s["size"]]}</b><span>1枚あたりを見る →</span></a>')
-    body=f'''<section class="page-head diaper-head"><a href="{SITE_URL}">← トップ</a><div class="section-kicker">DIAPERS</div><h1>紙おむつを<br>1枚あたりで比較</h1><p>テープ／パンツとサイズをそろえた商品だけを比較します。</p>{trust_strip()}</section>{selector(categories)}<section class="home-section"><h2>すべての比較条件</h2><div class="choices">{''.join(rows)}</div></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
-    return shell('紙おむつ 1枚あたり価格比較','テープ・パンツ、サイズ別に紙おむつの1枚あたり価格を比較。',body,f'{SITE_URL}diapers/')
+    body=f'''<section class="page-head diaper-head"><a href="{SITE_URL}">← トップ</a><div class="section-kicker">DIAPERS</div><h1>紙おむつを<br>1枚あたりで比較</h1><p>テープ／パンツとサイズをそろえた商品だけを比較します。</p>{trust_strip()}</section>{selector(categories)}{diaper_price_overview(categories, snapshots)}<section class="home-section"><h2>すべての比較条件</h2><div class="choices">{''.join(rows)}</div></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    return shell('おむつの価格比較｜テープ・パンツ・サイズ別の1枚単価','おむつをテープ・パンツとサイズ別に比較。送料込み対象の1枚単価、支払総額、確認済み商品数を一覧で確認し、同じ条件の商品を選べます。',body,f'{SITE_URL}diapers/')
 
 
 def compare_panel():

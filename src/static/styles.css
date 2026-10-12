@@ -62,3 +62,14 @@
  .compare-column{padding:14px}.compare-cell-image{height:145px}.compare-buy{font-size:11px;min-height:48px}
 }
 @media(max-width:360px){.growth-stage-button b{font-size:13px}.growth-need-grid{grid-template-columns:1fr}.growth-need{min-height:96px}.product-actions .cta{font-size:12px}.product-actions .save-product,.product-actions .compare-add{font-size:9px}}
+
+/* Scroll only the comparison table, preserving the existing shop layout. */
+.seo-table-scroll{max-width:100%;overflow-x:auto;margin:20px 0;overscroll-behavior-inline:contain}
+.seo-data-table{width:100%;min-width:560px;border-collapse:collapse;text-align:left;font-size:14px}
+.seo-data-table caption{text-align:left;padding:0 0 12px;font-size:12px;line-height:1.8}
+.seo-data-table th,.seo-data-table td{padding:14px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.seo-data-table thead{background:#f2eee5}.seo-data-table a{display:inline-block;padding:8px 0}
+.diaper-price-overview p{font-size:14px;line-height:1.9}
+.seo-table-scroll:focus-visible{outline:2px solid currentColor;outline-offset:4px}
+
+.seo-data-table tbody th{position:sticky;left:0;background:#faf8f2;z-index:1}
