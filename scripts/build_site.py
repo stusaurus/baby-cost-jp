@@ -528,7 +528,7 @@ def main(fixture: bool = False, pages: int = 2):
     latest["brand_pages"] = brand_pages
 
     write_page(SITE_DIR / "index.html", render_home(categories, snapshots, featured_deals, price_drops, recent_trends, updated_at))
-    write_page(SITE_DIR / "diapers" / "index.html", render_diaper_index(categories, updated_at))
+    write_page(SITE_DIR / "diapers" / "index.html", render_diaper_index(categories, updated_at, latest["categories"]))
     write_page(SITE_DIR / "method" / "index.html", render_method())
     write_page(SITE_DIR / "404.html", '<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,follow"><title>ページが見つかりません</title><h1>ページが見つかりません</h1><p>比較条件をトップページから選び直してください。</p><a href="'+SITE_URL+'">ベビーコスパ比較へ</a></html>')
 

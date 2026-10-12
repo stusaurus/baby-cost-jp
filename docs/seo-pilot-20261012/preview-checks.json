@@ -1,0 +1,200 @@
+[
+  {
+    "path": "baby-cost-jp/",
+    "mode": "preview",
+    "width": 320,
+    "status": 200,
+    "title": "ベビー用品コスパ比較 | 1枚・100g単価で比較",
+    "h1": 1,
+    "canonical": "https://stusaurus.github.io/baby-cost-jp/",
+    "robots": "index,follow",
+    "scroll": 320,
+    "tableRows": 0,
+    "brokenImages": 0,
+    "navigation": [
+      {
+        "domContentLoadedMs": 32,
+        "transferSize": 20217
+      }
+    ],
+    "overflowElements": [],
+    "tableScrollWorks": null,
+    "errors": []
+  },
+  {
+    "path": "baby-cost-jp/diapers/",
+    "mode": "preview",
+    "width": 320,
+    "status": 200,
+    "title": "おむつの価格比較｜テープ・パンツ・サイズ別の1枚単価",
+    "h1": 1,
+    "canonical": "https://stusaurus.github.io/baby-cost-jp/diapers/",
+    "robots": "index,follow",
+    "scroll": 320,
+    "tableRows": 9,
+    "brokenImages": 0,
+    "navigation": [
+      {
+        "domContentLoadedMs": 41,
+        "transferSize": 11777
+      }
+    ],
+    "overflowElements": [],
+    "tableScrollWorks": true,
+    "errors": []
+  },
+  {
+    "path": "baby-cost-jp/diapers/pants/m/",
+    "mode": "preview",
+    "width": 320,
+    "status": 200,
+    "title": "おむつ パンツタイプ Mサイズ｜1枚あたり価格比較",
+    "h1": 1,
+    "canonical": "https://stusaurus.github.io/baby-cost-jp/diapers/pants/m/",
+    "robots": "index,follow",
+    "scroll": 320,
+    "tableRows": 0,
+    "brokenImages": 0,
+    "navigation": [
+      {
+        "domContentLoadedMs": 134,
+        "transferSize": 22344
+      }
+    ],
+    "overflowElements": [],
+    "tableScrollWorks": null,
+    "errors": []
+  },
+  {
+    "path": "baby-cost-jp/",
+    "mode": "preview",
+    "width": 390,
+    "status": 200,
+    "title": "ベビー用品コスパ比較 | 1枚・100g単価で比較",
+    "h1": 1,
+    "canonical": "https://stusaurus.github.io/baby-cost-jp/",
+    "robots": "index,follow",
+    "scroll": 390,
+    "tableRows": 0,
+    "brokenImages": 0,
+    "navigation": [
+      {
+        "domContentLoadedMs": 110,
+        "transferSize": 20217
+      }
+    ],
+    "overflowElements": [],
+    "tableScrollWorks": null,
+    "errors": []
+  },
+  {
+    "path": "baby-cost-jp/diapers/",
+    "mode": "preview",
+    "width": 390,
+    "status": 200,
+    "title": "おむつの価格比較｜テープ・パンツ・サイズ別の1枚単価",
+    "h1": 1,
+    "canonical": "https://stusaurus.github.io/baby-cost-jp/diapers/",
+    "robots": "index,follow",
+    "scroll": 390,
+    "tableRows": 9,
+    "brokenImages": 0,
+    "navigation": [
+      {
+        "domContentLoadedMs": 36,
+        "transferSize": 11777
+      }
+    ],
+    "overflowElements": [],
+    "tableScrollWorks": true,
+    "errors": []
+  },
+  {
+    "path": "baby-cost-jp/diapers/pants/m/",
+    "mode": "preview",
+    "width": 390,
+    "status": 200,
+    "title": "おむつ パンツタイプ Mサイズ｜1枚あたり価格比較",
+    "h1": 1,
+    "canonical": "https://stusaurus.github.io/baby-cost-jp/diapers/pants/m/",
+    "robots": "index,follow",
+    "scroll": 390,
+    "tableRows": 0,
+    "brokenImages": 0,
+    "navigation": [
+      {
+        "domContentLoadedMs": 108,
+        "transferSize": 22344
+      }
+    ],
+    "overflowElements": [],
+    "tableScrollWorks": null,
+    "errors": []
+  },
+  {
+    "path": "baby-cost-jp/",
+    "mode": "preview",
+    "width": 1440,
+    "status": 200,
+    "title": "ベビー用品コスパ比較 | 1枚・100g単価で比較",
+    "h1": 1,
+    "canonical": "https://stusaurus.github.io/baby-cost-jp/",
+    "robots": "index,follow",
+    "scroll": 1440,
+    "tableRows": 0,
+    "brokenImages": 0,
+    "navigation": [
+      {
+        "domContentLoadedMs": 105,
+        "transferSize": 20217
+      }
+    ],
+    "overflowElements": [],
+    "tableScrollWorks": null,
+    "errors": []
+  },
+  {
+    "path": "baby-cost-jp/diapers/",
+    "mode": "preview",
+    "width": 1440,
+    "status": 200,
+    "title": "おむつの価格比較｜テープ・パンツ・サイズ別の1枚単価",
+    "h1": 1,
+    "canonical": "https://stusaurus.github.io/baby-cost-jp/diapers/",
+    "robots": "index,follow",
+    "scroll": 1440,
+    "tableRows": 9,
+    "brokenImages": 0,
+    "navigation": [
+      {
+        "domContentLoadedMs": 20,
+        "transferSize": 11777
+      }
+    ],
+    "overflowElements": [],
+    "tableScrollWorks": null,
+    "errors": []
+  },
+  {
+    "path": "baby-cost-jp/diapers/pants/m/",
+    "mode": "preview",
+    "width": 1440,
+    "status": 200,
+    "title": "おむつ パンツタイプ Mサイズ｜1枚あたり価格比較",
+    "h1": 1,
+    "canonical": "https://stusaurus.github.io/baby-cost-jp/diapers/pants/m/",
+    "robots": "index,follow",
+    "scroll": 1440,
+    "tableRows": 0,
+    "brokenImages": 0,
+    "navigation": [
+      {
+        "domContentLoadedMs": 31,
+        "transferSize": 22344
+      }
+    ],
+    "overflowElements": [],
+    "tableScrollWorks": null,
+    "errors": []
+  }
+]
