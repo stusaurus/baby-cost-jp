@@ -3,14 +3,61 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {JSDOM}=require('jsdom');
 const base='https://stusaurus.github.io/baby-cost-jp/';
-function setup(path, storage={}, session={}) {
- const dom=new JSDOM(fs.readFileSync('site/'+path,'utf8'),{url:base+path.replace('index.html',''),runScripts:'outside-only'});
+function setup(path, storage={}, session={}, suffix='') {
+ const dom=new JSDOM(fs.readFileSync('site/'+path,'utf8'),{url:base+path.replace('index.html','')+suffix,runScripts:'outside-only'});
  const w=dom.window;const events=[];w.gtag=(...args)=>events.push(args);
+ w.matchMedia=()=>({matches:false});
+ w.HTMLElement.prototype.scrollIntoView=()=>{};
  for(const [key,value] of Object.entries(storage))w.localStorage.setItem(key,value);
  for(const [key,value] of Object.entries(session))w.sessionStorage.setItem(key,value);
  w.eval(fs.readFileSync('src/static/analytics.js','utf8'));w.eval(fs.readFileSync('src/static/app.js','utf8'));
  return {dom,w,doc:w.document,events};
 }
+
+test('M-pants comparison link restores only current page catalog data in a fresh session',async()=>{
+ const a=setup('diapers/pants/m/index.html',{}, {}, '?test=1&unrelated=private');
+ [...a.doc.querySelectorAll('[data-compare-add]')].slice(0,2).forEach(x=>x.click());
+ a.doc.querySelector('[data-compare-open]').click();
+ let copied='';Object.defineProperty(a.w.navigator,'clipboard',{value:{writeText:async text=>{copied=text;}}});
+ a.doc.querySelector('[data-compare-share]').click();await new Promise(resolve=>setImmediate(resolve));
+ assert(copied.startsWith(base+'diapers/pants/m/#compare='));
+ assert.equal(new URL(copied).search,'');
+ assert(!copied.includes('rakuten')&&!copied.includes('private'));
+ assert.match(a.doc.querySelector('[data-compare-share-status]').textContent,/コピーしました/);
+ const b=setup('diapers/pants/m/index.html',{}, {},new URL(copied).hash);
+ assert.equal(b.doc.querySelector('[data-compare-modal]').hidden,false);
+ assert.equal(b.doc.querySelectorAll('.compare-column').length,2);
+ const original=[...a.doc.querySelectorAll('.compare-buy')].map(x=>[x.href,x.dataset.unitPrice]);
+ assert.deepEqual([...b.doc.querySelectorAll('.compare-buy')].map(x=>[x.href,x.dataset.unitPrice]),original);
+ const calls=b.events.filter(x=>x[1]==='affiliate_click');assert.equal(calls.length,0);
+ a.w.close();b.w.close();
+});
+test('unavailable shared IDs are not fabricated and malformed/oversized lists are rejected',()=>{
+ const initial=setup('diapers/pants/m/index.html');const id=initial.doc.querySelector('[data-compare-id]').dataset.compareId;initial.w.close();
+ const hash=ids=>'#'+new URLSearchParams({compare:JSON.stringify(ids)}).toString();
+ const a=setup('diapers/pants/m/index.html',{}, {},hash([id,'not-current']));
+ assert.equal(a.doc.querySelector('[data-compare-modal]').hidden,true);
+ assert.match(a.doc.querySelector('[data-compare-import-status]').textContent,/一部は現在掲載されていません/);
+ assert.equal(a.doc.querySelectorAll('[data-compare-add][aria-pressed=true]').length,1);a.w.close();
+ for(const ids of [[id,id],['<img src=x onerror=alert(1)>','x'],[id,'2','3','4'],{url:'https://example.com'}]){
+  const b=setup('diapers/pants/m/index.html',{}, {},hash(ids));
+  assert.equal(b.doc.querySelector('[data-compare-modal]').hidden,true);
+  assert.equal(b.doc.querySelectorAll('.compare-column').length,0);
+  assert.equal(b.doc.querySelector('img[src=x]'),null);b.w.close();
+ }
+});
+test('clipboard denial leaves a selectable link and removing a candidate clears stale links',async()=>{
+ const {w,doc}=setup('diapers/pants/m/index.html');
+ [...doc.querySelectorAll('[data-compare-add]')].slice(0,2).forEach(x=>x.click());doc.querySelector('[data-compare-open]').click();
+ Object.defineProperty(w.navigator,'clipboard',{value:{writeText:async()=>{throw new Error('denied');}}});
+ doc.querySelector('[data-compare-share]').click();await new Promise(resolve=>setImmediate(resolve));
+ const input=doc.querySelector('[data-compare-share-url]');assert(!input.hidden);assert.equal(doc.activeElement,input);assert.equal(input.selectionEnd,input.value.length);
+ doc.querySelector('[data-compare-close]').click();doc.querySelector('[data-tray-remove]').click();
+ assert.equal(input.value,'');assert(input.hidden);w.close();
+});
+test('share controls are limited to the M-pants all-brand page',()=>{
+ const {w,doc}=setup('wipes/index.html');assert.equal(doc.querySelector('[data-compare-share]'),null);w.close();
+});
 test('type and size selection includes newborn only under tape',()=>{
  const {w,doc,events}=setup('index.html');
  doc.querySelector('[data-value=tape]').click();

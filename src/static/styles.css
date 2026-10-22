@@ -73,3 +73,8 @@
 .seo-table-scroll:focus-visible{outline:2px solid currentColor;outline-offset:4px}
 
 .seo-data-table tbody th{position:sticky;left:0;background:#faf8f2;z-index:1}
+/* A comparison can be passed to family without saving prices or personal data. */
+.comparison-share{margin:1rem 0;padding:1rem;border:1px solid #d8ded6;border-radius:12px;background:#f7faf5}
+.comparison-share button{min-height:44px;padding:.6rem 1rem;border:1px solid #58735b;border-radius:8px;background:#fff;color:#294c35;cursor:pointer}
+.comparison-share label{display:block;margin-top:.6rem;font-size:.9rem}.comparison-share input{display:block;width:100%;box-sizing:border-box;min-height:44px;margin-top:.4rem;padding:.5rem;font-size:16px}.comparison-share input[hidden]{display:none}
+.comparison-share p:empty{display:none}.compare-import-status{padding:1rem;overflow-wrap:anywhere}

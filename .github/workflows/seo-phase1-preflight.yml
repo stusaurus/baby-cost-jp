@@ -23,3 +23,18 @@ jobs:
           npm test
           test -f site/sitemap.xml
           if grep -q '<lastmod>' site/sitemap.xml; then echo "Unverified lastmod found"; exit 1; fi
+      - name: Check shared comparison against published product snapshot
+        env:
+          PLAYWRIGHT_MODULE: /tmp/share-qa/node_modules/playwright
+          LIGHTHOUSE_MODULE: /tmp/share-qa/node_modules/lighthouse/core/index.js
+          CHROME_LAUNCHER_MODULE: /tmp/share-qa/node_modules/chrome-launcher/dist/index.js
+        run: |
+          npm install --prefix /tmp/share-qa --no-audit --no-fund playwright@1.56.1 lighthouse@12.8.2 chrome-launcher@1.2.1
+          /tmp/share-qa/node_modules/.bin/playwright install --with-deps chromium
+          node scripts/check_shared_comparison.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-comparison-evidence
+          path: shared-comparison-evidence
+          if-no-files-found: error

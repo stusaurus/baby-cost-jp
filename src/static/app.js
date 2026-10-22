@@ -93,6 +93,9 @@
   const count = document.querySelector('[data-compare-count]');
   const open = document.querySelector('[data-compare-open]');
   const clear = document.querySelector('[data-compare-clear]');
+  const share = document.querySelector('[data-compare-share]');
+  const shareUrl = document.querySelector('[data-compare-share-url]');
+  const shareStatus = document.querySelector('[data-compare-share-status]');
   const modal = document.querySelector('[data-compare-modal]');
   const table = document.querySelector('[data-compare-table]');
   const closeButtons = [...document.querySelectorAll('[data-compare-close]')];
@@ -121,6 +124,8 @@
   });
 
   const sync = () => {
+    if (shareUrl) {shareUrl.hidden = true; shareUrl.value = '';}
+    if (shareStatus) shareStatus.textContent = '';
     buttons.forEach((button) => {
       const item = parse(button);
       const active = selected.has(item.id);
@@ -230,7 +235,7 @@
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !modal.hidden) closeModal();
     if (event.key === 'Tab' && !modal.hidden) {
-      const focusable = [...modal.querySelectorAll('button:not([disabled]),a[href]')];
+      const focusable = [...modal.querySelectorAll('button:not([disabled]),a[href],input:not([hidden])')];
       const first = focusable[0], last = focusable[focusable.length-1];
       if (event.shiftKey && document.activeElement === first) {event.preventDefault(); last?.focus();}
       else if (!event.shiftKey && document.activeElement === last) {event.preventDefault(); first?.focus();}
@@ -243,6 +248,55 @@
     buttons.find(button => parse(button).id === firstId)?.focus({preventScroll: true});
   });
   sync();
+
+  // Share only catalog identities, never prices, affiliate destinations or profile data.
+  // Fragments do not create additional indexable search-result URLs.
+  const shareLink = () => {
+    const canonical = document.querySelector('link[rel="canonical"]')?.href;
+    if (!canonical || selected.size < 2) return null;
+    const link = new URL(canonical, location.href);
+    if (link.origin !== location.origin || link.pathname !== location.pathname) return null;
+    link.search = '';
+    link.hash = new URLSearchParams({compare: JSON.stringify([...selected.keys()])}).toString();
+    return link.href;
+  };
+  share?.addEventListener('click', async () => {
+    const link = shareLink();
+    if (!link || !shareUrl || !shareStatus) return;
+    shareUrl.value = link;
+    shareUrl.hidden = false;
+    try {
+      await navigator.clipboard.writeText(link);
+      shareStatus.textContent = '比較リンクをコピーしました。';
+    } catch (_) {
+      shareStatus.textContent = 'コピーできない場合は、下のリンク欄を選択してコピーしてください。';
+      shareUrl.focus();
+      shareUrl.select();
+    }
+  });
+  if (share && location.hash.startsWith('#compare=') && location.hash.length <= 2000) {
+    const status = document.querySelector('[data-compare-import-status]');
+    try {
+      const ids = JSON.parse(new URLSearchParams(location.hash.slice(1)).get('compare'));
+      if (!Array.isArray(ids) || ids.length < 2 || ids.length > 3 || new Set(ids).size !== ids.length || ids.some(id => typeof id !== 'string' || id.length > 256)) throw new Error('Invalid comparison');
+      selected.clear();
+      ids.forEach(id => {
+        const button = buttons.find(button => button.dataset.compareId === id);
+        if (button) selected.set(id, parse(button));
+      });
+      sync();
+      if (status) {
+        status.hidden = false;
+        status.textContent = selected.size === ids.length
+          ? '共有された候補を、現在の掲載価格・数量で表示しています。'
+          : '共有候補の一部は現在掲載されていません。現在掲載中の候補だけを表示します。';
+      }
+      if (selected.size >= 2) {open.click(); if (shareStatus && status) shareStatus.textContent = status.textContent;}
+      else status?.focus();
+    } catch (_) {
+      if (status) {status.hidden = false; status.textContent = '比較リンクを読み込めませんでした。掲載商品から候補を選び直してください。';}
+    }
+  }
 })();
 
 
