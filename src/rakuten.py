@@ -91,7 +91,7 @@ def fetch_items(keyword: str, pages: int = 2) -> list[dict]:
             # Keep the MVP ranking honest: compare offers that the API can restrict to postage included/free shipping.
             "postageFlag": 1,
             # catchcopy/itemCaption are used only as quality evidence for selectable-size/type detection.
-            "elements": "itemName,catchcopy,itemCaption,itemPrice,itemUrl,affiliateUrl,itemCode,shopName,mediumImageUrls,smallImageUrls,reviewCount",
+            "elements": "itemName,catchcopy,itemCaption,itemPrice,itemUrl,affiliateUrl,itemCode,shopName,mediumImageUrls,smallImageUrls,reviewCount,postageFlag",
         }
         if AFFILIATE_ID:
             params["affiliateId"] = AFFILIATE_ID
@@ -141,6 +141,12 @@ def fetch_items(keyword: str, pages: int = 2) -> list[dict]:
             normalized = _normalize(raw)
             if not normalized:
                 continue
+            # The request's postageFlag=1 is verified provenance, not a title guess.
+            # Output postageFlag has different semantics (0=included, 1=excluded).
+            item = raw.get("Item", raw)
+            normalized["shipping_basis"] = (
+                "rakuten_postage_filter" if item.get("postageFlag") in (None, 0, "0") else "unknown"
+            )
             key = normalized["source_id"] or f'{normalized["name"]}|{normalized["price_yen"]}|{normalized["shop"]}'
             if key in seen:
                 continue

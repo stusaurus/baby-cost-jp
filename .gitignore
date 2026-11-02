@@ -7,3 +7,6 @@ __pycache__/
 .price-cache/
 
 node_modules/
+
+purchase-planner-evidence/
+shared-comparison-evidence/
