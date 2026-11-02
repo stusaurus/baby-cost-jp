@@ -33,6 +33,8 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
   return {...p,url:p.affiliate_url,image:b.dataset.compareImage,
    shipping_basis:Object.hasOwn(p,'shipping_basis')?p.shipping_basis:'rakuten_postage_filter'};
  });
+ const imageCache=new Map();
+ await Promise.all(products.map(async p=>{if(!p.image)return;try{const r=await fetch(p.image,{signal:AbortSignal.timeout(15000)});if(r.ok)imageCache.set(p.image,{body:Buffer.from(await r.arrayBuffer()),contentType:r.headers.get('content-type')||'image/jpeg'})}catch(_){}}));
  const render=spawnSync('python',['scripts/render_purchase_preview.py'],{input:JSON.stringify({products,generated_at:snapshot.generated_at}),encoding:'utf8'});
  assert.equal(render.status,0,render.stderr);
  const after=render.stdout,newDOM=new JSDOM(after);
@@ -68,7 +70,7 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
    try{for(const width of [320,390,1440]){
     const context=await browser.newContext({viewport:{width,height:900},locale:'ja-JP'});
     // Only local content is served; synthetic events cannot reach GA4/Rakuten.
-    await context.route('**/*',r=>new URL(r.request().url()).origin===origin?r.continue():r.abort());
+    await context.route('**/*',r=>new URL(r.request().url()).origin===origin?r.continue():imageCache.has(r.request().url())?r.fulfill(imageCache.get(r.request().url())):r.abort());
     await context.addInitScript(()=>{window.__events=[];window.gtag=(...args)=>window.__events.push(args)});
     const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(origin+'/before/',{waitUntil:'networkidle'});
@@ -88,12 +90,12 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
      }
     }
     await verify(5,30);
-    await page.locator('[data-purchase-planner]').scrollIntoViewIfNeeded();await page.screenshot({path:output+'/'+engine+'-'+width+'-planner.png'});
+    await page.locator('[data-purchase-planner]').evaluate(el=>el.scrollIntoView({block:'start'}));await page.locator('[data-purchase-planner]').screenshot({path:output+'/'+engine+'-'+width+'-planner.png'});
     await page.locator('[data-usage="8"]').click();await verify(8,30);
     await page.locator('[data-purchase-days-choice="7"]').click();await verify(8,7);
     await page.locator('[data-purchase-daily]').fill('7');await page.locator('[data-purchase-days]').fill('14');await verify(7,14);
     await page.locator('.purchase-size summary').click();await page.locator('[data-purchase-size-days]').fill('7');await verify(7,14,7);
-    await page.locator('.product').first().scrollIntoViewIfNeeded();await page.screenshot({path:output+'/'+engine+'-'+width+'-product.png'});
+    await page.locator('.product').first().scrollIntoViewIfNeeded();await page.locator('.product').first().screenshot({path:output+'/'+engine+'-'+width+'-product.png'});
     for(const value of ['','0','1.5','31']){await page.locator('[data-purchase-daily]').fill(value);assert.equal(await page.locator('[data-plan-payment]').count(),0);assert(await page.locator('[data-purchase-error]').isVisible())}
     await page.locator('[data-purchase-daily]').fill('5');await page.locator('[data-purchase-size-days]').fill('');await verify(5,14);
     const first=page.locator('[data-purchase-product]').first(),raw=await first.getAttribute('data-purchase-product');
@@ -105,6 +107,7 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
     for(let i=0;i<3;i++)await page.locator('[data-compare-add]').nth(i).click();
     await page.locator('[data-compare-open]').click();assert.equal(await page.locator('.compare-column').count(),3);
     assert.equal(await page.locator('.compare-column [data-plan-payment]').first().textContent(),money(Math.ceil(150/products[0].quantity.total)*products[0].price_yen));
+    await page.locator('.compare-column .purchase-card').first().scrollIntoViewIfNeeded();
     await page.screenshot({path:output+'/'+engine+'-'+width+'-tray.png'});
     await page.locator('[data-compare-share]').click();const link=await page.locator('[data-compare-share-url]').inputValue();assert(new URL(link).hash.startsWith('#compare='));
     assert.equal(new URL(link).search,'');assert(!link.includes('daily')&&!link.includes('sizeDays'));
@@ -135,7 +138,7 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
     assert(report.lhr.categories.seo.score>=.9);assert(report.lhr.categories.accessibility.score>=.9);
    }}finally{await chrome.kill()}
   }
-  const result={publishedUrl:base+route,snapshotGeneratedAt:snapshot.generated_at,historicalQueryScope:snapshot.pricing_scope,seoAndCatalogUnchanged:true,records};
+  const result={publishedUrl:base+route,snapshotGeneratedAt:snapshot.generated_at,historicalQueryScope:snapshot.pricing_scope,productImagesCached:imageCache.size,seoAndCatalogUnchanged:true,records};
   fs.writeFileSync(output+'/report.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));
  }finally{server.close();originalDOM.window.close();newDOM.window.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});

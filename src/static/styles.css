@@ -116,3 +116,12 @@
 .compare-column .purchase-metrics>div{border-bottom:1px solid #dce4d8;padding:8px 0}
 .compare-column .purchase-metrics dd{font-size:22px}
 @media(max-width:600px){.purchase-planner{padding:18px 14px}.purchase-controls{grid-template-columns:1fr;gap:22px}.purchase-card{padding:14px 10px}.purchase-needed strong{display:block;margin:0}.purchase-planner .usage-chips button{padding:8px 10px}.purchase-payment dd{font-size:23px}}
+
+.purchase-conditions{margin:12px 0 18px;font-size:13px}.purchase-conditions summary{cursor:pointer;min-height:44px;align-content:center;line-height:1.7}.compare-column .purchase-metrics>div:first-child dd{font-size:22px}
+
+.purchase-planner{scroll-margin-top:84px}
+.purchase-controls fieldset{display:grid;grid-template-columns:minmax(0,1fr) 80px;gap:8px}
+.purchase-controls .usage-chips{grid-column:1/-1}
+.purchase-controls label{align-self:center;margin:0}
+.purchase-controls input{width:80px}
+@media(max-width:600px){.purchase-planner .usage-chips{gap:6px}.purchase-planner .usage-chips button{flex:1;min-width:0;white-space:nowrap;padding:8px 4px;font-size:14px}}

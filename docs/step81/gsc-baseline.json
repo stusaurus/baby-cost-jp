@@ -1,0 +1,210 @@
+{
+  "date_windows": {
+    "last_7": [
+      "2026-10-23",
+      "2026-10-29"
+    ],
+    "prior_7": [
+      "2026-10-16",
+      "2026-10-22"
+    ],
+    "last_28": [
+      "2026-10-02",
+      "2026-10-29"
+    ],
+    "prior_28": [
+      "2026-09-04",
+      "2026-10-01"
+    ]
+  },
+  "source_runs": [
+    41394727209,
+    41402576042
+  ],
+  "source_artifacts": [
+    13118214779,
+    13122007589
+  ],
+  "aggregate": {
+    "name": "ベビー用品",
+    "property": "https://stusaurus.github.io/baby-cost-jp/",
+    "status": "OBSERVED",
+    "windows": {
+      "last_7": {
+        "status": "OBSERVED",
+        "metrics": {
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0.0,
+          "position": 13.0
+        }
+      },
+      "prior_7": {
+        "status": "OBSERVED",
+        "metrics": {
+          "clicks": 0,
+          "impressions": 0,
+          "ctr": 0.0,
+          "position": null
+        }
+      },
+      "last_28": {
+        "status": "OBSERVED",
+        "metrics": {
+          "clicks": 0,
+          "impressions": 4,
+          "ctr": 0.0,
+          "position": 23.5
+        }
+      },
+      "prior_28": {
+        "status": "OBSERVED",
+        "metrics": {
+          "clicks": 0,
+          "impressions": 1,
+          "ctr": 0.0,
+          "position": 19.0
+        }
+      }
+    },
+    "top_pages": [
+      {
+        "path": "/wipes/",
+        "clicks": 0,
+        "impressions": 2,
+        "ctr": 0.0,
+        "position": 21.0
+      },
+      {
+        "path": "/",
+        "clicks": 0,
+        "impressions": 1,
+        "ctr": 0.0,
+        "position": 5.0
+      },
+      {
+        "path": "/diapers/pants/m/",
+        "clicks": 0,
+        "impressions": 1,
+        "ctr": 0.0,
+        "position": 47.0
+      }
+    ],
+    "changes": {
+      "week": {
+        "status": "LOW_SAMPLE",
+        "change_impressions": 1,
+        "change_percent": null
+      },
+      "month": {
+        "status": "LOW_SAMPLE",
+        "change_impressions": 3,
+        "change_percent": 300.0
+      }
+    },
+    "page_coverage": {
+      "status": "OBSERVED_TOP_ROWS",
+      "rows_returned": 3
+    }
+  },
+  "discovery": {
+    "name": "ベビー用品",
+    "property": "https://stusaurus.github.io/baby-cost-jp/",
+    "status": "OBSERVED",
+    "analytics": {
+      "queries_28d": {
+        "status": "OBSERVED_ROWS",
+        "rows_returned": 1,
+        "rows": [
+          {
+            "key": "site:github.io",
+            "clicks": 0,
+            "impressions": 2,
+            "ctr": 0.0,
+            "position": 38.0
+          }
+        ],
+        "note": "Reported grouped rows are not exhaustive; anonymized queries and low-volume rows can be missing."
+      },
+      "queries_7d": {
+        "status": "NO_ROWS",
+        "rows_returned": 0,
+        "rows": [],
+        "note": "Reported grouped rows are not exhaustive; anonymized queries and low-volume rows can be missing."
+      },
+      "query_pages_28d": {
+        "status": "OBSERVED_ROWS",
+        "rows_returned": 2,
+        "rows": [
+          {
+            "key": "site:github.io",
+            "clicks": 0,
+            "impressions": 1,
+            "ctr": 0.0,
+            "position": 47.0,
+            "page": "https://stusaurus.github.io/baby-cost-jp/diapers/pants/m/",
+            "path": "/diapers/pants/m/"
+          },
+          {
+            "key": "site:github.io",
+            "clicks": 0,
+            "impressions": 1,
+            "ctr": 0.0,
+            "position": 29.0,
+            "page": "https://stusaurus.github.io/baby-cost-jp/wipes/",
+            "path": "/wipes/"
+          }
+        ],
+        "note": "Reported grouped rows are not exhaustive; anonymized queries and low-volume rows can be missing."
+      }
+    },
+    "inspection": [
+      {
+        "path": "/",
+        "status": "OBSERVED_SNAPSHOT",
+        "verdict": "PASS",
+        "coverage_state": "Submitted and indexed",
+        "indexing_state": "INDEXING_ALLOWED",
+        "robots_txt_state": "ALLOWED",
+        "page_fetch_state": "SUCCESSFUL",
+        "last_crawl_time": "2026-09-29T12:26:12Z",
+        "google_canonical": "https://stusaurus.github.io/baby-cost-jp/",
+        "user_canonical": "https://stusaurus.github.io/baby-cost-jp/",
+        "public": {
+          "status": "PUBLIC_HTML",
+          "http_status": 200,
+          "canonical": [
+            "https://stusaurus.github.io/baby-cost-jp/"
+          ],
+          "robots": [
+            "index,follow"
+          ],
+          "x_robots_tag": null
+        }
+      },
+      {
+        "path": "/diapers/pants/m/",
+        "status": "OBSERVED_SNAPSHOT",
+        "verdict": "PASS",
+        "coverage_state": "Submitted and indexed",
+        "indexing_state": "INDEXING_ALLOWED",
+        "robots_txt_state": "ALLOWED",
+        "page_fetch_state": "SUCCESSFUL",
+        "last_crawl_time": "2026-10-08T21:41:31Z",
+        "google_canonical": "https://stusaurus.github.io/baby-cost-jp/diapers/pants/m/",
+        "user_canonical": "https://stusaurus.github.io/baby-cost-jp/diapers/pants/m/",
+        "public": {
+          "status": "PUBLIC_HTML",
+          "http_status": 200,
+          "canonical": [
+            "https://stusaurus.github.io/baby-cost-jp/diapers/pants/m/"
+          ],
+          "robots": [
+            "index,follow"
+          ],
+          "x_robots_tag": null
+        }
+      }
+    ]
+  }
+}
