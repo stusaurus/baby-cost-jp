@@ -1,7 +1,7 @@
 {
   "pants-m": [
-    {"source":"rakuten","source_id":"mp-m-1","name":"マミーポコ おむつ パンツ Mサイズ 74枚×3個","price_yen":4480,"url":"https://example.invalid/mp-m-1","shop":"fixture","image":"","review_count":220},
-    {"source":"rakuten","source_id":"pn-m-1","name":"パンパース おむつ パンツ Mサイズ 66枚×3個","price_yen":4890,"url":"https://example.invalid/pn-m-1","shop":"fixture","image":"","review_count":310},
+    {"source":"rakuten","shipping_basis":"rakuten_postage_filter","source_id":"mp-m-1","name":"マミーポコ おむつ パンツ Mサイズ 74枚×3個","price_yen":4480,"url":"https://example.invalid/mp-m-1","shop":"fixture","image":"","review_count":220},
+    {"source":"rakuten","shipping_basis":"rakuten_postage_filter","source_id":"pn-m-1","name":"パンパース おむつ パンツ Mサイズ 66枚×3個","price_yen":4890,"url":"https://example.invalid/pn-m-1","shop":"fixture","image":"","review_count":310},
     {"source":"rakuten","source_id":"bad-l","name":"パンパース おむつ パンツ Lサイズ 58枚×3個","price_yen":3000,"url":"https://example.invalid/bad-l","shop":"fixture","image":"","review_count":1}
   ],
   "wipes-standard": [

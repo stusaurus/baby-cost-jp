@@ -70,7 +70,7 @@
     const n = Number(value || 0);
     return n < 100 ? '¥' + n.toFixed(1) : '¥' + Math.round(n).toLocaleString('ja-JP');
   };
-  document.querySelectorAll('[data-savings-sim]').forEach((box) => {
+  document.querySelectorAll('[data-savings-sim]:not([data-purchase-planner])').forEach((box) => {
     const best = Number(box.dataset.best || 0);
     const median = Number(box.dataset.median || 0);
     const result = box.querySelector('[data-savings-result]');
@@ -120,7 +120,8 @@
     productId: button.dataset.compareProductId || button.dataset.compareId || '',
     size: button.dataset.compareSize || '',
     productType: button.dataset.compareProductType || '',
-    unitMetric: button.dataset.compareUnitMetric || ''
+    unitMetric: button.dataset.compareUnitMetric || '',
+    purchase: button.closest('.product')?.querySelector('[data-purchase-product]')?.dataset.purchaseProduct || ''
   });
 
   const sync = () => {
@@ -168,16 +169,19 @@
         : '<div class="compare-cell-image compare-cell-image--empty">商品</div>';
       const best = Math.abs(item.unit - bestUnit) < 0.0001;
       return '<article class="compare-column' + (best ? ' is-best' : '') + '">' +
-        '<div class="compare-column-badge">' + (best ? 'この中で最安' : item.rank + '位') + '</div>' +
+        '<div class="compare-column-badge">' + (best ? (item.purchase ? '1枚単価が最安' : 'この中で最安') : item.rank + '位') + '</div>' +
         image +
         '<h3>' + item.name.replace(/[&<>"']/g,(m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])) + '</h3>' +
         '<dl><div><dt>単価</dt><dd>¥' + (item.unit < 100 ? item.unit.toFixed(1) : Math.round(item.unit).toLocaleString('ja-JP')) + '<small> / ' + item.unitLabel + '</small></dd></div>' +
         '<div><dt>販売価格</dt><dd>¥' + Math.round(item.price).toLocaleString('ja-JP') + '</dd></div>' +
         '<div><dt>内容量</dt><dd>' + escapeHtml(item.quantity) + '</dd></div></dl>' +
+        (item.purchase && window.babyCostPurchase?.render ? '<section class="purchase-card" aria-label="この商品の購入計画">' + window.babyCostPurchase.render(item.purchase) + '</section>' : '') +
         (item.url ? '<a class="compare-buy" href="' + escapeHtml(item.url) + '" target="_blank" rel="nofollow sponsored noopener" data-affiliate="rakuten" data-category-id="' + escapeHtml(item.category) + '" data-product-name="' + escapeHtml(item.productName) + '" data-product-id="' + escapeHtml(item.productId) + '" data-size="' + escapeHtml(item.size) + '" data-product-type="' + escapeHtml(item.productType) + '" data-unit-metric="' + escapeHtml(item.unitMetric) + '" data-unit-price="' + item.unit + '" data-rank="' + item.rank + '" data-click-position="compare_modal">楽天で価格・在庫を見る <span aria-hidden="true">→</span></a>' : '') +
         '</article>';
     }).join('');
   };
+
+  document.addEventListener('purchase-plan-change', () => { if (!modal.hidden) renderTable(); });
 
   buttons.forEach((button) => {
     button.setAttribute('aria-pressed','false');
@@ -310,7 +314,7 @@
 
     const labels = {
       unit: '単価が安い順',
-      price: '支払総額が安い順',
+      price: comparison.querySelector('[data-purchase-planner]') ? '1セットの価格が安い順' : '支払総額が安い順',
       quantity: '大容量順'
     };
 
@@ -342,7 +346,7 @@
         if (badge) {
           badge.textContent =
             mode === 'unit' ? (rank === 1 ? '最安' : rank + '位') :
-            mode === 'price' ? (rank === 1 ? '総額最安' : '総額 ' + rank + '位') :
+            mode === 'price' ? (comparison.querySelector('[data-purchase-planner]') ? (rank === 1 ? '1セット価格最安' : '1セット価格 ' + rank + '位') : (rank === 1 ? '総額最安' : '総額 ' + rank + '位')) :
             (rank === 1 ? '最大容量' : '容量 ' + rank + '位');
         }
       });
@@ -377,6 +381,7 @@
       quantity: ['まとめ買い重視で並べます','内容量が多い順に切り替えました。']
     };
 
+    if (comparison.querySelector('[data-purchase-planner]')) copy.price = ['1セットの価格順で並べます','必要セット数を含む支払額は、各商品の購入計画を確認してください。'];
     buttons.forEach((button) => {
       button.addEventListener('click', () => {
         const goal = button.dataset.buyGoal || 'unit';

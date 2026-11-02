@@ -10,7 +10,7 @@ function setup(path, storage={}, session={}, suffix='') {
  w.HTMLElement.prototype.scrollIntoView=()=>{};
  for(const [key,value] of Object.entries(storage))w.localStorage.setItem(key,value);
  for(const [key,value] of Object.entries(session))w.sessionStorage.setItem(key,value);
- w.eval(fs.readFileSync('src/static/analytics.js','utf8'));w.eval(fs.readFileSync('src/static/app.js','utf8'));
+ w.eval(fs.readFileSync('src/static/purchase.js','utf8'));w.eval(fs.readFileSync('src/static/analytics.js','utf8'));w.eval(fs.readFileSync('src/static/app.js','utf8'));
  return {dom,w,doc:w.document,events};
 }
 
@@ -121,5 +121,92 @@ test('expired, future and wrong-target attribution does not contaminate direct v
  for(const nav of [{at:Date.now()-1800001,target:'/baby-cost-jp/diapers/pants/m/'},{at:Date.now()+10000,target:'/baby-cost-jp/diapers/pants/m/'},{at:Date.now(),target:'/baby-cost-jp/wipes/'}]){
   const {w,events}=setup('diapers/pants/m/index.html',{}, {'baby_cost_feature_navigation_v1':JSON.stringify({...nav,source:'growth_early'})});
   assert.equal(events.find(x=>x[1]==='comparison_view')[2].growth_stage,undefined);w.close();
+ }
+});
+
+const {calculate}=require('../src/static/purchase.js');
+const offer=(total=192,price=4480)=>({total,price,verified:true});
+test('purchase math: one set, exact boundary, multiple sets and large surplus',()=>{
+ assert.deepEqual(calculate(offer(),5,30),{needed:150,total:192,sets:1,payment:4480,surplus:42,costTenths:35000,sizeSurplus:null});
+ assert.equal(calculate(offer(150),5,30).surplus,0);
+ assert.deepEqual(calculate(offer(),8,30),{needed:240,total:192,sets:2,payment:8960,surplus:144,costTenths:56000,sizeSurplus:null});
+ assert.equal(calculate(offer(420,9980),5,7).surplus,385);
+ assert.equal(calculate(offer(420,9980),5,7,14).sizeSurplus,350);
+ assert.equal(calculate(offer(70,1500),5,14,14).sizeSurplus,0);
+});
+test('purchase math rejects invalid inputs and unknown prices, quantities or shipping',()=>{
+ for(const n of [0,-1,1.1,31,NaN,Infinity,'5',null,undefined])assert.equal(calculate(offer(),n,30),null);
+ for(const n of [0,-1,1.1,91,NaN,Infinity,'30',null])assert.equal(calculate(offer(),5,n),null);
+ for(const n of [0,-1,1.1,181,NaN,Infinity,'14'])assert.equal(calculate(offer(),5,30,n),null);
+ for(const p of [null,{},offer(0),offer(1.5),offer(20001),offer(192,0),offer(192,1.5),{...offer(),verified:false},{...offer(),price:'4480'}])assert.equal(calculate(p,5,30),null);
+});
+test('fractional equivalent rounds once, using integers even at allowed maximum',()=>{
+ assert.equal(calculate(offer(200,201),1,10).costTenths,101); // 10.05 -> 10.1, no binary error
+ assert.equal(calculate(offer(3,100),1,1).costTenths,333);
+ assert.equal(calculate(offer(3,100),1,3).payment,100);
+ const r=calculate(offer(1,999999999),30,90);
+ assert.equal(r.payment,2699999997300);assert.equal(r.costTenths,26999999973000);
+ for(let total=1;total<=250;total++)for(const needed of [1,28,150,240,2700]){
+  const daily=needed===2700?30:1,days=needed/daily;
+  if(days>90)continue;
+  const r=calculate(offer(total,3211),daily,days);
+  assert(r.sets*total>=needed&&(r.sets-1)*total<needed);
+  assert(r.surplus>=0&&r.surplus<total);
+ }
+});
+function change(a,selector,value,type='input'){
+ const input=a.doc.querySelector(selector);input.value=value;input.dispatchEvent(new a.w.Event(type,{bubbles:true}));
+}
+test('daily presets, manual input, days and savings share one state with cards and tray',()=>{
+ const a=setup('diapers/pants/m/index.html');
+ assert.match(a.doc.querySelector('[data-purchase-summary]').textContent,/必要150枚/);
+ a.doc.querySelector('[data-usage="8"]').click();
+ assert.match(a.doc.querySelector('[data-plan-sets]').textContent,/2セット/);
+ assert.match(a.doc.querySelector('[data-plan-payment]').textContent,/8,960/);
+ a.doc.querySelector('[data-purchase-days-choice="7"]').click();
+ assert.match(a.doc.querySelector('[data-purchase-summary]').textContent,/必要56枚/);
+ change(a,'[data-purchase-daily]','7');change(a,'[data-purchase-days]','14');
+ assert.equal(a.doc.querySelector('[data-savings-period]').textContent,'14日');
+ assert.match(a.doc.querySelector('[data-purchase-summary]').textContent,/必要98枚/);
+ [...a.doc.querySelectorAll('[data-compare-add]')].forEach(b=>b.click());a.doc.querySelector('[data-compare-open]').click();
+ assert.equal(a.doc.querySelectorAll('.compare-column [data-plan-payment]').length,2);
+ assert.equal(a.doc.querySelector('.compare-column [data-plan-payment]').textContent,a.doc.querySelector('.product [data-plan-payment]').textContent);
+ assert.match(a.doc.querySelector('.compare-column .purchase-context').textContent,/必要98枚/);
+ change(a,'[data-purchase-days]','30');
+ assert.match(a.doc.querySelector('.compare-column .purchase-context').textContent,/必要210枚/);
+ a.w.close();
+});
+test('invalid input clears stale amounts and recovers; size advice uses only entered duration',()=>{
+ const a=setup('diapers/pants/m/index.html');
+ for(const value of ['', '0','-1','1.5','31']){
+  change(a,'[data-purchase-daily]',value);
+  assert.equal(a.doc.querySelectorAll('[data-plan-payment]').length,0);
+  assert.equal(a.doc.querySelector('[data-purchase-error]').hidden,false);
+ }
+ change(a,'[data-purchase-daily]','5');change(a,'[data-purchase-size-days]','7');
+ assert.match(a.doc.querySelector('.purchase-warning').textContent,/187枚/);
+ change(a,'[data-purchase-size-days]','');assert.equal(a.doc.querySelector('.purchase-warning'),null);
+ change(a,'[data-purchase-size-days]','181');assert.equal(a.doc.querySelectorAll('[data-plan-payment]').length,0);
+ change(a,'[data-purchase-size-days]','180');assert.equal(a.doc.querySelector('[data-purchase-error]').hidden,true);
+ const card=a.doc.querySelector('[data-purchase-product]');card.dataset.purchaseProduct='null';
+ change(a,'[data-purchase-days]','7');assert.match(card.textContent,/購入計算はできません/);assert.equal(card.querySelector('[data-plan-payment]'),null);
+ card.dataset.purchaseProduct='{bad';change(a,'[data-purchase-days]','14');assert.equal(card.querySelector('[data-plan-payment]'),null);
+ a.w.close();
+});
+test('planner tracks explicit use only, preserves operator boundary, never sends household input or purchase',()=>{
+ for(const suffix of ['','?test=1']){
+  const a=setup('diapers/pants/m/index.html',{}, {},suffix);
+  assert.equal(a.events.filter(e=>e[1]==='purchase_planner_use').length,0);
+  a.doc.querySelector('[data-usage="6"]').click();
+  change(a,'[data-purchase-size-days]','14','change');
+  const sent=a.events.filter(e=>e[1]==='purchase_planner_use');assert.equal(sent.length,2);
+  for(const [, ,payload] of sent){
+   assert.equal(payload.operator_test,suffix?'1':undefined);
+   for(const key of ['usage_per_day','daily','days','size_days','value','revenue'])assert(!(key in payload));
+  }
+  assert(!a.events.some(e=>e[1]==='purchase'||e[1]==='affiliate_click'));
+  const link=a.doc.querySelector('.product a[data-affiliate]');link.addEventListener('click',e=>e.preventDefault());link.click();
+  const clicks=a.events.filter(e=>e[1]==='affiliate_click');assert.equal(clicks.length,1);assert.equal(clicks[0][2].operator_test,suffix?'1':undefined);
+  a.w.close();
  }
 });

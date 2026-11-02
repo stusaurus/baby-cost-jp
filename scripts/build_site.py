@@ -450,6 +450,7 @@ def main(fixture: bool = False, pages: int = 2):
                         "source": p.get("source", ""), "source_id": p.get("source_id", ""), "name": p["name"],
                         "price_yen": p["price_yen"], "shop": p.get("shop", ""), "affiliate_url": p.get("url", ""),
                         "unit_price": p["unit_price"], "unit_metric": p["unit_metric"], "quantity": p["quantity"],
+                        "shipping_basis": p.get("shipping_basis", "unknown"),
                         "manufacturer": p["manufacturer"], "brand": p["brand"], "attributes": p["attributes"],
                         "price_change": p.get("price_change"),
                         "history_points": len(p.get("price_history") or []),

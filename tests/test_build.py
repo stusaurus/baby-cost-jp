@@ -47,9 +47,9 @@ class BuildTests(unittest.TestCase):
 
     def test_comparison_explains_unit_cost_versus_checkout_and_links_related_category(self):
         text = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
-        self.assertIn("単価と、今回の支払総額を比べる", text)
+        self.assertIn("1枚単価と、必要セット数を含む支払額を比べる", text)
         self.assertIn("おしりふきの1枚単価も比べる", text)
-        self.assertIn("今回の支払総額が最小の候補", text)
+        self.assertIn("1セットの販売価格が最小の候補", text)
         self.assertIn("https://stusaurus.github.io/baby-cost-jp/wipes/", text)
 
     def test_home_explains_quality_and_surfaces_live_price(self):
@@ -136,7 +136,7 @@ class BuildTests(unittest.TestCase):
         self.assertIn('data-sort-mode="unit"', text)
         self.assertIn('data-sort-mode="price"', text)
         self.assertIn('data-sort-mode="quantity"', text)
-        self.assertIn("支払総額が安い", text)
+        self.assertIn("1セットの価格が安い", text)
         self.assertIn("大容量", text)
         self.assertIn("data-sortable-products", text)
 
