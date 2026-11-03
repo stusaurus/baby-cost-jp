@@ -571,9 +571,10 @@ def main(fixture: bool = False, pages: int = 2):
     (SITE_DIR / "data" / "price-history.json").write_text(json.dumps(price_history, ensure_ascii=False, indent=2), encoding="utf-8")
     (SITE_DIR / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}sitemap.xml\n", encoding="utf-8")
     unique_urls = list(dict.fromkeys(sitemap_urls))
-    lastmod = updated_at.date().isoformat()
+    # Rebuilding prices does not prove a substantive page update; avoid false lastmod.
+    # Keep fixture/build output aligned with generate_seo_files.py and the SEO CI gate.
     sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + "\n".join(
-        f"  <url><loc>{url}</loc><lastmod>{lastmod}</lastmod></url>" for url in unique_urls
+        f"  <url><loc>{url}</loc></url>" for url in unique_urls
     ) + "\n</urlset>\n"
     (SITE_DIR / "sitemap.xml").write_text(sitemap, encoding="utf-8")
 
