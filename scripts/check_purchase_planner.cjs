@@ -82,6 +82,8 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
     await page.goto(origin+'/before/',{waitUntil:'networkidle'});
     await page.locator('.products').scrollIntoViewIfNeeded();await page.screenshot({path:output+'/'+engine+'-'+width+'-before.png'});
     await page.goto(url+'?test=1',{waitUntil:'networkidle'});
+    assert(await page.locator('[data-purchase-entry]').evaluate(el=>el.getBoundingClientRect().height>=44));
+    await page.screenshot({path:output+'/'+engine+'-'+width+'-entry.png'});
     await page.locator('[data-purchase-entry]').click();
     assert.equal(new URL(page.url()).hash,'#purchase-planner');
     assert.match(await page.locator('[data-purchase-summary]').innerText(),/必要150枚/);
