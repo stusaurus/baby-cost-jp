@@ -125,3 +125,12 @@
 .purchase-controls label{align-self:center;margin:0}
 .purchase-controls input{width:80px}
 @media(max-width:600px){.purchase-planner .usage-chips{gap:6px}.purchase-planner .usage-chips button{flex:1;min-width:0;white-space:nowrap;padding:8px 4px;font-size:14px}}
+
+
+/* Toddler cost planning editorial entry (not a product ranking). */
+.toddler-entry{margin:26px auto;padding:clamp(18px,4vw,28px);max-width:1000px;background:#f2f8ee;border:1px solid #c9decf;border-radius:18px}
+.toddler-entry h2{margin:8px 0 10px;font-size:clamp(21px,3vw,27px);line-height:1.45}
+.toddler-entry p{line-height:1.8;margin:0 0 10px}
+.toddler-entry a{display:inline-block;margin:9px 0 0;min-height:44px;padding:12px 20px;background:#2b6648;color:#fff;font-weight:800;text-decoration:none;border-radius:10px}
+.toddler-entry a:focus-visible{outline:3px solid #81ab91;outline-offset:3px}
+@media(max-width:600px){.toddler-entry{margin:20px 13px;padding:19px 16px}.toddler-entry a{display:block;text-align:center}}
