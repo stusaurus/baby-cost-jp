@@ -18,6 +18,7 @@ if str(ROOT) not in sys.path:
 from src.config import DATA_DIR, SITE_DIR, SITE_URL, load_categories  # noqa: E402
 from src.parsing import norm, parse_for_segment_detailed, unit_price  # noqa: E402
 from src.rakuten import fetch_items  # noqa: E402
+from src.meal_guide import HOME_ENTRY, PAGE_URL, render_toddler_meal_guide  # noqa: E402
 from src.render import (  # noqa: E402
     display_product_name,
     brand_slug,
@@ -376,7 +377,7 @@ def main(fixture: bool = False, pages: int = 2):
         "categories": {},
         "excluded_problem_products": [],
     }
-    sitemap_urls = [SITE_URL, f"{SITE_URL}diapers/", f"{SITE_URL}method/"]
+    sitemap_urls = [SITE_URL, f"{SITE_URL}diapers/", f"{SITE_URL}method/", PAGE_URL]
 
     for category_id, category in categories.items():
         category_rows = []
@@ -528,7 +529,13 @@ def main(fixture: bool = False, pages: int = 2):
 
     latest["brand_pages"] = brand_pages
 
-    write_page(SITE_DIR / "index.html", render_home(categories, snapshots, featured_deals, price_drops, recent_trends, updated_at))
+    home_html = render_home(categories, snapshots, featured_deals, price_drops, recent_trends, updated_at)
+    home_anchor = '<section class="quality-card quality-visual">'
+    if home_html.count(home_anchor) != 1:
+        raise RuntimeError("Cannot locate the home-page editorial insertion point")
+    home_html = home_html.replace(home_anchor, HOME_ENTRY + home_anchor, 1)
+    write_page(SITE_DIR / "index.html", home_html)
+    write_page(SITE_DIR / "guides" / "toddler-meals" / "index.html", render_toddler_meal_guide())
     write_page(SITE_DIR / "diapers" / "index.html", render_diaper_index(categories, updated_at, latest["categories"]))
     write_page(SITE_DIR / "method" / "index.html", render_method())
     write_page(SITE_DIR / "404.html", '<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,follow"><title>ページが見つかりません</title><h1>ページが見つかりません</h1><p>比較条件をトップページから選び直してください。</p><a href="'+SITE_URL+'">ベビーコスパ比較へ</a></html>')
