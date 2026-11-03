@@ -136,7 +136,7 @@ class BuildTests(unittest.TestCase):
         self.assertIn('data-sort-mode="unit"', text)
         self.assertIn('data-sort-mode="price"', text)
         self.assertIn('data-sort-mode="quantity"', text)
-        self.assertIn("1セットの価格が安い", text)
+        self.assertIn("必要枚数分の購入額が安い", text)
         self.assertIn("大容量", text)
         self.assertIn("data-sortable-products", text)
 
