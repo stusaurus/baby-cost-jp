@@ -44,8 +44,8 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
  const expected=seo(doc);
  expected.title='おむつ パンツMの価格比較｜必要セット数・30日分の支払額を計算';
  expected.description='パンツMのおむつを1枚単価と購入時の支払総額で比較。1日の使用枚数と日数から必要セット数・余剰枚数を計算し、サイズ変更前の買いすぎも確認できます。';
- for(const schema of expected.jsonld)if(schema['@type']==='WebPage'){schema.name=expected.title;schema.description=expected.description;}
- for(const schema of expected.jsonld)if(schema['@type']==='BreadcrumbList'){const current=schema.itemListElement.find(x=>x.item===base+route);assert(current);current.name=expected.title;}
+ for(const schema of expected.jsonld.flat())if(schema['@type']==='WebPage'){schema.name=expected.title;schema.description=expected.description;}
+ for(const schema of expected.jsonld.flat())if(schema['@type']==='BreadcrumbList'){const current=schema.itemListElement.find(x=>x.item===base+route);assert(current);current.name=expected.title;}
  assert.deepEqual(seo(newDOM.window.document),expected);
  assert.equal(newDOM.window.document.querySelector('[data-purchase-entry]').getAttribute('href'),'#purchase-planner');
  const catalogDOM=d=>[...d.querySelectorAll('[data-compare-add]')].map(x=>({...x.dataset}));
