@@ -124,7 +124,7 @@ class BuildTests(unittest.TestCase):
         text = (ROOT / "site/index.html").read_text(encoding="utf-8")
         latest = json.loads((ROOT / "site/data/latest.json").read_text(encoding="utf-8"))
         self.assertIn("今日の比較候補", text)
-        self.assertLess(text.index('class="featured-deals"'), text.index('class="growth-finder"'))
+        self.assertLess(text.index('class="featured-deals"'), text.index('id="growth-finder"'))
         self.assertIn("TODAY'S PICKS", text)
         self.assertIn("中央値より", text)
         self.assertIn("featured_deals", latest)
