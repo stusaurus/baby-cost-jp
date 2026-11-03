@@ -33,6 +33,8 @@ if (typeof document !== 'undefined') (() => {
   const number = n => n.toLocaleString('ja-JP');
   const yen = n => '¥' + number(n);
   let state = null;
+  // Provide the validated local inputs to the page sorter; never send them to analytics.
+  api.currentPlan = () => state ? {...state} : null;
   const read = (input, optional = false) => {
     if (optional && input.value === '' && !input.validity.badInput) return null;
     return /^\d+$/.test(input.value) && input.checkValidity() ? Number(input.value) : NaN;

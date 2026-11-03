@@ -111,7 +111,33 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
     const first=page.locator('[data-purchase-product]').first(),raw=await first.getAttribute('data-purchase-product');
     await first.evaluate(el=>el.dataset.purchaseProduct='null');await page.locator('[data-purchase-days]').fill('7');assert.equal(await first.locator('[data-plan-payment]').count(),0);
     await first.evaluate((el,raw)=>el.dataset.purchaseProduct=raw,raw);await page.locator('[data-purchase-days]').fill('30');await verify(5,30);
-    await page.locator('[data-sort-mode=price]').click();assert.match(await page.locator('[data-result-sort-label]').innerText(),/1セット/);await verify(5,30);
+    await page.locator('[data-sort-mode=price]').click();
+    assert.match(await page.locator('[data-result-sort-label]').innerText(),/必要枚数分の購入額/);
+    async function verifyCheckoutSort(daily,days){
+      const ordered=await page.locator('.product').evaluateAll(xs=>xs.map(x=>({
+        id:x.querySelector('[data-compare-id]').dataset.compareId,
+        badge:x.querySelector('.rank-badge').textContent
+      })));
+      const expected=[...products].sort((a,b)=>{
+        const ap=Math.ceil(daily*days/a.quantity.total)*a.price_yen;
+        const bp=Math.ceil(daily*days/b.quantity.total)*b.price_yen;
+        return ap-bp||products.indexOf(a)-products.indexOf(b);
+      }).map(p=>p.source_id);
+      assert.deepEqual(ordered.map(x=>x.id),expected);
+      assert.equal(ordered[0].badge,'購入額最小');
+    }
+    await verify(5,30);await verifyCheckoutSort(5,30);
+    await page.locator('[data-purchase-daily]').fill('8');
+    await verify(8,30);await verifyCheckoutSort(8,30);
+    await page.locator('[data-purchase-days]').fill('7');
+    await verify(8,7);await verifyCheckoutSort(8,7);
+    await page.locator('[data-purchase-daily]').fill('');
+    assert.match(await page.locator('[data-result-sort-label]').innerText(),/購入額未計算/);
+    assert.equal(await page.locator('[data-plan-payment]').count(),0);
+    await page.locator('[data-purchase-daily]').fill('5');
+    await page.locator('[data-purchase-days]').fill('30');
+    await verify(5,30);await verifyCheckoutSort(5,30);
+    assert.equal((await page.evaluate(()=>window.__events)).filter(x=>x[1]==='comparison_sort'&&x[2].sort_mode==='price').length,1);
     await page.locator('[data-sort-mode=quantity]').click();await verify(5,30);await page.locator('[data-sort-mode=unit]').click();
     await page.locator('[data-save-id]').first().click();await page.locator('[data-saved-only]').click();assert.equal(await page.locator('.product:visible').count(),1);await page.locator('[data-saved-only]').click();
     for(let i=0;i<3;i++)await page.locator('[data-compare-add]').nth(i).click();
