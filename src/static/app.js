@@ -312,19 +312,45 @@
     const buttons = [...switcher.querySelectorAll('[data-sort-mode]')];
     if (!list || !buttons.length || !label) return;
 
+    const purchase = !!comparison.querySelector('[data-purchase-planner]');
     const labels = {
       unit: '単価が安い順',
-      price: comparison.querySelector('[data-purchase-planner]') ? '1セットの価格が安い順' : '支払総額が安い順',
+      price: purchase ? '必要枚数分の購入額が安い順' : '支払総額が安い順',
       quantity: '大容量順'
     };
+    let activeMode = 'unit';
 
-    const apply = (mode) => {
+    const purchasePayment = (card) => {
+      const plan = window.babyCostPurchase?.currentPlan?.();
+      const raw = card.querySelector('[data-purchase-product]')?.dataset.purchaseProduct;
+      if (!plan || !raw) return null;
+      try {
+        const result = window.babyCostPurchase.calculate(
+          JSON.parse(raw), plan.daily, plan.days, plan.sizeDays
+        );
+        return Number.isSafeInteger(result?.payment) ? result.payment : null;
+      } catch (_) {
+        return null;
+      }
+    };
+
+    const apply = (mode, emit = true) => {
       const cards = [...list.querySelectorAll('.product')];
-      const get = (card) => Number(
-        mode === 'unit' ? card.dataset.sortUnit :
-        mode === 'price' ? card.dataset.sortPrice :
-        card.dataset.sortQuantity
-      ) || 0;
+      const payments = new Map();
+      if (purchase && mode === 'price') {
+        cards.forEach((card) => payments.set(card, purchasePayment(card)));
+      }
+      const get = (card) => {
+        if (purchase && mode === 'price') {
+          const payment = payments.get(card);
+          return Number.isFinite(payment) ? payment : Infinity;
+        }
+        return Number(
+          mode === 'unit' ? card.dataset.sortUnit :
+          mode === 'price' ? card.dataset.sortPrice :
+          card.dataset.sortQuantity
+        ) || 0;
+      };
 
       cards.sort((a,b) => {
         const av=get(a), bv=get(b);
@@ -346,7 +372,9 @@
         if (badge) {
           badge.textContent =
             mode === 'unit' ? (rank === 1 ? '最安' : rank + '位') :
-            mode === 'price' ? (comparison.querySelector('[data-purchase-planner]') ? (rank === 1 ? '1セット価格最安' : '1セット価格 ' + rank + '位') : (rank === 1 ? '総額最安' : '総額 ' + rank + '位')) :
+            mode === 'price' ? (purchase
+              ? (Number.isFinite(get(card)) ? (rank === 1 ? '購入額最小' : '購入額 ' + rank + '位') : '購入額未計算')
+              : (rank === 1 ? '総額最安' : '総額 ' + rank + '位')) :
             (rank === 1 ? '最大容量' : '容量 ' + rank + '位');
         }
       });
@@ -356,14 +384,19 @@
         button.classList.toggle('is-active',active);
         button.setAttribute('aria-pressed',active?'true':'false');
       });
-      label.textContent=labels[mode] || labels.unit;
-      window.babyCostEvent?.('comparison_sort', {
+      activeMode = mode;
+      const anyPayment = !purchase || mode !== 'price' || cards.some((card) => Number.isFinite(get(card)));
+      label.textContent=anyPayment ? (labels[mode] || labels.unit) : '購入額未計算（枚数・日数を確認）';
+      if (emit) window.babyCostEvent?.('comparison_sort', {
         category_id: comparison?.dataset.categoryId || '',
         sort_mode: mode
       });
     };
 
     buttons.forEach((button) => {button.setAttribute('aria-pressed',button.classList.contains('is-active')?'true':'false'); button.addEventListener('click', () => apply(button.dataset.sortMode || 'unit'));});
+    if (purchase) document.addEventListener('purchase-plan-change', () => {
+      if (activeMode === 'price') apply('price', false);
+    });
   });
 })();
 
@@ -381,7 +414,7 @@
       quantity: ['まとめ買い重視で並べます','内容量が多い順に切り替えました。']
     };
 
-    if (comparison.querySelector('[data-purchase-planner]')) copy.price = ['1セットの価格順で並べます','必要セット数を含む支払額は、各商品の購入計画を確認してください。'];
+    if (comparison.querySelector('[data-purchase-planner]')) copy.price = ['必要枚数分の購入額順で並べます','設定した枚数・日数に必要なセット数を切り上げ、購入時の支払額で並べます。'];
     buttons.forEach((button) => {
       button.addEventListener('click', () => {
         const goal = button.dataset.buyGoal || 'unit';
