@@ -33,6 +33,7 @@ jobs:
           /tmp/share-qa/node_modules/.bin/playwright install --with-deps chromium webkit
           node scripts/check_shared_comparison.cjs
           node scripts/check_purchase_planner.cjs
+          node scripts/check_toddler_guide.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -40,4 +41,5 @@ jobs:
           path: |
             shared-comparison-evidence
             purchase-planner-evidence
+            toddler-meal-evidence
           if-no-files-found: error

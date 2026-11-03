@@ -210,3 +210,83 @@ test('planner tracks explicit use only, preserves operator boundary, never sends
   a.w.close();
  }
 });
+
+
+test('Mogumo twelve-week planner computes true checkout totals, supply balance, and average without assumed prices',()=>{
+ const s=setup('guides/toddler-meals/index.html', {}, {}, '?test=1');
+ const {w,doc,events}=s;
+ try {
+   w.eval(fs.readFileSync('src/static/meal-guide.js','utf8'));
+   doc.dispatchEvent(new w.Event('DOMContentLoaded'));
+   const set=(id,value)=>{doc.getElementById(id).value=String(value)};
+   set('tm-weekly',4);set('tm-bundle',12);set('tm-price',7000);set('tm-shipping',1000);set('tm-interval',3);
+   doc.getElementById('tm-form').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+   assert.equal(doc.getElementById('tm-results').hidden,false);
+   assert.equal(doc.getElementById('tm-total').textContent,'32,000円');
+   assert.equal(doc.getElementById('tm-average').textContent,'10,667円');
+   assert.equal(doc.getElementById('tm-deliveries').textContent,'4回');
+   assert.equal(doc.getElementById('tm-unit').textContent,'666.67円');
+   assert.equal(doc.getElementById('tm-purchased').textContent,'48食');
+   assert.equal(doc.getElementById('tm-needed').textContent,'48食');
+   assert.match(doc.getElementById('tm-balance').textContent,/一致/);
+   const calc=events.filter(e=>e[1]==='meal_planner_use');
+   assert.equal(calc.length,1);
+   assert.equal(calc[0][2].operator_test,'1');
+   assert.equal(calc[0][2].balance_type,'matched');
+   assert.equal(calc[0][2].delivery_interval_weeks,'3');
+   assert.equal(calc[0][2].price_yen,undefined);
+   // Changing delivery interval can cause a shortage even if bundle price stays same.
+   set('tm-weekly',5);set('tm-bundle',8);set('tm-interval',2);
+   doc.getElementById('tm-form').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+   assert.equal(doc.getElementById('tm-total').textContent,'48,000円');
+   assert.match(doc.getElementById('tm-balance').textContent,/12食不足/);
+   assert.equal(doc.getElementById('tm-deliveries').textContent,'6回');
+ } finally {w.close()}
+});
+
+test('Mogumo ad link and impression pixel stay unchanged and A8 click is tracked through baby site GA4',()=>{
+ const s=setup('guides/toddler-meals/index.html',{}, {},'?test=1');
+ const {w,doc,events}=s;
+ try {
+   w.eval(fs.readFileSync('src/static/meal-guide.js','utf8'));
+   doc.dispatchEvent(new w.Event('DOMContentLoaded'));
+   const box=doc.querySelector('#tm-mogumo-ad');
+   assert.ok(box.textContent.includes('広告｜A8.netアフィリエイト'));
+   const link=box.querySelector('a[href^="https://px.a8.net/"]');
+   const pixel=box.querySelector('img');
+   assert.equal(link.getAttribute('href'),'https://px.a8.net/svt/ejp?a8mat=4BGCF1+9W19AY+5CLW+5YJRM');
+   assert.equal(link.getAttribute('rel'),'nofollow');
+   assert.equal(link.textContent,'【子どもお墨付き】冷凍幼児食モグモ ');
+   assert.equal(pixel.getAttribute('src'),'https://www16.a8.net/0.gif?a8mat=4BGCF1+9W19AY+5CLW+5YJRM');
+   assert.equal(pixel.getAttribute('width'),'1');
+   assert.equal(pixel.getAttribute('height'),'1');
+   link.addEventListener('click',e=>e.preventDefault());
+   link.dispatchEvent(new w.MouseEvent('click',{bubbles:true,cancelable:true}));
+   const clicks=events.filter(e=>e[1]==='affiliate_click' && e[2]?.affiliate==='a8');
+   assert.equal(clicks.length,1);
+   assert.equal(clicks[0][2].site_id,'baby_cost_jp');
+   assert.equal(clicks[0][2].operator_test,'1');
+   assert.equal(clicks[0][2].category_id,'toddler_meals');
+   assert.equal(clicks[0][2].conversion_source,'toddler_meal_cost_planner');
+ } finally {w.close()}
+});
+
+test('Mogumo planner invalid/missing inputs never show a fabricated result',()=>{
+ const s=setup('guides/toddler-meals/index.html');
+ const {w,doc}=s;
+ try {
+   w.eval(fs.readFileSync('src/static/meal-guide.js','utf8'));
+   doc.dispatchEvent(new w.Event('DOMContentLoaded'));
+   const submit=()=>doc.getElementById('tm-form').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+   submit();
+   assert.equal(doc.getElementById('tm-results').hidden,true);
+   assert.match(doc.getElementById('tm-status').textContent,/すべての欄/);
+   for(const [id,n] of Object.entries({'tm-weekly':4,'tm-bundle':12,'tm-price':9000,'tm-shipping':0}))doc.getElementById(id).value=String(n);
+   doc.getElementById('tm-interval').value='4';
+   submit();
+   assert.equal(doc.getElementById('tm-results').hidden,false);
+   doc.getElementById('tm-bundle').value='0';
+   submit();
+   assert.equal(doc.getElementById('tm-results').hidden,true);
+ } finally {w.close()}
+});
