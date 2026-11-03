@@ -41,7 +41,12 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
  const seo=d=>({title:d.title,description:d.querySelector('meta[name=description]').content,
   canonical:d.querySelector('link[rel=canonical]').href,robots:d.querySelector('meta[name=robots]').content,
   h1:d.querySelector('h1').textContent,jsonld:[...d.querySelectorAll('script[type="application/ld+json"]')].map(x=>JSON.parse(x.textContent))});
- assert.deepEqual(seo(newDOM.window.document),seo(doc));
+ const expected=seo(doc);
+ expected.title='おむつ パンツMの価格比較｜必要セット数・30日分の支払額を計算';
+ expected.description='パンツMのおむつを1枚単価と購入時の支払総額で比較。1日の使用枚数と日数から必要セット数・余剰枚数を計算し、サイズ変更前の買いすぎも確認できます。';
+ for(const schema of expected.jsonld)if(schema['@type']==='WebPage'){schema.name=expected.title;schema.description=expected.description;}
+ assert.deepEqual(seo(newDOM.window.document),expected);
+ assert.equal(newDOM.window.document.querySelector('[data-purchase-entry]').getAttribute('href'),'#purchase-planner');
  const catalogDOM=d=>[...d.querySelectorAll('[data-compare-add]')].map(x=>({...x.dataset}));
  assert.deepEqual(catalogDOM(newDOM.window.document),catalogDOM(doc));
  fs.writeFileSync(output+'/before.html',original);fs.writeFileSync(output+'/after.html',after);
@@ -76,6 +81,8 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
     await page.goto(origin+'/before/',{waitUntil:'networkidle'});
     await page.locator('.products').scrollIntoViewIfNeeded();await page.screenshot({path:output+'/'+engine+'-'+width+'-before.png'});
     await page.goto(url+'?test=1',{waitUntil:'networkidle'});
+    await page.locator('[data-purchase-entry]').click();
+    assert.equal(new URL(page.url()).hash,'#purchase-planner');
     assert.match(await page.locator('[data-purchase-summary]').innerText(),/必要150枚/);
     assert.equal(await page.locator('[data-purchase-product]').count(),products.length);
     async function verify(daily,days,sizeDays=null){
@@ -139,7 +146,7 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
     assert(report.lhr.categories.seo.score>=.9);assert(report.lhr.categories.accessibility.score>=.9);
    }}finally{await chrome.kill()}
   }
-  const result={publishedUrl:base+route,snapshotGeneratedAt:snapshot.generated_at,historicalQueryScope:snapshot.pricing_scope,productImagesCached:imageCache.size,seoAndCatalogUnchanged:true,records};
+  const result={publishedUrl:base+route,snapshotGeneratedAt:snapshot.generated_at,historicalQueryScope:snapshot.pricing_scope,productImagesCached:imageCache.size,seoPolicyAndCatalogVerified:true,records};
   fs.writeFileSync(output+'/report.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));
  }finally{server.close();originalDOM.window.close();newDOM.window.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
