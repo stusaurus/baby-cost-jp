@@ -22,6 +22,7 @@
     const horizon = sizeDays === null ? days : Math.min(days, sizeDays);
     const needed = daily * horizon;
     const shortage = Math.max(0, needed - stock);
+    if (stock === 0) { const original = calculate(product, daily, days, sizeDays); return original ? {...original, shortage:original.needed, stock:0, noBuy:false} : null; }
     if (shortage === 0) return {needed, shortage:0, stock, sets:0, payment:0, surplus:0, noBuy:true, sizeSurplus:0, costTenths:0};
     const base = calculate(product, daily, days, sizeDays);
     if (!base) return null;
