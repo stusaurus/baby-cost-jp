@@ -1,4 +1,4 @@
-import pytest
+import unittest
 from src.purchase_decision import decide
 
 VALID = {
@@ -33,14 +33,17 @@ def test_missing_price_or_shipping_is_not_a_recommendation():
     assert d.status == "unverified" and d.payment_yen is None
 
 
-@pytest.mark.parametrize("kwargs", [
+INVALID_CASES = [
     {"daily_use": -1},
     {"daily_use": 1.5},
     {"daily_use": True},
     {"daily_use": 5, "days": 366},
     {"daily_use": 5, "usable_stock": -2},
     {"daily_use": 5, "size_review_days": -1},
-])
-def test_reject_invalid_inputs(kwargs):
-    with pytest.raises(ValueError):
-        decide(VALID, **kwargs)
+]
+
+
+def test_reject_invalid_inputs():
+    for kwargs in INVALID_CASES:
+        with unittest.TestCase().assertRaises(ValueError):
+            decide(VALID, **kwargs)
