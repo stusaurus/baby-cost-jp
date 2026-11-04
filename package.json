@@ -1,1 +1,1 @@
-{"name":"baby-cost-jp-ui-checks","private":true,"scripts":{"test":"node --test tests/ui.test.cjs"},"devDependencies":{"jsdom":"26.1.0"}}
+{"name":"baby-cost-jp-ui-checks","private":true,"scripts":{"test":"node --test tests/*.test.cjs"},"devDependencies":{"jsdom":"26.1.0"}}
