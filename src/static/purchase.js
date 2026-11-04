@@ -83,7 +83,7 @@ if (typeof document !== 'undefined') (() => {
     [dailyInput, daysInput, sizeInput, stockInput].forEach((input, i) => input.setAttribute('aria-invalid', Number.isNaN([daily, days, sizeDays, stock][i]) || (i===3 && (!Number.isSafeInteger(stock) || stock<0 || stock>10000)) ? 'true' : 'false'));
     error.hidden = !!state;
     error.textContent = state ? '' : '使用枚数は1〜30枚、対象期間は1〜90日、サイズの予定は空欄または1〜180日、手持ちは0〜10000枚の整数で入力してください。';
-    summary.innerHTML = state ? '予定' + number(daily * (sizeDays === null ? days : Math.min(days,sizeDays))) + '枚 − 手持ち' + number(stock) + '枚 ＝ <strong>不足' + number(Math.max(0,daily * (sizeDays === null ? days : Math.min(days,sizeDays)) - stock)) + '枚</strong>' : '入力を確認すると計算結果を表示します。';
+    summary.innerHTML = state ? '必要' + number(daily * (sizeDays === null ? days : Math.min(days,sizeDays))) + '枚 − 手持ち' + number(stock) + '枚 ＝ <strong>不足' + number(Math.max(0,daily * (sizeDays === null ? days : Math.min(days,sizeDays)) - stock)) + '枚</strong>' : '入力を確認すると計算結果を表示します。';
     box.querySelectorAll('[data-usage]').forEach(b => {
       const active = Number(b.dataset.usage) === daily;
       b.classList.toggle('is-active', active); b.setAttribute('aria-pressed', String(active));
