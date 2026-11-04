@@ -325,8 +325,8 @@
       const raw = card.querySelector('[data-purchase-product]')?.dataset.purchaseProduct;
       if (!plan || !raw) return null;
       try {
-        const result = window.babyCostPurchase.calculate(
-          JSON.parse(raw), plan.daily, plan.days, plan.sizeDays
+        const result = window.babyCostPurchase.calculateWithStock(
+          JSON.parse(raw), plan.daily, plan.days, plan.sizeDays, plan.stock
         );
         return Number.isSafeInteger(result?.payment) ? result.payment : null;
       } catch (_) {
