@@ -12,8 +12,8 @@ test('stock is subtracted before rounding sets',()=>{
   assert.equal(r.shortage,120);assert.equal(r.sets,2);assert.equal(r.payment,1960);
 });
 test('size review horizon bounds purchase quantity',()=>{
-  const r=calculateWithStock(p,5,30,10,0);
-  assert.equal(r.needed,50);assert.equal(r.sets,1);assert.equal(r.surplus,10);
+  const r=calculateWithStock(p,5,30,10,5);
+  assert.equal(r.needed,50);assert.equal(r.shortage,45);assert.equal(r.sets,1);assert.equal(r.surplus,15);
 });
 test('missing evidence cannot produce payment when purchase needed',()=>{
   assert.equal(calculateWithStock({},5,30,null,0),null);
