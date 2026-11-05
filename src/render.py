@@ -187,7 +187,20 @@ def render_diaper_index(categories, updated_at, snapshots=None):
     rows=[]
     for s in categories['diapers']['segments']:
         rows.append(f'<a class="choice choice--{s["type"]}" data-nav-source="diaper_index" data-category-id="diapers" href="{segment_url(categories["diapers"],s)}"><span class="choice-type">{TYPE[s["type"]]}</span><b>{SIZE[s["size"]]}</b><span>1枚あたりを見る →</span></a>')
-    body=f'''<section class="page-head diaper-head"><a href="{SITE_URL}">← トップ</a><div class="section-kicker">DIAPERS</div><h1>紙おむつを<br>1枚あたりで比較</h1><p>テープ／パンツとサイズをそろえた商品だけを比較します。</p>{trust_strip()}</section>{selector(categories)}{diaper_price_overview(categories, snapshots)}<section class="home-section"><h2>すべての比較条件</h2><div class="choices">{''.join(rows)}</div></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    # Only surface the purchase planner when the pants-M comparison is indexable.
+    pants_m = next((segment for segment in categories['diapers']['segments']
+                    if segment.get('id') == 'pants-m'), None)
+    pants_m_products = ((snapshots or {}).get('pants-m') or {}).get('products', [])
+    planner_entry = (
+        f'<section class="home-section diaper-planner-entry"><h2>パンツMは、何セット買えばいい？</h2>'
+        f'<p>1日に使う枚数と日数から、必要な購入セット数・支払総額・余る枚数を比較できます。'
+        f'サイズ変更が近い場合は買いすぎにも注意しましょう。</p>'
+        f'<a class="purchase-entry" data-nav-source="diaper_index_planner" '
+        f'data-category-id="diapers" href="{segment_url(categories["diapers"], pants_m)}#purchase-planner">'
+        f'パンツMの購入量を計算する →</a></section>'
+        if pants_m and len(pants_m_products) >= 2 else ''
+    )
+    body=f'''<section class="page-head diaper-head"><a href="{SITE_URL}">← トップ</a><div class="section-kicker">DIAPERS</div><h1>紙おむつを<br>1枚あたりで比較</h1><p>テープ／パンツとサイズをそろえた商品だけを比較します。</p>{trust_strip()}</section>{selector(categories)}{planner_entry}{diaper_price_overview(categories, snapshots)}<section class="home-section"><h2>すべての比較条件</h2><div class="choices">{''.join(rows)}</div></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     return shell('おむつの価格比較｜テープ・パンツ・サイズ別の1枚単価','おむつをテープ・パンツとサイズ別に比較。送料込み対象の1枚単価、支払総額、確認済み商品数を一覧で確認し、同じ条件の商品を選べます。',body,f'{SITE_URL}diapers/')
 
 
