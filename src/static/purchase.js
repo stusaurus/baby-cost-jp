@@ -22,14 +22,13 @@
     const horizon = sizeDays === null ? days : Math.min(days, sizeDays);
     const needed = daily * horizon;
     const shortage = Math.max(0, needed - stock);
-    if (stock === 0) { const original = calculate(product, daily, days, sizeDays); return original ? {...original, shortage:original.needed, stock:0, noBuy:false} : null; }
     if (shortage === 0) return {needed, shortage:0, stock, sets:0, payment:0, surplus:0, noBuy:true, sizeSurplus:0, costTenths:0};
-    const base = calculate(product, daily, days, sizeDays);
+    const base = calculate(product, daily, horizon, sizeDays);
     if (!base) return null;
     const sets = Math.ceil(shortage / product.total);
     return {...base, needed, shortage, stock, sets, payment:sets * product.price,
       surplus:sets * product.total - shortage,
-      sizeSurplus:sizeDays === null ? null : Math.max(0, sets * product.total - shortage),
+      sizeSurplus:sizeDays === null ? null : Math.max(0, stock + sets * product.total - daily * sizeDays),
       costTenths:Math.floor((product.price * shortage * 20 + product.total)/(product.total * 2))};
   };
   const api = {calculate, calculateWithStock};
@@ -84,7 +83,9 @@ if (typeof document !== 'undefined') (() => {
     [dailyInput, daysInput, sizeInput, stockInput].forEach((input, i) => input.setAttribute('aria-invalid', Number.isNaN([daily, days, sizeDays, stock][i]) || (i===3 && (!Number.isSafeInteger(stock) || stock<0 || stock>10000)) ? 'true' : 'false'));
     error.hidden = !!state;
     error.textContent = state ? '' : '使用枚数は1〜30枚、対象期間は1〜90日、サイズの予定は空欄または1〜180日、手持ちは0〜10000枚の整数で入力してください。';
-    summary.innerHTML = state ? '必要' + number(daily * (sizeDays === null ? days : Math.min(days,sizeDays))) + '枚 − 手持ち' + number(stock) + '枚 ＝ <strong>不足' + number(Math.max(0,daily * (sizeDays === null ? days : Math.min(days,sizeDays)) - stock)) + '枚</strong>' : '入力を確認すると計算結果を表示します。';
+    const purchaseHorizon = sizeDays === null ? days : Math.min(days, sizeDays);
+    const actualShortage = state ? Math.max(0, daily * purchaseHorizon - stock) : 0;
+    summary.innerHTML = state ? '必要' + number(daily * purchaseHorizon) + '枚 − 手持ち' + number(stock) + '枚 ＝ <strong>不足' + number(actualShortage) + '枚</strong>' : '入力を確認すると計算結果を表示します。';
     box.querySelectorAll('[data-usage]').forEach(b => {
       const active = Number(b.dataset.usage) === daily;
       b.classList.toggle('is-active', active); b.setAttribute('aria-pressed', String(active));
@@ -95,8 +96,6 @@ if (typeof document !== 'undefined') (() => {
     });
     const saving = box.querySelector('[data-savings-result]');
     box.querySelector('[data-savings-period]').textContent = state ? days + '日' : '入力した期間';
-    const purchaseHorizon = stock === 0 ? days : (sizeDays === null ? days : Math.min(days, sizeDays));
-    const actualShortage = state ? Math.max(0, daily * purchaseHorizon - stock) : 0;
     saving.textContent = !state ? '—' : Number(box.dataset.savingsCount) < 2 ? '比較できる商品が不足しています' : '約¥' + (Math.max(0, Number(box.dataset.median) - Number(box.dataset.best)) * actualShortage).toLocaleString('ja-JP', {minimumFractionDigits:1, maximumFractionDigits:1});
     cards.forEach(card => { card.querySelector('[data-purchase-result]').innerHTML = api.render(card.dataset.purchaseProduct); });
     document.dispatchEvent(new CustomEvent('purchase-plan-change'));
