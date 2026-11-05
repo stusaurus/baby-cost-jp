@@ -162,6 +162,7 @@
 
   const renderTable = () => {
     const items = [...selected.values()];
+    const noBuyNow = Boolean(window.babyCostPurchase?.noBuyNow?.());
     const bestUnit = Math.min(...items.map((x) => x.unit || Infinity));
     table.innerHTML = items.map((item) => {
       const image = item.image
@@ -176,7 +177,7 @@
         '<div><dt>販売価格</dt><dd>¥' + Math.round(item.price).toLocaleString('ja-JP') + '</dd></div>' +
         '<div><dt>内容量</dt><dd>' + escapeHtml(item.quantity) + '</dd></div></dl>' +
         (item.purchase && window.babyCostPurchase?.render ? '<section class="purchase-card" aria-label="この商品の購入計画">' + window.babyCostPurchase.render(item.purchase) + '</section>' : '') +
-        (item.url ? '<a class="compare-buy" href="' + escapeHtml(item.url) + '" target="_blank" rel="nofollow sponsored noopener" data-affiliate="rakuten" data-category-id="' + escapeHtml(item.category) + '" data-product-name="' + escapeHtml(item.productName) + '" data-product-id="' + escapeHtml(item.productId) + '" data-size="' + escapeHtml(item.size) + '" data-product-type="' + escapeHtml(item.productType) + '" data-unit-metric="' + escapeHtml(item.unitMetric) + '" data-unit-price="' + item.unit + '" data-rank="' + item.rank + '" data-click-position="compare_modal">楽天で価格・在庫を見る <span aria-hidden="true">→</span></a>' : '') +
+        (item.url && !(item.purchase && noBuyNow) ? '<a class="compare-buy" href="' + escapeHtml(item.url) + '" target="_blank" rel="nofollow sponsored noopener" data-affiliate="rakuten" data-category-id="' + escapeHtml(item.category) + '" data-product-name="' + escapeHtml(item.productName) + '" data-product-id="' + escapeHtml(item.productId) + '" data-size="' + escapeHtml(item.size) + '" data-product-type="' + escapeHtml(item.productType) + '" data-unit-metric="' + escapeHtml(item.unitMetric) + '" data-unit-price="' + item.unit + '" data-rank="' + item.rank + '" data-click-position="compare_modal">楽天で価格・在庫を見る <span aria-hidden="true">→</span></a>' : '') +
         '</article>';
     }).join('');
   };
