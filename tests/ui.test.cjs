@@ -184,7 +184,9 @@ test('invalid input clears stale amounts and recovers; size advice uses only ent
   assert.equal(a.doc.querySelector('[data-purchase-error]').hidden,false);
  }
  change(a,'[data-purchase-daily]','5');change(a,'[data-purchase-size-days]','7');
- assert.match(a.doc.querySelector('.purchase-warning').textContent,/187枚/);
+ assert.match(a.doc.querySelector('[data-purchase-summary]').textContent,/必要35枚/);
+ assert.equal(a.doc.querySelector('[data-savings-period]').textContent,'7日');
+ assert.match(a.doc.querySelector('.purchase-warning').textContent,/余る計算です/);
  change(a,'[data-purchase-size-days]','');assert.equal(a.doc.querySelector('.purchase-warning'),null);
  change(a,'[data-purchase-size-days]','181');assert.equal(a.doc.querySelectorAll('[data-plan-payment]').length,0);
  change(a,'[data-purchase-size-days]','180');assert.equal(a.doc.querySelector('[data-purchase-error]').hidden,true);
@@ -289,4 +291,25 @@ test('Mogumo planner invalid/missing inputs never show a fabricated result',()=>
    submit();
    assert.equal(doc.getElementById('tm-results').hidden,true);
  } finally {w.close()}
+});
+
+test('stock-aware page avoids showing imaginary savings when no diapers need buying',()=>{
+ const a=setup('diapers/pants/m/index.html');
+ try{
+  change(a,'[data-purchase-stock]','150');
+  assert.match(a.doc.querySelector('[data-purchase-summary]').textContent,/不足0枚/);
+  assert.match(a.doc.querySelector('.product [data-purchase-no-buy]').textContent,/今は買い足し不要/);
+  assert.equal(a.doc.querySelectorAll('.product [data-plan-payment]').length,0);
+  assert.equal(a.doc.querySelectorAll('.product .product-actions .cta:not([hidden])').length,0);
+  [...a.doc.querySelectorAll('[data-compare-add]')].slice(0,2).forEach(x=>x.click());
+  a.doc.querySelector('[data-compare-open]').click();
+  assert.equal(a.doc.querySelectorAll('.compare-column .compare-buy').length,0);
+  assert.match(a.doc.querySelector('[data-savings-result]').textContent,/約¥0\.0/);
+  change(a,'[data-purchase-stock]','30');
+  assert.match(a.doc.querySelector('.product .purchase-equivalent').textContent,/今回買い足す120枚分/);
+  assert.match(a.doc.querySelector('[data-purchase-summary]').textContent,/不足120枚/);
+  assert(a.doc.querySelector('.product .product-actions .cta:not([hidden])'));
+  assert.equal(a.doc.querySelectorAll('.compare-column .compare-buy').length,2);
+  assert.equal(a.doc.querySelector('[data-purchase-error]').hidden,true);
+ }finally{a.w.close();}
 });
