@@ -66,7 +66,7 @@ if (typeof document !== 'undefined') (() => {
     if (r.noBuy) return '<p class="purchase-context" data-purchase-no-buy>今は買い足し不要です。手持ちの' + number(stock) + '枚で、予定する' + number(r.needed) + '枚をまかなえます。</p>';
     let warning = '';
     if (r.sizeSurplus > 0) {
-      warning = '<p class="purchase-warning">サイズ変更までの予定' + number(sizeDays) + '日では、購入分のうち' + number(r.sizeSurplus) + '枚が余る計算です。短い期間や少量の商品も確認してください。</p>';
+      warning = '<p class="purchase-warning">サイズ変更までの予定' + number(sizeDays) + '日では、手持ちと購入分を合わせて' + number(r.sizeSurplus) + '枚が余る計算です。短い期間や少量の商品も確認してください。</p>';
     } else if (sizeDays === null && r.surplus >= r.needed) {
       warning = '<p class="purchase-warning">今回の必要枚数以上に余ります。まとめ買い前に、今のサイズを使い切れるか確認してください。</p>';
     }
@@ -74,7 +74,7 @@ if (typeof document !== 'undefined') (() => {
       '<dl class="purchase-metrics"><div><dt>必要購入セット数</dt><dd data-plan-sets>' + number(r.sets) + '<small>セット</small></dd></div>' +
       '<div class="purchase-payment"><dt>購入時の支払額（掲載条件）</dt><dd data-plan-payment>' + yen(r.payment) + '</dd></div>' +
       '<div><dt>1セットの総枚数</dt><dd>' + number(r.total) + '<small>枚</small></dd></div>' +
-      '<div><dt>購入後に余る枚数</dt><dd data-plan-surplus>' + number(r.surplus) + '<small>枚</small></dd></div></dl>' +
+      '<div><dt>使用後に余る枚数</dt><dd data-plan-surplus>' + number(r.surplus) + '<small>枚</small></dd></div></dl>' +
       '<p class="purchase-equivalent">今回買い足す' + number(r.shortage) + '枚分の費用相当額：約¥' + (r.costTenths / 10).toLocaleString('ja-JP', {minimumFractionDigits:1, maximumFractionDigits:1}) + '（按分・支払額とは別）</p>' + warning;
   };
   const update = () => {
@@ -95,7 +95,7 @@ if (typeof document !== 'undefined') (() => {
       b.classList.toggle('is-active', active); b.setAttribute('aria-pressed', String(active));
     });
     const saving = box.querySelector('[data-savings-result]');
-    box.querySelector('[data-savings-period]').textContent = state ? days + '日' : '入力した期間';
+    box.querySelector('[data-savings-period]').textContent = state ? purchaseHorizon + '日' : '入力した期間';
     saving.textContent = !state ? '—' : Number(box.dataset.savingsCount) < 2 ? '比較できる商品が不足しています' : '約¥' + (Math.max(0, Number(box.dataset.median) - Number(box.dataset.best)) * actualShortage).toLocaleString('ja-JP', {minimumFractionDigits:1, maximumFractionDigits:1});
     cards.forEach(card => { card.querySelector('[data-purchase-result]').innerHTML = api.render(card.dataset.purchaseProduct); });
     document.dispatchEvent(new CustomEvent('purchase-plan-change'));
