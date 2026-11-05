@@ -114,6 +114,7 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
     assert.match(await page.locator('[data-purchase-summary]').innerText(),/不足0枚/);
     assert.equal(await page.locator('.product [data-plan-payment]').count(),0);
     assert.equal(await page.locator('.product [data-purchase-no-buy]').count(),products.length);
+    assert.equal(await page.locator('.product .product-actions .cta:visible').count(),0);
     await page.locator('[data-purchase-stock]').fill('0');await verify(7,14,7);
     await page.locator('.product').first().scrollIntoViewIfNeeded();await page.locator('.product').first().screenshot({path:output+'/'+engine+'-'+width+'-product.png'});
     for(const value of ['','0','1.5','31']){await page.locator('[data-purchase-daily]').fill(value);assert.equal(await page.locator('[data-plan-payment]').count(),0);assert(await page.locator('[data-purchase-error]').isVisible())}
