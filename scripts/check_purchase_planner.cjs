@@ -88,15 +88,18 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
     assert.equal(new URL(page.url()).hash,'#purchase-planner');
     assert.match(await page.locator('[data-purchase-summary]').innerText(),/必要150枚/);
     assert.equal(await page.locator('[data-purchase-product]').count(),products.length);
-    async function verify(daily,days,sizeDays=null){
+    async function verify(daily,days,sizeDays=null,stock=0){
      const actual=await page.locator('.product').evaluateAll(xs=>xs.map(x=>({id:x.querySelector('[data-compare-id]').dataset.compareId,
       sets:x.querySelector('[data-plan-sets]')?.textContent,payment:x.querySelector('[data-plan-payment]')?.textContent,
       surplus:x.querySelector('[data-plan-surplus]')?.textContent,warning:x.querySelector('.purchase-warning')?.textContent||''})));
+     const horizon=sizeDays===null?days:Math.min(days,sizeDays);
+     const shortage=Math.max(0,daily*horizon-stock);
      for(const a of actual){const p=products.find(p=>p.source_id===a.id);
-      const sets=Math.ceil(daily*days/p.quantity.total),surplus=sets*p.quantity.total-daily*days;
+      const sets=Math.ceil(shortage/p.quantity.total),surplus=sets*p.quantity.total-shortage;
       assert.equal(a.sets,sets.toLocaleString('ja-JP')+'セット');assert.equal(a.payment,money(sets*p.price_yen));
       assert.equal(a.surplus,surplus.toLocaleString('ja-JP')+'枚');
-      if(sizeDays!==null&&sets*p.quantity.total>daily*sizeDays)assert(a.warning.includes((sets*p.quantity.total-daily*sizeDays).toLocaleString('ja-JP')+'枚'));
+      const sizeSurplus=sizeDays===null?0:Math.max(0,stock+sets*p.quantity.total-daily*sizeDays);
+      if(sizeSurplus>0)assert(a.warning.includes(sizeSurplus.toLocaleString('ja-JP')+'枚'));
      }
     }
     await verify(5,30);
@@ -105,6 +108,13 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
     await page.locator('[data-purchase-days-choice="7"]').click();await verify(8,7);
     await page.locator('[data-purchase-daily]').fill('7');await page.locator('[data-purchase-days]').fill('14');await verify(7,14);
     await page.locator('.purchase-size summary').click();await page.locator('[data-purchase-size-days]').fill('7');await verify(7,14,7);
+    assert.match(await page.locator('[data-purchase-summary]').innerText(),/必要49枚/);
+    await page.locator('[data-purchase-stock]').fill('10');await verify(7,14,7,10);
+    await page.locator('[data-purchase-stock]').fill('49');
+    assert.match(await page.locator('[data-purchase-summary]').innerText(),/不足0枚/);
+    assert.equal(await page.locator('.product [data-plan-payment]').count(),0);
+    assert.equal(await page.locator('.product [data-purchase-no-buy]').count(),products.length);
+    await page.locator('[data-purchase-stock]').fill('0');await verify(7,14,7);
     await page.locator('.product').first().scrollIntoViewIfNeeded();await page.locator('.product').first().screenshot({path:output+'/'+engine+'-'+width+'-product.png'});
     for(const value of ['','0','1.5','31']){await page.locator('[data-purchase-daily]').fill(value);assert.equal(await page.locator('[data-plan-payment]').count(),0);assert(await page.locator('[data-purchase-error]').isVisible())}
     await page.locator('[data-purchase-daily]').fill('5');await page.locator('[data-purchase-size-days]').fill('');await verify(5,14);
