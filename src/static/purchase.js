@@ -52,6 +52,7 @@ if (typeof document !== 'undefined') (() => {
   let state = null;
   // Provide the validated local inputs to the page sorter; never send them to analytics.
   api.currentPlan = () => state ? {...state} : null;
+  api.noBuyNow = () => Boolean(state && state.stock >= state.daily * (state.sizeDays === null ? state.days : Math.min(state.days, state.sizeDays)));
   const read = (input, optional = false) => {
     if (optional && input.value === '' && !input.validity.badInput) return null;
     return /^\d+$/.test(input.value) && input.checkValidity() ? Number(input.value) : NaN;
