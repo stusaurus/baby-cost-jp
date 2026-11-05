@@ -185,6 +185,7 @@ test('invalid input clears stale amounts and recovers; size advice uses only ent
  }
  change(a,'[data-purchase-daily]','5');change(a,'[data-purchase-size-days]','7');
  assert.match(a.doc.querySelector('[data-purchase-summary]').textContent,/必要35枚/);
+ assert.equal(a.doc.querySelector('[data-savings-period]').textContent,'7日');
  assert.match(a.doc.querySelector('.purchase-warning').textContent,/余る計算です/);
  change(a,'[data-purchase-size-days]','');assert.equal(a.doc.querySelector('.purchase-warning'),null);
  change(a,'[data-purchase-size-days]','181');assert.equal(a.doc.querySelectorAll('[data-plan-payment]').length,0);
