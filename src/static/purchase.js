@@ -76,7 +76,7 @@ if (typeof document !== 'undefined') (() => {
       '<div class="purchase-payment"><dt>購入時の支払額（掲載条件）</dt><dd data-plan-payment>' + yen(r.payment) + '</dd></div>' +
       '<div><dt>1セットの総枚数</dt><dd>' + number(r.total) + '<small>枚</small></dd></div>' +
       '<div><dt>購入後に余る枚数</dt><dd data-plan-surplus>' + number(r.surplus) + '<small>枚</small></dd></div></dl>' +
-      '<p class="purchase-equivalent">使用' + number(r.needed) + '枚分の費用相当額：約¥' + (r.costTenths / 10).toLocaleString('ja-JP', {minimumFractionDigits:1, maximumFractionDigits:1}) + '（按分・支払額とは別）</p>' + warning;
+      '<p class="purchase-equivalent">今回買い足す' + number(r.shortage) + '枚分の費用相当額：約¥' + (r.costTenths / 10).toLocaleString('ja-JP', {minimumFractionDigits:1, maximumFractionDigits:1}) + '（按分・支払額とは別）</p>' + warning;
   };
   const update = () => {
     const daily = read(dailyInput), days = read(daysInput), sizeDays = read(sizeInput, true), stock = read(stockInput);
@@ -95,7 +95,9 @@ if (typeof document !== 'undefined') (() => {
     });
     const saving = box.querySelector('[data-savings-result]');
     box.querySelector('[data-savings-period]').textContent = state ? days + '日' : '入力した期間';
-    saving.textContent = !state ? '—' : Number(box.dataset.savingsCount) < 2 ? '比較できる商品が不足しています' : '約¥' + (Math.max(0, Number(box.dataset.median) - Number(box.dataset.best)) * daily * days).toLocaleString('ja-JP', {minimumFractionDigits:1, maximumFractionDigits:1});
+    const purchaseHorizon = stock === 0 ? days : (sizeDays === null ? days : Math.min(days, sizeDays));
+    const actualShortage = state ? Math.max(0, daily * purchaseHorizon - stock) : 0;
+    saving.textContent = !state ? '—' : Number(box.dataset.savingsCount) < 2 ? '比較できる商品が不足しています' : '約¥' + (Math.max(0, Number(box.dataset.median) - Number(box.dataset.best)) * actualShortage).toLocaleString('ja-JP', {minimumFractionDigits:1, maximumFractionDigits:1});
     cards.forEach(card => { card.querySelector('[data-purchase-result]').innerHTML = api.render(card.dataset.purchaseProduct); });
     document.dispatchEvent(new CustomEvent('purchase-plan-change'));
   };
