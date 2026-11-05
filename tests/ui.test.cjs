@@ -300,10 +300,16 @@ test('stock-aware page avoids showing imaginary savings when no diapers need buy
   assert.match(a.doc.querySelector('[data-purchase-summary]').textContent,/不足0枚/);
   assert.match(a.doc.querySelector('.product [data-purchase-no-buy]').textContent,/今は買い足し不要/);
   assert.equal(a.doc.querySelectorAll('.product [data-plan-payment]').length,0);
+  assert.equal(a.doc.querySelectorAll('.product .product-actions .cta:not([hidden])').length,0);
+  [...a.doc.querySelectorAll('[data-compare-add]')].slice(0,2).forEach(x=>x.click());
+  a.doc.querySelector('[data-compare-open]').click();
+  assert.equal(a.doc.querySelectorAll('.compare-column .compare-buy').length,0);
   assert.match(a.doc.querySelector('[data-savings-result]').textContent,/約¥0\.0/);
   change(a,'[data-purchase-stock]','30');
   assert.match(a.doc.querySelector('.product .purchase-equivalent').textContent,/今回買い足す120枚分/);
   assert.match(a.doc.querySelector('[data-purchase-summary]').textContent,/不足120枚/);
+  assert(a.doc.querySelector('.product .product-actions .cta:not([hidden])'));
+  assert.equal(a.doc.querySelectorAll('.compare-column .compare-buy').length,2);
   assert.equal(a.doc.querySelector('[data-purchase-error]').hidden,true);
  }finally{a.w.close();}
 });
