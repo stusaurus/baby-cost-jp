@@ -100,7 +100,7 @@ if (typeof document !== 'undefined') (() => {
     saving.textContent = !state ? '—' : Number(box.dataset.savingsCount) < 2 ? '比較できる商品が不足しています' : '約¥' + (Math.max(0, Number(box.dataset.median) - Number(box.dataset.best)) * actualShortage).toLocaleString('ja-JP', {minimumFractionDigits:1, maximumFractionDigits:1});
     cards.forEach(card => {
       card.querySelector('[data-purchase-result]').innerHTML = api.render(card.dataset.purchaseProduct);
-      const buyLink = card.querySelector('.product-actions .cta');
+      const buyLink = card.closest('.product')?.querySelector('.product-actions .cta');
       if (buyLink) buyLink.hidden = Boolean(state && actualShortage === 0);
     });
     document.dispatchEvent(new CustomEvent('purchase-plan-change'));
