@@ -11,6 +11,14 @@ test('stock is subtracted before rounding sets',()=>{
   const r=calculateWithStock(p,5,30,null,30);
   assert.equal(r.shortage,120);assert.equal(r.sets,2);assert.equal(r.payment,1960);
 });
+test('size review also bounds a zero-stock order',()=>{
+  const r=calculateWithStock(p,5,30,10,0);
+  assert.equal(r.needed,50);
+  assert.equal(r.shortage,50);
+  assert.equal(r.sets,1);
+  assert.equal(r.payment,980);
+  assert.equal(r.surplus,10);
+});
 test('size review horizon bounds purchase quantity',()=>{
   const r=calculateWithStock(p,5,30,10,5);
   assert.equal(r.needed,50);assert.equal(r.shortage,45);assert.equal(r.sets,1);assert.equal(r.surplus,15);
