@@ -95,6 +95,12 @@ if (typeof document !== 'undefined') (() => {
       const active = Number(b.dataset.purchaseDaysChoice) === days;
       b.classList.toggle('is-active', active); b.setAttribute('aria-pressed', String(active));
     });
+    box.querySelectorAll('[data-purchase-size-choice]').forEach(button => {
+      const raw = button.dataset.purchaseSizeChoice;
+      const active = raw === '' ? sizeDays === null : Number(raw) === sizeDays;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
     const saving = box.querySelector('[data-savings-result]');
     box.querySelector('[data-savings-period]').textContent = state ? purchaseHorizon + '日' : '入力した期間';
     saving.textContent = !state ? '—' : Number(box.dataset.savingsCount) < 2 ? '比較できる商品が不足しています' : '約¥' + (Math.max(0, Number(box.dataset.median) - Number(box.dataset.best)) * actualShortage).toLocaleString('ja-JP', {minimumFractionDigits:1, maximumFractionDigits:1});
@@ -113,6 +119,13 @@ if (typeof document !== 'undefined') (() => {
   };
   box.querySelectorAll('[data-usage]').forEach(b => b.addEventListener('click', () => {dailyInput.value = b.dataset.usage; update(); track('daily_preset');}));
   box.querySelectorAll('[data-purchase-days-choice]').forEach(b => b.addEventListener('click', () => {daysInput.value = b.dataset.purchaseDaysChoice; update(); track('days_preset');}));
+  box.querySelectorAll('[data-purchase-size-choice]').forEach(button => button.addEventListener('click', () => {
+    const raw = button.dataset.purchaseSizeChoice;
+    if (raw !== '' && !['7', '14', '30'].includes(raw)) return;
+    sizeInput.value = raw;
+    update();
+    track('size_plan');
+  }));
   [dailyInput, daysInput, sizeInput, stockInput].forEach((input, i) => {
     input.addEventListener('input', update);
     input.addEventListener('change', () => {update(); track(['daily_input','days_input','size_plan','stock_input'][i]);});

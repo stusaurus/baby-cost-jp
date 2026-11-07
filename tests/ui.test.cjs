@@ -313,3 +313,34 @@ test('stock-aware page avoids showing imaginary savings when no diapers need buy
   assert.equal(a.doc.querySelector('[data-purchase-error]').hidden,true);
  }finally{a.w.close();}
 });
+
+test('size planning uses chosen horizon, retains unknown default and does not guess growth',()=>{
+ const a=setup('diapers/pants/m/index.html');
+ try{
+   const input=a.doc.querySelector('[data-purchase-size-days]');
+   const pick=v=>a.doc.querySelector('[data-purchase-size-choice="'+v+'"]');
+   const chips=[...a.doc.querySelectorAll('[data-purchase-size-choice]')];
+   assert.equal(chips.length,4);
+   assert.equal(input.value,'');
+   assert.equal(pick('').getAttribute('aria-pressed'),'true');
+   pick('7').click();
+   assert.equal(input.value,'7');
+   assert.match(a.doc.querySelector('[data-purchase-summary]').textContent,/必要35枚/);
+   assert.equal(a.doc.querySelector('[data-savings-period]').textContent,'7日');
+   assert.equal(pick('7').getAttribute('aria-pressed'),'true');
+   assert.equal(pick('').getAttribute('aria-pressed'),'false');
+   assert.ok(a.doc.querySelector('.purchase-warning'));
+   pick('14').click();
+   assert.equal(input.value,'14');
+   assert.match(a.doc.querySelector('[data-purchase-summary]').textContent,/必要70枚/);
+   change(a,'[data-purchase-size-days]','10');
+   assert.ok(chips.every(x=>x.getAttribute('aria-pressed')==='false'));
+   pick('').click();
+   assert.equal(input.value,'');
+   assert.match(a.doc.querySelector('[data-purchase-summary]').textContent,/必要150枚/);
+   assert.equal(pick('').getAttribute('aria-pressed'),'true');
+   assert.equal(a.doc.querySelector('.purchase-warning'),null);
+   assert.ok(a.events.filter(e=>e[1]==='purchase_planner_use').every(
+     e=>e[2].size_days===undefined&&e[2].sizeDays===undefined));
+ }finally{a.w.close();}
+});
