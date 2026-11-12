@@ -44,7 +44,7 @@ def display_product_name(name: str) -> str:
 def presentation_product_name(name: str) -> str:
     """Hide a confirmed shop campaign-only badge in visible text, not data.
 
-    This deliberately differs from presentation_product_name(), which is also used
+    This deliberately differs from display_product_name(), which is also used
     for catalog identity/deduplication during the price collection pipeline.
     Do not alter identity, product count, sort order, or merchant evidence.
     """
