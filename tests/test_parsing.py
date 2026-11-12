@@ -13,6 +13,38 @@ class ParsingTests(unittest.TestCase):
         q = parse_piece_quantity("おむつ 66枚 3パックセット")
         self.assertEqual(q.total, 198)
 
+    def test_consistent_but_different_nested_pack_summaries_keep_only_total(self):
+        title = ("【お買得！186枚×2個セット】メリーズ パンツ Mサイズ "
+                 "372枚 62枚x6セット 紙おむつ")
+        q = parse_piece_quantity(title)
+        self.assertIsNotNone(q)
+        self.assertEqual(q.total, 372)
+        self.assertEqual(q.base_unit, "piece")
+        self.assertEqual(q.pack_count, 1)
+        self.assertGreaterEqual(q.confidence, .99)
+        self.assertIn("186枚×2個", q.evidence)
+        self.assertIn("62枚x6セット", q.evidence)
+        parsed = parse_for_segment(title, "diapers", {"type":"pants","size":"m"})
+        self.assertEqual(parsed["quantity"]["total"], 372)
+        self.assertEqual(parsed["quantity"]["pack_count"], 1)
+        self.assertAlmostEqual(unit_price(12180, "per_piece", parsed["quantity"]), 12180/372)
+
+    def test_one_consistent_explicit_breakdown_preserves_pack_count(self):
+        q = parse_piece_quantity("グーン パンツ Mサイズ 64枚×3個 計192枚")
+        self.assertEqual((q.total,q.pack_count,q.evidence),(192,3,"64枚×3個"))
+        q2 = parse_piece_quantity("パンパース おむつ パンツ Mサイズ 62枚×3セット 186枚")
+        self.assertEqual((q2.total,q2.pack_count),(186,3))
+
+    def test_conflicting_total_remains_rejected_not_sorted_or_guessed(self):
+        self.assertIsNone(parse_piece_quantity(
+            "メリーズ パンツ M 186枚×2セット 62枚×5セット"))
+        self.assertIsNone(parse_piece_quantity(
+            "おしりふき 80枚×2個 90枚×3個"))
+
+    def test_weight_variants_keep_existing_behavior(self):
+        q = parse_weight_quantity("粉ミルク 800g×2缶 400g×4缶")
+        self.assertEqual((q.total,q.pack_count),(1600,2))
+
     def test_weight_multiplication(self):
         q = parse_weight_quantity("粉ミルク 800g×2缶セット")
         self.assertEqual(q.total, 1600)
