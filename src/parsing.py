@@ -50,6 +50,15 @@ def _parse_quantity(title: str, unit_pattern: str, base_unit: str):
         total=next(iter(totals)); bases={n for n,p,e in explicit}
         if any(p==1 and n not in bases and n!=total for n,p,e in entries): return None
         n,p,e=explicit[0]
+        # "186枚×2個セット ... 62枚×6セット" proves 372枚, but does
+        # not establish what counts as a manufacturer's *one pack*.
+        # Keep total quantity and both original proofs, without inventing
+        # a "2 packs / 186 each" breakdown for the purchase comparison.
+        # Only piece-count products are affected; formula weight parsing
+        # and ordinary unambiguous pack counts retain the existing rules.
+        if base_unit=='piece' and len({(n,p) for n,p,_ in explicit})>1:
+            p=1  # unknown sub-pack breakdown: suppress per-pack display
+            e=' / '.join(dict.fromkeys(proof for _,_,proof in explicit))
     else:
         vals={n for n,p,e in entries}
         if len(vals)!=1 or len(prefix)>1: return None
@@ -57,7 +66,8 @@ def _parse_quantity(title: str, unit_pattern: str, base_unit: str):
         total=n*p
         if prefix: e=f'{e} / {p}個セット'
     if (base_unit=='piece' and total>20000) or (base_unit=='g' and total>100000): return None
-    return Quantity(total,base_unit,e,.99 if p>1 else .89,p)
+    # High confidence applies to the confirmed total, not the sub-pack count.
+    return Quantity(total,base_unit,e,.99 if explicit or p>1 else .89,p)
 
 def parse_weight_quantity(title: str):
     return _parse_quantity(title, 'kg|g', 'g')
