@@ -49,7 +49,20 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
  assert.deepEqual(seo(newDOM.window.document),expected);
  assert.equal(newDOM.window.document.querySelector('[data-purchase-entry]').getAttribute('href'),'#purchase-planner');
  const catalogDOM=d=>[...d.querySelectorAll('[data-compare-add]')].map(x=>({...x.dataset}));
- assert.deepEqual(catalogDOM(newDOM.window.document),catalogDOM(doc));
+ const beforeCatalog=catalogDOM(doc),afterCatalog=catalogDOM(newDOM.window.document);
+ assert.equal(afterCatalog.length,beforeCatalog.length,'Product count must not change');
+ for(let i=0;i<beforeCatalog.length;i++){
+  const {compareName:beforeDisplay,...beforeEvidence}=beforeCatalog[i];
+  const {compareName:afterDisplay,...afterEvidence}=afterCatalog[i];
+  // Only the human-facing opening-sale badge may disappear. Preserve raw
+  // catalog name, product ID, price, quantity, affiliate URL, image and all
+  // data needed for purchase/GA4. Do not disable the original equality gate.
+  assert.deepEqual(afterEvidence,beforeEvidence,
+   'Product/offer evidence changed beyond the approved display-only edit');
+  const expectedDisplay=beforeDisplay.replace(/^【オープン記念セール】\s*/, '').trim() || beforeDisplay;
+  assert.equal(afterDisplay,expectedDisplay,
+   'Unapproved change to the product name used in the comparison tray');
+ }
  fs.writeFileSync(output+'/before.html',original);fs.writeFileSync(output+'/after.html',after);
  const server=http.createServer((req,res)=>{
   const u=new URL(req.url,'http://localhost');let body,type='text/html; charset=utf-8';
