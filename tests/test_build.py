@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from scripts.build_site import attach_price_changes, attach_price_history, brand_page_groups, history_trend_candidate, normalize_products
-from src.render import brand_comparison_section, brand_page_url, display_product_name, price_history_sparkline, product_brand_label, product_card, product_strength_tags, render_brand_page
+from src.render import brand_comparison_section, brand_page_url, display_product_name, presentation_product_name, price_history_sparkline, product_brand_label, product_card, product_strength_tags, render_brand_page
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -86,6 +86,42 @@ class BuildTests(unittest.TestCase):
         self.assertNotIn("hero-mascot", text)
         self.assertIn("3ステップで、すぐ比較", text)
         self.assertIn("HOW TO USE", text)
+
+    def test_opening_sale_badge_removed_only_from_presentation(self):
+        raw = "【オープン記念セール】 グーン ぐんぐん吸収パンツ Mサイズ おむつ 64枚×3個 計192枚"
+        clean = "グーン ぐんぐん吸収パンツ Mサイズ おむつ 64枚×3個 計192枚"
+        self.assertEqual(presentation_product_name(raw), clean)
+        self.assertEqual(display_product_name(raw), raw)
+        self.assertEqual(presentation_product_name(clean), clean)
+        self.assertEqual(presentation_product_name("【オープン記念セール】"), "【オープン記念セール】")
+        self.assertEqual(
+            presentation_product_name("【オープン記念セール】 【Mサイズ】 おむつ 64枚×3個"),
+            "【Mサイズ】 おむつ 64枚×3個",
+        )
+
+    def test_shop_badge_cleanup_preserves_price_count_and_affiliate_evidence(self):
+        raw = "【オープン記念セール】 グーン パンツ Mサイズ 64枚×3個"
+        p = {
+            "name": raw, "source_id": "rakuten:64x3", "price_yen": 4480,
+            "unit_price": 4480 / 192, "unit_metric": "per_piece",
+            "quantity": {"total": 192, "base_unit": "piece", "pack_count": 3, "evidence": "64枚×3個"},
+            "shop": "テスト販売店", "brand": "グーン", "manufacturer": "グーン",
+            "url": "https://item.rakuten.co.jp/shop/test", "image": "", "attributes": {},
+        }
+        markup = product_card(
+            p, 1, "diapers", {"type": "pants", "size": "m"},
+            best_unit_price=p["unit_price"], purchase=True,
+        )
+        self.assertIn('<h3 class="product-title"', markup)
+        headline = markup.split('<h3 class="product-title"', 1)[1].split('</h3>', 1)[0]
+        self.assertNotIn("オープン記念セール", headline.split('>', 1)[1])
+        self.assertIn("64枚×3個", headline)
+        self.assertIn('class="full-name"', markup)
+        self.assertIn(raw, markup)
+        self.assertIn("¥4,480", markup)
+        self.assertIn("合計 192枚", markup)
+        self.assertIn("https://item.rakuten.co.jp/shop/test", markup)
+        self.assertIn('data-product-name="', markup)
 
     def test_comparison_pages_have_department_context(self):
         text = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")

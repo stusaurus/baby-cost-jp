@@ -40,6 +40,19 @@ def display_product_name(name: str) -> str:
     return re.sub(r'\s+',' ',text) or str(name or '').strip()
 
 
+
+def presentation_product_name(name: str) -> str:
+    """Hide a confirmed shop campaign-only badge in visible text, not data.
+
+    This deliberately differs from display_product_name(), which is also used
+    for catalog identity/deduplication during the price collection pipeline.
+    Do not alter identity, product count, sort order, or merchant evidence.
+    """
+    title = display_product_name(name)
+    cleaned = re.sub(r'^【オープン記念セール】\s*', '', title).strip()
+    return cleaned or title
+
+
 def how_visual():
     return f'''<section class="how-visual"><div class="how-intro"><div><div class="section-kicker">HOW TO USE</div><h2>3ステップで、すぐ比較</h2><p>欲しいものを選んだら、あとは単価順に見るだけ。</p></div></div><div class="how-steps"><div class="how-step"><span>01</span><b>条件を選ぶ</b><small>サイズやカテゴリを選択</small></div><div class="how-arrow">→</div><div class="how-step"><span>02</span><b>単価で比べる</b><small>1枚・100gで同条件化</small></div><div class="how-arrow">→</div><div class="how-step"><span>03</span><b>楽天で確認</b><small>価格・在庫を最終チェック</small></div></div></section>'''
 
@@ -88,7 +101,7 @@ def featured_deals_section(deals):
     for row in deals:
         p=row['product']
         image=f'<div class="deal-image"><img src="{esc(p.get("image"))}" alt="" loading="lazy" decoding="async"></div>' if p.get('image') else f'<div class="deal-image deal-image-fallback">{icon_svg(category_icon.get(row["category_id"],"price"))}</div>'
-        cards.append(f'''<a class="deal-card deal-card--{esc(row["category_id"])}" href="{esc(row["url"])}" data-nav-source="featured_deal" data-category-id="{esc(row["category_id"])}"><div class="deal-top"><span>{esc(row["category_label"])}</span><b>中央値より {row["gap_percent"]:.0f}%低い</b></div>{image}<div class="deal-copy"><small>{esc(row["segment_label"])}</small><strong>{yen(row["unit_price"])}<em> / {METRIC[row["metric"]]}</em></strong><p>{esc(display_product_name(p["name"]))}</p><span>比較を見る →</span></div></a>''')
+        cards.append(f'''<a class="deal-card deal-card--{esc(row["category_id"])}" href="{esc(row["url"])}" data-nav-source="featured_deal" data-category-id="{esc(row["category_id"])}"><div class="deal-top"><span>{esc(row["category_label"])}</span><b>中央値より {row["gap_percent"]:.0f}%低い</b></div>{image}<div class="deal-copy"><small>{esc(row["segment_label"])}</small><strong>{yen(row["unit_price"])}<em> / {METRIC[row["metric"]]}</em></strong><p>{esc(presentation_product_name(p["name"]))}</p><span>比較を見る →</span></div></a>''')
     return f'''<section class="featured-deals" id="featured-deals"><div class="featured-deals-head"><div><div class="section-kicker">TODAY'S PICKS</div><h2>今日の比較候補<span class="section-subtitle">まず商品から比べてみよう。</span></h2><p>現在取得できる同条件の商品から、中央値との差が大きい候補を紹介。気になる商品をタップすると比較条件を確認できます。</p></div></div><div class="deal-grid">{''.join(cards)}</div><p class="deal-disclaimer">※ 過去価格との比較ではありません。現在の比較対象内での相対的な価格差です。</p></section>'''
 
 
@@ -100,7 +113,7 @@ def price_drops_section(rows):
         p=row["product"]
         image=f'<div class="drop-image"><img src="{esc(p.get("image"))}" alt="" loading="lazy" decoding="async"></div>' if p.get("image") else f'<div class="drop-image drop-image-fallback">{icon_svg("price")}</div>'
         medal=f'{i:02}'
-        cards.append(f'''<a class="drop-card drop-rank-{i}" href="{esc(row["url"])}" data-nav-source="price_drop" data-category-id="{esc(row["category_id"])}"><div class="drop-rank">{medal}<span>位</span></div><div class="drop-badge">前回より {row["drop_percent"]:.0f}%↓</div>{image}<div class="drop-copy"><small>{esc(row["category_label"])} / {esc(row["segment_label"])}</small><strong>¥{p["price_yen"]:,}</strong><p>{esc(display_product_name(p["name"]))}</p><span>¥{row["drop_yen"]:,}安い・比較を見る →</span></div></a>''')
+        cards.append(f'''<a class="drop-card drop-rank-{i}" href="{esc(row["url"])}" data-nav-source="price_drop" data-category-id="{esc(row["category_id"])}"><div class="drop-rank">{medal}<span>位</span></div><div class="drop-badge">前回より {row["drop_percent"]:.0f}%↓</div>{image}<div class="drop-copy"><small>{esc(row["category_label"])} / {esc(row["segment_label"])}</small><strong>¥{p["price_yen"]:,}</strong><p>{esc(presentation_product_name(p["name"]))}</p><span>¥{row["drop_yen"]:,}安い・比較を見る →</span></div></a>''')
     return f'''<section class="price-drops"><div class="price-drops-head"><div><div class="section-kicker">PRICE DROP RANKING</div><h2>値下がりランキング<span class="section-subtitle">値札が変わった、おすすめ棚。</span></h2><p>前回公開時と同じ商品・同じ内容量だけを比較し、値下がり率順に並べています。</p></div></div><div class="drop-grid">{''.join(cards)}</div><p class="drop-note">※ 前回取得時との比較です。長期的な最安値やセールを示すものではありません。</p></section>'''
 
 def recent_trends_section(rows):
@@ -110,7 +123,7 @@ def recent_trends_section(rows):
     for row in rows:
         p=row["product"]
         spark=price_history_sparkline(p.get("price_history") or [])
-        cards.append(f'''<a class="trend-card" href="{esc(row["url"])}" data-nav-source="recent_price_trend" data-category-id="{esc(row["category_id"])}"><div class="trend-card-head"><span>{esc(row["category_label"])}</span><b>{row["points"]}回分</b></div><h3>{esc(display_product_name(p["name"]))}</h3>{spark}<div class="trend-card-foot"><strong>{row["drop_percent"]:.0f}%↓</strong><span>¥{row["start_price_yen"]:,} → ¥{row["current_price_yen"]:,}</span></div></a>''')
+        cards.append(f'''<a class="trend-card" href="{esc(row["url"])}" data-nav-source="recent_price_trend" data-category-id="{esc(row["category_id"])}"><div class="trend-card-head"><span>{esc(row["category_label"])}</span><b>{row["points"]}回分</b></div><h3>{esc(presentation_product_name(p["name"]))}</h3>{spark}<div class="trend-card-foot"><strong>{row["drop_percent"]:.0f}%↓</strong><span>¥{row["start_price_yen"]:,} → ¥{row["current_price_yen"]:,}</span></div></a>''')
     return f'''<section class="recent-trends"><div class="recent-trends-head"><div><div class="section-kicker">RECENT TREND</div><h2>最近安くなっている商品</h2><p>3回以上の履歴がある商品のうち、最初の記録より現在価格が下がっているものです。</p></div>{icon_svg("price")}</div><div class="trend-grid">{''.join(cards)}</div></section>'''
 
 
@@ -331,7 +344,7 @@ def product_card(p, rank, category_id, segment, best_unit_price=None, strength_t
     packs=q.get('pack_count',1); pack=f' / {packs}パック相当' if packs>1 else ''
     pack_detail=f'<p class="pack-detail">1パック相当 {total/packs:g}{unit}・¥{p["price_yen"]/packs:,.0f}（計算上の目安）</p>' if packs>1 else ''
     stage=p.get('attributes',{}).get('fit_stage','') or ('厚手（商品名に明記）' if p.get('attributes',{}).get('variant')=='thick' else ''); stage_html=f'<span class="tag">{esc(stage)}</span>' if stage else ''
-    display=display_product_name(p['name'])
+    display=presentation_product_name(p['name'])
     strength_tags=strength_tags or []
     if purchase:
         strength_tags=[(kind, '1セット価格◎' if kind=='price' else label) for kind, label in strength_tags]
@@ -364,7 +377,7 @@ def quick_compare(products):
         q=p['quantity']; total=f'{q["total"]:g}{"g" if q["base_unit"]=="g" else "枚"}'
         image=f'<div class="quick-image"><img src="{esc(p.get("image"))}" alt="" loading="lazy" decoding="async"></div>' if p.get('image') else f'<div class="quick-image quick-image-fallback">{icon_svg("price")}</div>'
         medal=f'{i:02}'
-        cards.append(f'''<a class="quick-item quick-rank-{i}" href="#rank-{i}"><div class="quick-top"><span class="quick-medal">{medal}</span><span>{i}位</span></div>{image}<strong>{yen(p["unit_price"])}<small> / {METRIC[p["unit_metric"]]}</small></strong><p>{esc(display_product_name(p["name"]))}</p><em>{total}・¥{p["price_yen"]:,}</em></a>''')
+        cards.append(f'''<a class="quick-item quick-rank-{i}" href="#rank-{i}"><div class="quick-top"><span class="quick-medal">{medal}</span><span>{i}位</span></div>{image}<strong>{yen(p["unit_price"])}<small> / {METRIC[p["unit_metric"]]}</small></strong><p>{esc(presentation_product_name(p["name"]))}</p><em>{total}・¥{p["price_yen"]:,}</em></a>''')
     return f'''<section class="quick-compare"><div class="quick-head"><div><div class="section-kicker">QUICK VIEW</div><h2>上位を早見</h2></div><span>タップで商品詳細へ</span></div><div class="quick-grid">{''.join(cards)}</div></section>'''
 
 
@@ -432,7 +445,7 @@ def render_brand_page(categories, category, segment, brand_label, products, upda
     strengths=product_strength_tags(products)
     cards=''.join(product_card(p,i+1,'diapers',segment,best['unit_price'],strengths.get(p.get('source_id') or p.get('name'),[])) for i,p in enumerate(sorted(products,key=lambda p:p['unit_price'])))
     summary=f'''<section class="brand-page-summary"><div><small>掲載商品</small><strong>{len(products)}商品</strong></div><div><small>最安単価</small><strong>{yen(best['unit_price'])}<em> / {metric}</em></strong></div><div><small>販売価格帯</small><strong>¥{min_price:,}〜¥{max_price:,}</strong></div><div><small>容量</small><strong>{min_qty:g}〜{max_qty:g}枚</strong></div></section>'''
-    answer=f'''<section class="answer"><div class="answer-content"><div class="answer-label"><span>{esc(brand_label)}内の最安単価</span></div><strong>{yen(best['unit_price'])}<small> / {metric}</small></strong><p>{esc(display_product_name(best['name']))}</p></div></section>'''
+    answer=f'''<section class="answer"><div class="answer-content"><div class="answer-label"><span>{esc(brand_label)}内の最安単価</span></div><strong>{yen(best['unit_price'])}<small> / {metric}</small></strong><p>{esc(presentation_product_name(best['name']))}</p></div></section>'''
     body=f'''<section class="page-head brand-page-head comparison-page-head comparison-page-head--diapers"><a href="{segment_url(category,segment)}">← {esc(segment['label'])}の全ブランド比較</a>{comparison_head_visual('diapers')}<div class="section-kicker">THE BRAND SHELF</div><h1>{esc(brand_label)}<br><span>{esc(segment['label'])} 価格比較</span></h1><p>同じブランド・同じタイプ・同じサイズにそろえ、{metric}あたりの価格を比較します。</p><div class="compare-meta"><span>{TYPE[segment['type']]}</span><span>{SIZE[segment['size']]}</span><span>{len(products)}商品を比較</span></div></section><section class="comparison brand-page-comparison" data-comparison data-category-id="diapers" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-result-count="{len(products)}">{summary}{answer}{price_snapshot(products,metric)}{buying_guide()}<section class="view-switcher" data-view-switcher><div><div class="section-kicker">VIEW</div><h2>{esc(brand_label)}を目的別に比べる</h2><p>このブランドの掲載商品だけを並べ替えます。</p></div><div class="view-buttons" role="group" aria-label="商品の並べ替え"><button type="button" class="is-active" data-sort-mode="unit">単価が安い</button><button type="button" data-sort-mode="price">支払総額が安い</button><button type="button" data-sort-mode="quantity">大容量</button></div></section><h2 class="result-title"><span>{esc(brand_label)}</span> <b data-result-sort-label>単価が安い順</b></h2><div class="products" data-sortable-products>{cards}</div>{diaper_savings_simulator(products)}<details class="extra-comparison"><summary>上位を早見</summary>{quick_compare(products)}</details>{compare_panel()}</section><section class="brand-page-seo-note"><div class="section-kicker">ABOUT THIS PAGE</div><h2>{esc(brand_label)} {esc(segment['label'])}を同条件で比較</h2><p>このページは、楽天から取得した商品のうち「{esc(brand_label)}」「{esc(segment['label'])}」と数量を安全に確認できた商品だけを掲載しています。ポイント・クーポンは順位に含めず、送料込み／送料無料条件の価格から単価を算出しています。</p></section><p class="updated">更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     title=f'{brand_label} {segment["label"]} 価格比較｜{metric}あたり'
     desc=f'{brand_label}の{segment["label"]}を{metric}あたりで価格比較。販売価格・容量・現在の価格推移も確認できます。'
@@ -477,7 +490,7 @@ def render_comparison(categories, category_id, category, segment, products, upda
         if len(products)>1:
             gap=products[1]['unit_price']-best['unit_price']
             delta=f'<span class="delta">2位と同単価</span>' if abs(gap)<0.0001 else f'<span class="delta">2位より {yen(gap)} / {metric} 安い</span>'
-        answer=f'''<section class="answer"><div class="answer-content"><div class="answer-label"><span>取得対象内の最安単価</span>{delta}</div><strong>{yen(best['unit_price'])}<small> / {metric}</small></strong><p>{esc(display_product_name(best['name']))}</p></div></section>'''
+        answer=f'''<section class="answer"><div class="answer-content"><div class="answer-label"><span>取得対象内の最安単価</span>{delta}</div><strong>{yen(best['unit_price'])}<small> / {metric}</small></strong><p>{esc(presentation_product_name(best['name']))}</p></div></section>'''
         strengths=product_strength_tags(products)
         cards=''.join(product_card(p,i+1,category_id,segment,best['unit_price'],strengths.get(p.get('source_id') or p.get('name'),[]), purchase=purchase) for i,p in enumerate(products))
     else:
