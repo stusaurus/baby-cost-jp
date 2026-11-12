@@ -319,6 +319,30 @@ class BuildTests(unittest.TestCase):
         self.assertIn("1位より +¥1.0 / 1枚", html)
         self.assertIn("fixture shop", html)
 
+    def test_nested_bundle_breakdown_is_not_mislabeled_as_manufacturer_pack(self):
+        from src.parsing import parse_piece_quantity
+        name=("【お買得！186枚×2個セット】メリーズ パンツ Mサイズ "
+              "372枚 62枚x6セット 紙おむつ")
+        q=parse_piece_quantity(name).as_dict()
+        item={
+            "quantity":q,"attributes":{},"name":name,"brand":"メリーズ",
+            "manufacturer":"花王","shop":"fixture","image":"",
+            "unit_price":12180/372,"unit_metric":"per_piece",
+            "price_yen":12180,"shipping_basis":"rakuten_postage_filter",
+            "url":"https://example.invalid/unchanged","source_id":"nested-pack",
+        }
+        html=product_card(item,4,"diapers",{"type":"pants","size":"m"},
+                          best_unit_price=20.0,purchase=True)
+        self.assertIn("合計 372枚",html)
+        self.assertIn("¥12,180",html)
+        self.assertIn("¥12,180 ÷ 372枚",html)
+        self.assertIn("186枚×2個 / 62枚x6セット",html)
+        self.assertNotIn("2パック相当",html)
+        self.assertNotIn("1パック相当",html)
+        self.assertIn("https://example.invalid/unchanged",html)
+        self.assertIn("必要購入セット数",html)
+        self.assertIn("購入時の支払額",html)
+
     def test_m_subvariant_has_no_separate_index_url(self):
         sitemap = (ROOT / "site/sitemap.xml").read_text(encoding="utf-8")
         self.assertNotIn("m_haihai", sitemap)
