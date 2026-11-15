@@ -579,6 +579,11 @@ def main(fixture: bool = False, pages: int = 2):
     (SITE_DIR / "sitemap.xml").write_text(sitemap, encoding="utf-8")
 
     if not fixture:
+        # Log only segment-level counts before a failed quality check stops publication.
+        # This must never relax the live catalog quality gates.
+        from scripts.quality_count_diagnostics import describe_segment_counts
+        for row in describe_segment_counts(latest, previous_latest, quality_audit):
+            print("QUALITY_PRECHECK " + json.dumps(row, ensure_ascii=False, sort_keys=True), flush=True)
         from scripts.validate_site import validate
         validate(SITE_DIR, previous=previous_latest)
 
