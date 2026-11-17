@@ -195,7 +195,17 @@ def parse_for_segment_detailed(title: str, parser: str, segment: dict, supplemen
     combined=norm(f'{t} {supplemental_text}')
     if re.search(r'定期(?:購入|便|コース)|初回(?:限定|価格)|初めての方限定|お試し|試供品|ふるさと納税|福袋',combined): return None,'conditional_offer'
     if re.search(r'(?:枚数|個数|パック数|容量|数量).{0,12}(?:選べ|選択|お選び)|(?:選べ|選択|お選び).{0,12}(?:枚数|個数|パック数|容量|数量)',combined): return None,'selectable_quantity'
-    if any(x in low for x in ['介護','大人用','犬用','猫用','ペット用']): return None,'excluded_scope'
+    # The seller description may reveal a pet diaper that looks like baby pants in the title.
+    # Keep this fail-closed without guessing variant prices or infant fit.
+    scope_text = combined.lower()
+    pet_markers = (
+        '犬用', '猫用', 'ペット用', '小型犬', '中型犬', '大型犬',
+        'マナーウェア', 'マナーウエア', 'マナーパンツ', 'マナーパッド',
+        'マナーベルト', '犬のおむつ', '犬のオムツ', '猫のおむつ', '猫のオムツ',
+        'わんちゃん', 'ワンちゃん', '愛犬', '愛猫',
+    )
+    if any(x in scope_text for x in ('介護', '大人用', *pet_markers)):
+        return None, 'excluded_scope'
     maker,brand=identify_brand(t); attrs={}
     if parser=='diapers':
         if re.search(r'夜用|ぐっすり|水遊び|水あそび|トレーニング',t): return None,'special_diaper_variant'
