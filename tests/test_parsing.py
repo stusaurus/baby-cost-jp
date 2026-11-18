@@ -158,6 +158,36 @@ class ParsingTests(unittest.TestCase):
         self.assertIsNotNone(row)
         self.assertEqual(row["attributes"]["size"], "big")
 
+    def test_pet_manner_wear_and_seller_description_are_not_baby_diapers(self):
+        from src.parsing import parse_for_segment_detailed
+        segment = {"type": "pants", "size": "s"}
+        pet_offers = [
+            ("マナーウェア 男の子用 パンツ Sサイズ 40枚", ""),
+            ("犬用 マナーウェア パンツ Sサイズ 40枚", ""),
+            ("犬のオムツ パンツ Sサイズ 40枚", ""),
+            ("猫用 おむつ パンツ Sサイズ 40枚", ""),
+            ("紙おむつ パンツ Sサイズ 40枚", "販売店説明: 犬用のマナーウェアです"),
+            ("おむつ パンツ Sサイズ 40枚", "小型犬・わんちゃん向け"),
+        ]
+        for title, supplemental in pet_offers:
+            with self.subTest(title=title, supplemental=supplemental):
+                parsed, reason = parse_for_segment_detailed(
+                    title, "diapers", segment, supplemental_text=supplemental
+                )
+                self.assertIsNone(parsed)
+                self.assertEqual(reason, "excluded_scope")
+
+    def test_regular_baby_pants_remain_eligible_after_pet_exclusion(self):
+        from src.parsing import parse_for_segment_detailed
+        parsed, reason = parse_for_segment_detailed(
+            "メリーズ 紙おむつ パンツ Sサイズ 62枚×3個", "diapers",
+            {"type": "pants", "size": "s"},
+            supplemental_text="乳児向けの通常タイプ",
+        )
+        self.assertEqual(reason, "")
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed["quantity"]["total"], 186)
+
     def test_wipes_excludes_flushable(self):
         row = parse_for_segment("トイレに流せる おしりふき 72枚×12個", "wipes", {})
         self.assertIsNone(row)
