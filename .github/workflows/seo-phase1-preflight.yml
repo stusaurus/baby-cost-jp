@@ -43,3 +43,16 @@ jobs:
             purchase-planner-evidence
             toddler-meal-evidence
           if-no-files-found: error
+      - name: Validate live catalog before publishing PR 20
+        if: github.event_name == 'pull_request' && github.event.pull_request.number == 20 && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          RAKUTEN_APPLICATION_ID: ${{ secrets.RAKUTEN_APPLICATION_ID }}
+          RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
+          RAKUTEN_AFFILIATE_ID: ${{ secrets.RAKUTEN_AFFILIATE_ID }}
+          SITE_URL: https://stusaurus.github.io/baby-cost-jp/
+        run: |
+          mkdir -p .price-cache
+          curl -fsSL "${SITE_URL}data/latest.json" -o .price-cache/latest.json
+          python scripts/build_site.py --pages 2
+          python scripts/generate_seo_files.py
+          python scripts/validate_site.py
