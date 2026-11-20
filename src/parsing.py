@@ -190,9 +190,36 @@ def _diaper_selection_issue(title: str, supplemental_text: str='') -> str:
         return 'ambiguous_diaper_size_selection'
     return ''
 
+def has_explicit_regional_shipping_exception(text: str) -> bool:
+    """Detect seller-stated geographic postage exceptions, never infer fees.
+
+    Rakuten's included-postage API filter can still return a listing whose
+    title or seller copy states that a destination has an extra charge.
+    Keep these out of the universal postage-included comparison, while
+    allowing ordinary mentions of a seller's location or free delivery.
+    """
+    t = norm(text)
+    region = r'(?:北海道|沖縄(?:県)?|離島|一部地域|特定地域)'
+    patterns = (
+        # "送料無料（北海道・沖縄・離島を除く）"
+        rf'(?:送料無料|送料込(?:み)?|配送料無料).{{0,65}}{region}.{{0,32}}(?:除く|対象外)',
+        # "北海道は送料無料の対象外"
+        rf'{region}.{{0,35}}(?:送料無料|送料込(?:み)?).{{0,14}}(?:除く|対象外)',
+        # "沖縄は送料別", "北海道は送料が別途必要"
+        rf'{region}.{{0,35}}(?:送料別|(?:送料|配送料|配送費).{{0,15}}(?:別途|追加|加算|有料|必要|発生|かかる|負担))',
+        # "北海道は別途送料", "離島は追加配送料"
+        rf'{region}.{{0,35}}(?:別途|追加)(?!送料(?:なし|不要|無料|0円)).{{0,12}}(?:送料|配送料|配送費)',
+        # "北海道は1000円、沖縄は2000円自動加算"
+        rf'{region}.{{0,30}}[¥￥]?\d[\d,]*\s*円.{{0,16}}(?:加算|追加|別途)',
+    )
+    return any(re.search(pattern, t, re.I) for pattern in patterns)
+
+
 def parse_for_segment_detailed(title: str, parser: str, segment: dict, supplemental_text: str=''):
     t=norm(title); low=t.lower()
     combined=norm(f'{t} {supplemental_text}')
+    if has_explicit_regional_shipping_exception(combined):
+        return None, 'regional_shipping_surcharge'
     if re.search(r'定期(?:購入|便|コース)|初回(?:限定|価格)|初めての方限定|お試し|試供品|ふるさと納税|福袋',combined): return None,'conditional_offer'
     if re.search(r'(?:枚数|個数|パック数|容量|数量).{0,12}(?:選べ|選択|お選び)|(?:選べ|選択|お選び).{0,12}(?:枚数|個数|パック数|容量|数量)',combined): return None,'selectable_quantity'
     # The seller description may reveal a pet diaper that looks like baby pants in the title.
