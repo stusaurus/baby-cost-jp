@@ -377,6 +377,57 @@ class BuildTests(unittest.TestCase):
         self.assertNotIn("メリーズ", groups)
         self.assertNotIn("謎ブランド", groups)
 
+    def test_brand_url_rescue_is_not_indexed_and_reaches_parent(self):
+        from scripts.validate_site import inspect_pages
+        from src.config import SITE_URL
+
+        route = "diapers/pants/m/goon/"
+        stub = (ROOT / "site" / route / "index.html").read_text(encoding="utf-8")
+        parent = SITE_URL + "diapers/pants/m/"
+        self.assertIn('<meta name="robots" content="noindex,follow">', stub)
+        self.assertIn(f'<meta http-equiv="refresh" content="0; url={parent}">', stub)
+        self.assertIn(f'<link rel="canonical" href="{parent}">', stub)
+        self.assertIn(f'<a href="{parent}">', stub)
+        self.assertNotIn("http-equiv=\\"refresh\\" content=\\"10;", stub)
+        self.assertNotIn(SITE_URL + route, (ROOT / "site/sitemap.xml").read_text(encoding="utf-8"))
+        pages, errors = inspect_pages(ROOT / "site", SITE_URL)
+        self.assertEqual(errors, [])
+        self.assertEqual(pages[SITE_URL + route].robots, "noindex,follow")
+
+    def test_brand_route_history_survives_zero_offers_and_rejects_unknown_paths(self):
+        from src.config import load_categories
+        from scripts.build_site import stable_brand_routes
+        categories = load_categories()
+        prior = {
+            "brand_page_history": [
+                "diapers/pants/m/goon/",
+                "diapers/pants/m/merries/",
+                "../../bad/",
+                "diapers/pants/m/unknown-brand/",
+            ],
+        }
+        allowed, history = stable_brand_routes(
+            categories, prior,
+            {"pants-m": {"products": []}},
+            [],
+        )
+        self.assertIn("diapers/pants/m/goon/", history)
+        self.assertIn("diapers/pants/m/merries/", history)
+        self.assertNotIn("../../bad/", history)
+        self.assertNotIn("diapers/pants/m/unknown-brand/", history)
+        self.assertIn("diapers/pants/m/goon/", allowed)
+
+    def test_brand_route_history_remembers_single_eligible_product(self):
+        from src.config import load_categories
+        from scripts.build_site import stable_brand_routes
+        categories=load_categories()
+        _, history=stable_brand_routes(
+            categories, {}, {"pants-m":{"products":[{
+                "name":"パンパース おむつ パンツ Mサイズ 66枚", "brand":"パンパース"
+            }]}}, [],
+        )
+        self.assertIn("diapers/pants/m/pampers/", history)
+
     def test_brand_page_url_is_stable(self):
         segment={"type":"pants","size":"m"}
         self.assertTrue(brand_page_url(segment,"パンパース").endswith("/diapers/pants/m/pampers/"))
