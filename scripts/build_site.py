@@ -20,6 +20,8 @@ from src.parsing import norm, parse_for_segment_detailed, unit_price  # noqa: E4
 from src.rakuten import fetch_items  # noqa: E402
 from src.meal_guide import HOME_ENTRY, PAGE_URL, render_toddler_meal_guide  # noqa: E402
 from src.render import (  # noqa: E402
+    BRAND_SLUGS,
+    render_brand_unavailable_redirect,
     display_product_name,
     brand_slug,
     product_brand_label,
@@ -332,6 +334,35 @@ def brand_page_groups(products: list[dict]) -> dict[str, list[dict]]:
     return {label: rows for label, rows in groups.items() if len(rows) >= 2}
 
 
+def stable_brand_routes(categories: dict, previous_latest: dict, current_categories: dict, active_pages: list[dict]):
+    """Remember only valid brand routes already observed, not hypothetical SEO URLs."""
+    diaper_category = categories["diapers"]
+    allowed = {
+        f"diapers/{segment['type']}/{segment['size']}/{slug}/":
+            (diaper_category, segment, label)
+        for segment in diaper_category["segments"]
+        for label, slug in BRAND_SLUGS.items()
+    }
+    seed_path = DATA_DIR / "brand_url_history.json"
+    seed = json.loads(seed_path.read_text(encoding="utf-8"))
+    history = set(seed.get("routes") or [])
+    history.update(previous_latest.get("brand_page_history") or [])
+    for old in previous_latest.get("brand_pages") or []:
+        old_url = old.get("url", "")
+        if isinstance(old_url, str) and old_url.startswith(SITE_URL):
+            history.add(old_url[len(SITE_URL):])
+    for active in active_pages:
+        history.add(active["url"][len(SITE_URL):])
+    for segment in diaper_category["segments"]:
+        for product in (current_categories.get(segment["id"]) or {}).get("products", []):
+            label = product_brand_label(product)
+            slug = brand_slug(label)
+            if slug:
+                history.add(f"diapers/{segment['type']}/{segment['size']}/{slug}/")
+    # Invalid or unrecognized paths can never become filesystem/redirect targets.
+    return allowed, sorted(path for path in history if path in allowed)
+
+
 def brand_output_path(segment: dict, label: str) -> Path:
     slug = brand_slug(label)
     return SITE_DIR / "diapers" / segment["type"] / segment["size"] / slug / "index.html"
@@ -526,6 +557,27 @@ def main(fixture: bool = False, pages: int = 2):
         }
         for row in recent_trends
     ]
+
+    # Preserve published brand entry URLs across price refreshes. When only
+    # zero/one accepted offer remains, avoid returning a 404 to existing users
+    # and search results. Redirect to a real, useful same-size comparison.
+    allowed_routes, known_routes = stable_brand_routes(
+        categories, previous_latest, latest["categories"], brand_pages
+    )
+    active_routes = {row["url"][len(SITE_URL):] for row in brand_pages}
+    brand_fallbacks = []
+    for route in known_routes:
+        if route in active_routes:
+            continue
+        category, segment, label = allowed_routes[route]
+        destination = segment_url(category, segment)
+        write_page(
+            SITE_DIR / route / "index.html",
+            render_brand_unavailable_redirect(category, segment, label),
+        )
+        brand_fallbacks.append({"path": route, "destination": destination})
+    latest["brand_page_history"] = known_routes
+    quality_audit["brand_fallbacks"] = brand_fallbacks
 
     latest["brand_pages"] = brand_pages
 

@@ -511,6 +511,31 @@ def comparison_mascot_tip(category_id: str, count: int):
     return f'''<div class="result-mascot-tip"><div><b>{count}商品を比較中</b><span>{esc(text)}</span></div></div>'''
 
 
+def render_brand_unavailable_redirect(category, segment, brand_label):
+    """Rescue a previously published brand URL without inventing offers.
+
+    Instant meta refresh is a static-host fallback for server-side HTTP 301;
+    Google treats it as a permanent redirect. The segment page stays the only
+    canonical/indexable destination when fewer than two brand offers remain.
+    """
+    destination = segment_url(category, segment)
+    title = f'{brand_label} {segment["label"]}の比較先が変わりました'
+    return (
+        '<!doctype html><html lang="ja"><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        f'<title>{esc(title)}</title>'
+        '<meta name="robots" content="noindex,follow">'
+        f'<meta http-equiv="refresh" content="0; url={esc(destination)}">'
+        f'<link rel="canonical" href="{esc(destination)}">'
+        '</head><body><main>'
+        f'<h1>{esc(title)}</h1>'
+        '<p>現在このブランドの比較対象が少ないため、'
+        '同じタイプ・サイズの全ブランド比較ページへ移動します。</p>'
+        f'<p><a href="{esc(destination)}">同じタイプ・サイズの紙おむつを比較する</a></p>'
+        '</main></body></html>'
+    )
+
+
 def render_brand_page(categories, category, segment, brand_label, products, updated_at):
     metric=METRIC[category['metric']]
     canonical=brand_page_url(segment,brand_label)
