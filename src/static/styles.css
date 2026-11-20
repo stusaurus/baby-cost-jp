@@ -157,3 +157,53 @@
 .fourteen-day-jump:hover{background:#386468}
 .fourteen-day-same{font-size:12px;align-self:center;padding:18px;border:1px dashed var(--line)}
 @media(max-width:650px){.fourteen-day-decision{padding:20px 17px}.fourteen-day-grid{grid-template-columns:minmax(0,1fr)}.fourteen-day-option{padding:18px 15px}}
+
+
+/* Nursery guide: restrained editorial layout, with thumb-friendly controls. */
+.nursery-home-promo,.nursery-diaper-entry,.nursery-setup,.nursery-how,.nursery-related{
+  margin:30px 0 40px;padding:28px;background:#f1f3eb;border:1px solid #cfdbcd;color:var(--body)
+}
+.nursery-home-promo h2,.nursery-diaper-entry h2,.nursery-related h2{margin:6px 0 12px}
+.nursery-home-promo p,.nursery-diaper-entry p,.nursery-related p{font-size:13px;max-width:740px}
+.nursery-home-promo a,.nursery-diaper-entry a,.nursery-related a,.nursery-m-link a{
+  display:inline-flex;align-items:center;min-height:46px;padding:8px 13px;
+  font-size:12px;border:1px solid #608477;text-decoration:none;color:var(--ink);background:#fffef9
+}
+.nursery-m-link{margin:0 0 30px}
+.nursery-head h1{font-size:clamp(28px,4vw,43px)}
+.nursery-setup{background:#fffefa}
+.nursery-setup>p,.nursery-how>p,.nursery-related>p{font-size:13px;line-height:1.95}
+.nursery-setup form{display:grid;gap:16px}
+.nursery-fields{margin:0;border:1px solid var(--line);background:#f8f9f4;padding:20px 22px 22px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 18px;min-width:0}
+.nursery-fields legend{font:normal 20px var(--serif);color:var(--ink);padding:0 8px}
+.nursery-fields label{display:flex;flex-direction:column;gap:6px;font-size:12px;min-width:0;color:var(--ink)}
+.nursery-fields input,.nursery-fields select{width:100%;height:48px;border:1px solid #bcccbc;border-radius:3px;background:white;color:var(--ink);font:16px sans-serif;padding:6px 12px}
+.nursery-fields input:focus-visible,.nursery-fields select:focus-visible{outline:3px solid #b4cfbf;outline-offset:2px}
+.nursery-fields .nursery-note{grid-column:1 / -1;font-size:11px;color:var(--muted);margin:3px 0 0}
+.nursery-submit{min-height:50px;background:var(--ink);border:1px solid var(--ink);color:#fffef8;font-size:13px;padding:13px 20px}
+.nursery-submit:hover{background:#426e6e}
+.nursery-error{color:#a52e26;font-size:13px;border-left:3px solid #a52e26;padding:10px 13px;background:#fff7f5}
+.nursery-output{margin-top:26px;border-top:1px solid #cbd8ce;padding-top:24px;scroll-margin-top:100px}
+.nursery-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.nursery-total{padding:13px 17px;background:#e9efe4;border:1px solid #c7d4c4;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.nursery-total span{font-size:11px}.nursery-total strong{font:normal 26px var(--number);color:var(--ink)}
+.nursery-offer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.nursery-offer{padding:19px;border:1px solid #d8ddce;background:#fffef8;min-width:0}
+.nursery-offer h3{font:normal 18px var(--serif);color:var(--ink)}
+.nursery-offer-name{font-size:12px;overflow-wrap:anywhere}
+.nursery-offer dl{margin:12px 0}.nursery-offer dl>div{display:flex;justify-content:space-between;gap:9px;border-top:1px solid var(--line);padding:9px 0}
+.nursery-offer dt{font-size:11px}.nursery-offer dd{margin:0;font-size:12px;font-weight:700;color:var(--ink);text-align:right}
+.nursery-offer a{display:inline-flex;align-items:center;min-height:44px;font-size:12px;color:#345a4b}
+.nursery-tradeoff{font-size:13px;font-weight:600;color:var(--ink)}
+.nursery-disclaimer,.nursery-no-buy{font-size:11px;color:var(--muted)}
+.nursery-how h3{font-size:16px}
+.nursery-how li{font-size:13px;line-height:1.9;margin-bottom:7px}
+.nursery-how a{overflow-wrap:anywhere}
+.nursery-related a+a{margin:10px 0 0 8px}
+@media(max-width:650px){
+  .nursery-home-promo,.nursery-diaper-entry,.nursery-setup,.nursery-how,.nursery-related{padding:18px 15px;margin:22px 0 28px}
+  .nursery-fields{padding:17px 13px 18px;grid-template-columns:minmax(0,1fr)}
+  .nursery-totals,.nursery-offer-grid{grid-template-columns:minmax(0,1fr)}
+  .nursery-related a{display:flex;width:100%;justify-content:center}
+  .nursery-related a+a{margin:10px 0 0}
+}
