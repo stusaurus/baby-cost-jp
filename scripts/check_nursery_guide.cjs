@@ -26,7 +26,7 @@ const local = http.createServer((req,res) => {
   let rel = suffix.endsWith("/") ? suffix + "index.html" : suffix;
   if (u.pathname === expectedRoute) {
     res.setHeader("Content-Type","text/html; charset=utf-8");
-    res.end(body);
+    res.end(body.replaceAll("https://stusaurus.github.io/baby-cost-jp/", "http://127.0.0.1:"+local.address().port+"/baby-cost-jp/"));
     return;
   }
   const target = path.resolve(root,rel);
