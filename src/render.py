@@ -210,7 +210,7 @@ def render_diaper_index(categories, updated_at, snapshots=None):
         f'サイズ変更が近い場合は買いすぎにも注意しましょう。</p>'
         f'<a class="purchase-entry" data-nav-source="diaper_index_planner" '
         f'data-category-id="diapers" href="{segment_url(categories["diapers"], pants_m)}#purchase-planner">'
-        f'パンツMの購入量を計算する →</a></section>'
+        f'パンツMの14日分・30日分の買い足しを計算する →</a></section>'
         if pants_m and len(pants_m_products) >= 2 else ''
     )
     body=f'''<section class="page-head diaper-head"><a href="{SITE_URL}">← トップ</a><div class="section-kicker">DIAPERS</div><h1>紙おむつを<br>1枚あたりで比較</h1><p>テープ／パンツとサイズをそろえた商品だけを比較します。</p>{trust_strip()}</section>{selector(categories)}{planner_entry}{diaper_price_overview(categories, snapshots)}<section class="home-section"><h2>すべての比較条件</h2><div class="choices">{''.join(rows)}</div></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
@@ -394,6 +394,83 @@ def price_snapshot(products, metric: str):
     note=f'最安は中央値より {pct:.0f}% 低い' if pct>=1 else '最安と中央値はほぼ同水準'
     return f'''<section class="price-snapshot"><div class="price-snapshot-head"><div><div class="section-kicker">PRICE SNAPSHOT</div><h2>いまの価格感</h2></div><span>{esc(note)}</span></div><div class="price-band"><div class="price-point"><small>最安</small><strong>{yen(low)}</strong><em>/ {metric}</em></div><div class="price-line"><i></i><b></b><i></i></div><div class="price-point price-point-mid"><small>中央値</small><strong>{yen(median)}</strong><em>/ {metric}</em></div><div class="price-point"><small>高値側</small><strong>{yen(high)}</strong><em>/ {metric}</em></div></div><p>このページで現在比較できる {len(products)} 商品の単価から算出しています。過去価格との比較ではありません。</p></section>'''
 
+def render_fourteen_day_purchase_decision(products):
+    """Daily product-specific illustration, not a forecast or a global cheapest offer."""
+    from .purchase_decision import decide
+
+    candidates = []
+    for product in products:
+        decision = decide(
+            product, daily_use=5, days=14, usable_stock=20, size_review_days=14
+        )
+        if decision.status == "buy":
+            candidates.append((product, decision))
+    if not candidates:
+        return ""
+
+    by_payment = min(
+        candidates,
+        key=lambda item: (
+            item[1].payment_yen, item[1].surplus,
+            item[0].get("source_id", "")
+        ),
+    )
+    by_surplus = min(
+        candidates,
+        key=lambda item: (
+            item[1].surplus, item[1].payment_yen,
+            item[0].get("source_id", "")
+        ),
+    )
+
+    def option(label, choice):
+        product, decision = choice
+        name = presentation_product_name(product.get("name", ""))
+        if len(name) > 95:
+            name = name[:95].rstrip() + "…"
+        return (
+            '<article class="fourteen-day-option">'
+            f'<h3>{esc(label)}</h3>'
+            f'<p class="fourteen-day-product">{esc(name)}</p>'
+            '<dl class="fourteen-day-metrics">'
+            f'<div><dt>買う数量</dt><dd>{decision.sets}セット・{int(product["quantity"]["total"]) * decision.sets}枚</dd></div>'
+            f'<div><dt>支払額（掲載条件）</dt><dd>¥{decision.payment_yen:,}</dd></div>'
+            f'<div><dt>今回の使用後に余る枚数</dt><dd>{decision.surplus}枚</dd></div>'
+            '</dl></article>'
+        )
+
+    first = option("支払額が少ない候補", by_payment)
+    if by_surplus[0] is by_payment[0]:
+        second = '<p class="fourteen-day-same">今回の掲載候補では、支払額と余りが最小の候補は同じ商品です。</p>'
+        tradeoff = ""
+    else:
+        second = option("余る枚数が少ない候補", by_surplus)
+        delta_yen = by_surplus[1].payment_yen - by_payment[1].payment_yen
+        delta_pieces = by_payment[1].surplus - by_surplus[1].surplus
+        tradeoff = (
+            f'<p class="fourteen-day-tradeoff">この条件では、支払額を¥{delta_yen:,}増やすと、'
+            f'余りを{delta_pieces}枚減らせる組み合わせです。'
+            '価格だけでなく、手持ち・使い切る予定・慣れたブランドで判断してください。</p>'
+        )
+
+    return (
+        '<section class="fourteen-day-decision" id="14day-example" aria-labelledby="14day-title">'
+        '<div class="section-kicker">14-DAY PURCHASE DECISION</div>'
+        '<h2 id="14day-title">パンツMをあと14日使うなら、何枚買い足す？</h2>'
+        '<p>例：1日に5枚使い、14日分を予定すると70枚。手持ちが20枚あれば'
+        '<strong>不足は50枚</strong>です。50枚だけを購入できるとは限らないため、'
+        '販売セット単位の支払額と余りを見比べます。</p>'
+        f'<div class="fourteen-day-grid">{first}{second}</div>'
+        f'{tradeoff}'
+        f'<p class="fourteen-day-caveat">上記は現在このページで購入条件を検証できる{len(candidates)}商品内の例です。'
+        '楽天全店の最安・最少余りを保証せず、価格・送料・在庫・数量制限は販売店で再確認してください。'
+        '14日は保護者が仮に選ぶ期間で、体重や成長からサイズ変更日を予測したものではありません。'
+        'ブランドや肌との相性も価格から判断できません。</p>'
+        '<a class="fourteen-day-jump" href="#purchase-planner">自分の使用枚数・手持ち在庫で計算する →</a>'
+        '</section>'
+    )
+
+
 def diaper_purchase_planner(products):
     values = sorted(float(p['price_yen']) / p['quantity']['total'] for p in products if purchase_inputs(p))
     median = (values[len(values)//2] if len(values)%2 else (values[len(values)//2-1]+values[len(values)//2])/2) if values else 0
@@ -511,9 +588,10 @@ def render_comparison(categories, category_id, category, segment, products, upda
     snapshot=price_snapshot(products,metric)
     savings=diaper_savings_simulator(products) if category_id=='diapers' and not purchase else ''
     planner=diaper_purchase_planner(products) if purchase else ''
+    fourteen_day_answer = render_fourteen_day_purchase_decision(products) if purchase and len(products) >= 2 else ''
     purchase_intro = ('1枚単価に加え、使う枚数と日数から必要セット数・支払総額・余る枚数を比較できます。' if purchase else f'{metric}あたりの価格を、同じ条件にそろえて比較します。')
     purchase_entry = ('<p><a class="purchase-entry" style="display:inline-flex;align-items:center;min-height:44px;max-width:100%;padding:10px 14px;border:1px solid currentColor;border-radius:10px;box-sizing:border-box" href="#purchase-planner" data-purchase-entry>何セット・いくら必要か計算する ↓</a></p>' if purchase else '')
-    body=f'''<section class="page-head comparison-page-head comparison-page-head--{category_id}">{back}{head_visual}<div class="section-kicker">PRICE COMPARISON</div><h1>{esc(label)}<br><span>コスパ比較</span></h1><p>{purchase_intro}</p>{purchase_entry}{meta}</section>{mascot_tip}{suitability_note(category_id,segment)}<section class="comparison" data-comparison data-category-id="{category_id}" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-result-count="{len(products)}">{answer}{planner}{snapshot}{comparison_decision_notes(category_id, products, metric, purchase=purchase)}{'<details class="condition-disclosure" id="condition-change"><summary>条件を変更する</summary>'+selector_html+'</details>' if selector_html else ''}<nav class="comparison-nav" aria-label="比較ページ内"><a href="#products">商品を見る ↓</a>{'<a href="#condition-change">条件を変更</a><a href="#brand-section">ブランド</a>' if category_id=='diapers' else ''}</nav>{buying_guide(purchase=purchase)}<section class="view-switcher" data-view-switcher><div><div class="section-kicker">VIEW</div><h2>比べ方を切り替える</h2><p>同じ掲載商品を、目的に合わせて並べ替えます。</p></div><div class="view-buttons" role="group" aria-label="商品の並べ替え"><button type="button" class="is-active" data-sort-mode="unit">単価が安い</button><button type="button" data-sort-mode="price">{'必要枚数分の購入額が安い' if purchase else '支払総額が安い'}</button><button type="button" data-sort-mode="quantity">大容量</button></div></section><div class="saved-tools"><button type="button" data-saved-only aria-pressed="false">保存した商品だけ見る</button><span data-saved-status aria-live="polite">保存はこの端末で利用できます</span></div><h2 class="result-title"><span>ランキング</span> <b data-result-sort-label>単価が安い順</b></h2><div class="products" id="products" data-sortable-products>{cards}</div><div id="brand-section">{brand_comparison_section(products,category_id,metric,segment)}</div>{savings}<details class="extra-comparison"><summary>上位を早見・価格履歴を確認</summary>{quick_compare(products)}</details>{compare_panel(category_id=='diapers' and segment.get('id')=='pants-m')}</section>{health_note}<section class="method-note method-note-visual"><div><div class="section-kicker">HOW IT WORKS</div><h2>この順位に入る条件</h2><p>楽天APIで送料込み／送料無料条件に絞り、数量と条件を確認できた商品だけを単価換算しています。紙おむつはサイズ選択式やタイプ不明の商品を除外。ポイント・クーポンは順位に含めません。</p><a href="{SITE_URL}method/">詳しい比較方法を見る →</a></div></section><p class="updated">更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    body=f'''<section class="page-head comparison-page-head comparison-page-head--{category_id}">{back}{head_visual}<div class="section-kicker">PRICE COMPARISON</div><h1>{esc(label)}<br><span>コスパ比較</span></h1><p>{purchase_intro}</p>{purchase_entry}{meta}</section>{mascot_tip}{suitability_note(category_id,segment)}<section class="comparison" data-comparison data-category-id="{category_id}" data-size="{esc(segment.get('size',''))}" data-product-type="{esc(segment.get('type',''))}" data-result-count="{len(products)}">{answer}{fourteen_day_answer}{planner}{snapshot}{comparison_decision_notes(category_id, products, metric, purchase=purchase)}{'<details class="condition-disclosure" id="condition-change"><summary>条件を変更する</summary>'+selector_html+'</details>' if selector_html else ''}<nav class="comparison-nav" aria-label="比較ページ内"><a href="#products">商品を見る ↓</a>{'<a href="#condition-change">条件を変更</a><a href="#brand-section">ブランド</a>' if category_id=='diapers' else ''}</nav>{buying_guide(purchase=purchase)}<section class="view-switcher" data-view-switcher><div><div class="section-kicker">VIEW</div><h2>比べ方を切り替える</h2><p>同じ掲載商品を、目的に合わせて並べ替えます。</p></div><div class="view-buttons" role="group" aria-label="商品の並べ替え"><button type="button" class="is-active" data-sort-mode="unit">単価が安い</button><button type="button" data-sort-mode="price">{'必要枚数分の購入額が安い' if purchase else '支払総額が安い'}</button><button type="button" data-sort-mode="quantity">大容量</button></div></section><div class="saved-tools"><button type="button" data-saved-only aria-pressed="false">保存した商品だけ見る</button><span data-saved-status aria-live="polite">保存はこの端末で利用できます</span></div><h2 class="result-title"><span>ランキング</span> <b data-result-sort-label>単価が安い順</b></h2><div class="products" id="products" data-sortable-products>{cards}</div><div id="brand-section">{brand_comparison_section(products,category_id,metric,segment)}</div>{savings}<details class="extra-comparison"><summary>上位を早見・価格履歴を確認</summary>{quick_compare(products)}</details>{compare_panel(category_id=='diapers' and segment.get('id')=='pants-m')}</section>{health_note}<section class="method-note method-note-visual"><div><div class="section-kicker">HOW IT WORKS</div><h2>この順位に入る条件</h2><p>楽天APIで送料込み／送料無料条件に絞り、数量と条件を確認できた商品だけを単価換算しています。紙おむつはサイズ選択式やタイプ不明の商品を除外。ポイント・クーポンは順位に含めません。</p><a href="{SITE_URL}method/">詳しい比較方法を見る →</a></div></section><p class="updated">更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     if category_id=='diapers':
         title=f'おむつ {TYPE[segment["type"]]}タイプ {SIZE[segment["size"]]}サイズ｜1枚あたり価格比較'
         desc=f'紙おむつの{TYPE[segment["type"]]}タイプ・{SIZE[segment["size"]]}サイズを、送料込み対象の1枚あたり価格で比較。枚数・支払総額・ブランド別の価格も確認できます。'

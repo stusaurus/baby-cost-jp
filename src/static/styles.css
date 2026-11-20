@@ -138,3 +138,22 @@
 .toddler-entry a{display:inline-block;margin:9px 0 0;min-height:44px;padding:12px 20px;background:#2b6648;color:#fff;font-weight:800;text-decoration:none;border-radius:10px}
 .toddler-entry a:focus-visible{outline:3px solid #81ab91;outline-offset:3px}
 @media(max-width:600px){.toddler-entry{margin:20px 13px;padding:19px 16px}.toddler-entry a{display:block;text-align:center}}
+
+/* A readable, crawlable purchase decision grounded in the current verified catalog. */
+.fourteen-day-decision{margin:0 0 34px;padding:26px 28px 30px;background:#f1f3eb;border:1px solid #cbd5c9;scroll-margin-top:100px}
+.fourteen-day-decision h2{font-size:clamp(21px,2.1vw,27px);margin:8px 0 12px}
+.fourteen-day-decision>p{font-size:13px;line-height:1.95;max-width:830px}
+.fourteen-day-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:22px 0 16px}
+.fourteen-day-option{padding:20px 21px;background:#fffef9;border:1px solid #d8dfd1;min-width:0}
+.fourteen-day-option h3{font-family:var(--serif);font-weight:600;font-size:18px;margin:0 0 11px;color:var(--ink)}
+.fourteen-day-product{font-size:12px;line-height:1.8;color:#4a5b52;margin:0 0 16px;overflow-wrap:anywhere}
+.fourteen-day-metrics{margin:0;display:grid;gap:8px}
+.fourteen-day-metrics>div{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;border-top:1px solid #e0e5dc;padding-top:8px}
+.fourteen-day-metrics dt{font-size:11px;color:var(--muted)}
+.fourteen-day-metrics dd{margin:0;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.fourteen-day-tradeoff{color:var(--ink);font-weight:600}
+.fourteen-day-decision .fourteen-day-caveat{font-size:11px;color:var(--muted);max-width:920px;margin:16px 0}
+.fourteen-day-jump{display:inline-flex;align-items:center;min-height:48px;background:var(--ink);border:1px solid var(--ink);color:#fffdf6;text-decoration:none;padding:9px 16px;font-size:12px;border-radius:3px}
+.fourteen-day-jump:hover{background:#386468}
+.fourteen-day-same{font-size:12px;align-self:center;padding:18px;border:1px dashed var(--line)}
+@media(max-width:650px){.fourteen-day-decision{padding:20px 17px}.fourteen-day-grid{grid-template-columns:minmax(0,1fr)}.fourteen-day-option{padding:18px 15px}}

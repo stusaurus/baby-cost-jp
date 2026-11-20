@@ -52,6 +52,58 @@ class BuildTests(unittest.TestCase):
         self.assertIn("1セットの販売価格が最小の候補", text)
         self.assertIn("https://stusaurus.github.io/baby-cost-jp/wipes/", text)
 
+    def test_fourteen_day_purchase_decision_uses_verified_real_set_cost(self):
+        from src.render import render_fourteen_day_purchase_decision
+
+        def eligible(name, code, price, pieces, shipping="rakuten_postage_filter"):
+            return {
+                "name": name, "source_id": code, "price_yen": price,
+                "quantity": {"total": pieces, "base_unit": "piece",
+                             "confidence": .99, "evidence": f"{pieces}枚"},
+                "shipping_basis": shipping,
+            }
+
+        products = [
+            eligible("パンパース パンツM 160枚", "a", 4000, 160),
+            eligible("メリーズ パンツM 64枚", "b", 5000, 64),
+            eligible("安価だが送料不明 50枚", "c", 100, 50, shipping="unknown"),
+        ]
+        html = render_fourteen_day_purchase_decision(products)
+        self.assertIn('id="14day-example"', html)
+        self.assertIn("不足は50枚", html)
+        self.assertIn("¥4,000", html)
+        self.assertIn("¥5,000", html)
+        self.assertIn("110枚", html)
+        self.assertIn("14枚", html)
+        self.assertIn("¥1,000増やすと", html)
+        self.assertIn("余りを96枚減らせる", html)
+        self.assertIn("検証できる2商品内", html)
+        self.assertNotIn("安価だが送料不明", html)
+        self.assertIn('href="#purchase-planner"', html)
+
+    def test_fourteen_day_purchase_decision_empty_or_single_offer(self):
+        from src.render import render_fourteen_day_purchase_decision
+        self.assertEqual(render_fourteen_day_purchase_decision([]), "")
+        single = [{
+            "name": "ムーニー パンツM 80枚", "source_id": "only",
+            "price_yen": 2500, "quantity": {
+                "total": 80, "base_unit": "piece", "confidence": .99,
+                "evidence": "80枚"
+            }, "shipping_basis": "rakuten_postage_filter",
+        }]
+        html = render_fourteen_day_purchase_decision(single)
+        self.assertEqual(html.count('class="fourteen-day-option"'), 1)
+        self.assertIn("同じ商品", html)
+        self.assertNotIn("¥0増やすと", html)
+
+    def test_pants_m_has_crawlable_14day_decision_without_other_segment_spill(self):
+        pants = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
+        tape = (ROOT / "site/diapers/tape/m/index.html").read_text(encoding="utf-8")
+        self.assertIn('id="14day-example"', pants)
+        self.assertIn("販売セット単位の支払額と余り", pants)
+        self.assertIn('href="#purchase-planner"', pants)
+        self.assertNotIn('id="14day-example"', tape)
+
     def test_pants_m_14day_entry_does_not_change_other_segments(self):
         pants = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
         tape = (ROOT / "site/diapers/tape/m/index.html").read_text(encoding="utf-8")
