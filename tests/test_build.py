@@ -52,6 +52,18 @@ class BuildTests(unittest.TestCase):
         self.assertIn("1セットの販売価格が最小の候補", text)
         self.assertIn("https://stusaurus.github.io/baby-cost-jp/wipes/", text)
 
+    def test_pants_m_14day_entry_does_not_change_other_segments(self):
+        pants = (ROOT / "site/diapers/pants/m/index.html").read_text(encoding="utf-8")
+        tape = (ROOT / "site/diapers/tape/m/index.html").read_text(encoding="utf-8")
+        self.assertIn("14日・30日分の必要セット数と支払額", pants)
+        self.assertIn("パンツMをあと14日使う予定なら？", pants)
+        self.assertIn("必要70枚", pants)
+        self.assertIn("不足するのは50枚", pants)
+        self.assertIn('href="#purchase-planner"', pants)
+        self.assertIn('https://stusaurus.github.io/baby-cost-jp/diapers/pants/m/', pants)
+        self.assertNotIn("パンツMをあと14日使う予定なら？", tape)
+        self.assertNotIn("14日・30日分の必要セット数と支払額", tape)
+
     def test_home_explains_quality_and_surfaces_live_price(self):
         text = (ROOT / "site/index.html").read_text(encoding="utf-8")
         self.assertIn("選択式商品は除外", text)

@@ -130,5 +130,12 @@ if (typeof document !== 'undefined') (() => {
     input.addEventListener('input', update);
     input.addEventListener('change', () => {update(); track(['daily_input','days_input','size_plan','stock_input'][i]);});
   });
+  // A public campaign link may preselect a non-sensitive, fixed scenario.
+  // Do not accept household quantities from URL parameters or log a synthetic use event.
+  if (new URLSearchParams(window.location.search).get('plan') === '14d') {
+    daysInput.value = '14';
+    sizeInput.value = '14';
+    box.querySelector('.purchase-size').open = true;
+  }
   update();
 })();
