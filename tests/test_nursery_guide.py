@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from pathlib import Path
-from src.render import render_nursery_diaper_guide
+from src.nursery_guide import render_nursery_diaper_guide
 
 ROOT = Path(__file__).resolve().parents[1]
 
