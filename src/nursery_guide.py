@@ -57,8 +57,8 @@ def render_nursery_diaper_guide(pants_m_products):
 <fieldset class="nursery-fields"><legend>4. 購入するおむつのタイプ・サイズを確認</legend>
 <label>現在使用しているおむつ
 <select name="productSize" data-nursery-field>
-<option value="other" selected>パンツM以外・まだ確認していない（必要枚数のみ）</option>
-<option value="pants-m">パンツMを使用中（販売セットの金額も比較）</option>
+<option value="other" selected>パンツM以外・未確認</option>
+<option value="pants-m">パンツMを使用中</option>
 </select></label>
 <p class="nursery-note">タイプ・サイズを確認していない段階では、商品や購入先を表示しません。必要枚数の計算はそのまま利用できます。</p>
 </fieldset>
