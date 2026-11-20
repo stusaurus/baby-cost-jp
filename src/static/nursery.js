@@ -110,6 +110,18 @@
       add(output, "p", "この計算条件なら追加購入は0セットです。手持ち在庫だけで足りるため、買い足しは不要です。", "nursery-no-buy");
       return heading;
     }
+    // A generic nursery shortage is not evidence the child wears pants-M.
+    // Never display M-size affiliate offers unless the guardian explicitly
+    // selects the currently used size on this submission.
+    if (input("productSize")?.value !== "pants-m") {
+      add(output, "p", "必要枚数のみを計算しました。パンツMを現在使用中と確認できた場合だけ、このページで商品と購入セット数を比較できます。ほかのサイズはタイプ・サイズ別の比較一覧をご利用ください。", "nursery-disclaimer");
+      const link = document.createElement("a");
+      link.href = "/baby-cost-jp/diapers/";
+      link.textContent = "自分に合うタイプ・サイズの比較へ進む →";
+      link.className = "nursery-size-link";
+      output.appendChild(link);
+      return heading;
+    }
     const offers = offerSelection(result.shortage);
     if (offers.length === 0) {
       add(output, "p", "現在、数量と価格を確認できたパンツMの商品がありません。必要枚数のみを表示します。", "nursery-disclaimer");

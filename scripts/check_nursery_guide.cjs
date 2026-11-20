@@ -62,6 +62,14 @@ const local = http.createServer((req,res) => {
           await page.locator("[data-nursery-form] button[type=submit]").click();
           const result=page.locator("[data-nursery-output]");
           assert.equal(await result.isVisible(),true);
+          const initial=await result.innerText();
+          for(const expected of ["54枚","55枚","109枚","89枚"]) assert(initial.includes(expected),expected+" not in "+initial.slice(0,900));
+          assert.equal(await page.locator('[name="productSize"]').inputValue(),"other");
+          assert.equal(await page.locator(".nursery-offer").count(),0);
+          assert(initial.includes("必要枚数のみを計算しました"),"The unconfirmed size must not offer M-size products");
+          assert.equal(await page.locator(".nursery-size-link").count(),1);
+          await page.locator('[name="productSize"]').selectOption("pants-m");
+          await page.locator("[data-nursery-form] button[type=submit]").click();
           const text=await result.innerText();
           for(const expected of ["54枚","55枚","109枚","89枚","¥2,800","¥3,000","20枚"]) assert(text.includes(expected),expected+" not in "+text.slice(0,900));
           assert.equal(await page.locator(".nursery-offer").count(),2);
@@ -73,14 +81,26 @@ const local = http.createServer((req,res) => {
           }
           const events=await page.evaluate(()=>window.__events);
           const planEvents=events.filter(ev=>ev[1]==="nursery_plan_complete");
-          assert.equal(planEvents.length,1);
+          assert.equal(planEvents.length,2);
           const payload=planEvents[0][2];
           assert.deepEqual(Object.keys(payload).sort(),["calculator_type","page_path","site_id"].sort());
           // No individual values, attendance pattern or nursery status in events.
-          for (const unsafe of ["attend","stock","nurseryDaily","homeAttend","period","shortage","mode","needed"]) {
+          for (const unsafe of ["attend","stock","nurseryDaily","homeAttend","period","shortage","mode","needed","productSize"]) {
             assert(!Object.hasOwn(payload,unsafe));
           }
-          assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth),true,engine+"/"+width+" horizontal overflow");
+          const overflow = await page.evaluate(() => ({
+            documentWidth: document.documentElement.scrollWidth,
+            viewportWidth: innerWidth,
+            elements: [...document.querySelectorAll("body *")].filter((el) => {
+              const rect = el.getBoundingClientRect();
+              return rect.width > 0 && (rect.right > innerWidth + 1 || rect.left < -1);
+            }).slice(0, 12).map((el) => ({
+              tag: el.tagName, className: String(el.className).slice(0, 65),
+              width: Math.round(el.getBoundingClientRect().width),
+              right: Math.round(el.getBoundingClientRect().right)
+            }))
+          }));
+          assert(overflow.documentWidth <= overflow.viewportWidth,engine+"/"+width+" horizontal overflow "+JSON.stringify(overflow));
           if(width===390)await page.screenshot({path:path.join(out,engine+"-"+width+"-bring.png"),fullPage:true});
 
           await page.locator('[name="mode"]').selectOption("subscription");
