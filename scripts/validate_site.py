@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 
 class Page(HTMLParser):
     def __init__(self, text):
-        super().__init__(); self.canonical=[]; self.robots=''; self.links=[]; self.ids=set(); self.h1=0; self.json_blocks=[]; self.in_json=False
+        super().__init__(); self.canonical=[]; self.robots=''; self.links=[]; self.ids=set(); self.h1=0; self.json_blocks=[]; self.in_json=False; self.refresh=[]
         self.feed(text)
     def handle_starttag(self, tag, attrs):
         a=dict(attrs)
@@ -16,6 +16,7 @@ class Page(HTMLParser):
         if tag=='h1': self.h1+=1
         if tag=='link' and a.get('rel')=='canonical': self.canonical.append(a.get('href'))
         if tag=='meta' and a.get('name')=='robots': self.robots=a.get('content','')
+        if tag=='meta' and a.get('http-equiv','').lower()=='refresh': self.refresh.append(a.get('content',''))
         if tag=='a' and a.get('href'): self.links.append(a['href'])
         if tag=='script' and a.get('type')=='application/ld+json': self.in_json=True
     def handle_endtag(self, tag):
@@ -30,10 +31,22 @@ def inspect_pages(site, site_url):
         page=Page(path.read_text()); rel=path.relative_to(site).as_posix()
         url=site_url+('' if rel=='index.html' else rel[:-10] if rel.endswith('/index.html') else rel)
         result[url]=page
-        if page.canonical!=[url]: errors.append(f'canonical: {rel}')
-        if page.h1!=1: errors.append(f'H1: {rel}')
-        if not page.json_blocks: errors.append(f'structured data: {rel}')
+        if page.refresh:
+            # Only allow one immediate same-segment redirect on a noindex
+            # legacy brand route. Never allow a redirect to an arbitrary URL.
+            target=url.rstrip('/').rsplit('/',1)[0]+'/'
+            if page.refresh!=[f'0; url={target}']: errors.append(f'brand redirect target: {rel}')
+            if page.canonical!=[target]: errors.append(f'brand redirect canonical: {rel}')
+            if 'noindex' not in page.robots: errors.append(f'brand redirect indexability: {rel}')
+            if page.h1!=1: errors.append(f'brand redirect H1: {rel}')
+        else:
+            if page.canonical!=[url]: errors.append(f'canonical: {rel}')
+            if page.h1!=1: errors.append(f'H1: {rel}')
+            if not page.json_blocks: errors.append(f'structured data: {rel}')
     for url,page in result.items():
+        if page.refresh:
+            target=url.rstrip('/').rsplit('/',1)[0]+'/'
+            if target not in result: errors.append(f'brand redirect missing destination: {url}')
         for link in page.links:
             if link.startswith('#'): target=url; fragment=link[1:]
             elif link.startswith(site_url): target=link.split('#')[0].split('?')[0]; fragment=urlsplit(link).fragment
