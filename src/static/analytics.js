@@ -74,7 +74,7 @@
     const link = target?.closest('a[data-affiliate]');
     if (!link) return;
     const data = {
-      affiliate: link.dataset.affiliate || '', conversion_source: inheritedSource || 'comparison_result', category_id: link.dataset.categoryId || '',
+      affiliate: link.dataset.affiliate || '', conversion_source: inheritedSource || link.dataset.conversionSource || 'comparison_result', category_id: link.dataset.categoryId || '',
       product_name: (link.dataset.productName || '').slice(0,100), product_id: link.dataset.productId || '',
       size: link.dataset.size || '', product_type: link.dataset.productType || '', unit_metric: link.dataset.unitMetric || '',
       unit_price: Number(link.dataset.unitPrice || 0), rank: Number(link.closest('.product')?.querySelector('.rank')?.textContent || link.dataset.rank || 0), click_position: link.dataset.clickPosition || '',

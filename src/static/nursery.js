@@ -85,6 +85,9 @@
     link.dataset.unitMetric = "per_piece";
     link.dataset.unitPrice = String(p.price / p.pieces);
     link.dataset.clickPosition = "nursery_plan_offer";
+    // Preserve source attribution for direct Google landings on the guide.
+    // A prior same-tab navigation source still takes precedence in analytics.js.
+    link.dataset.conversionSource = "nursery_plan_offer";
     link.textContent = "楽天で最新の価格・数量を確認する →";
     box.appendChild(link);
   }
@@ -119,6 +122,8 @@
       link.href = "/baby-cost-jp/diapers/";
       link.textContent = "自分に合うタイプ・サイズの比較へ進む →";
       link.className = "nursery-size-link";
+      link.dataset.navSource = "nursery_unconfirmed_size";
+      link.dataset.categoryId = "diapers";
       output.appendChild(link);
       return heading;
     }
