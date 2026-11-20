@@ -68,6 +68,10 @@ const local = http.createServer((req,res) => {
           assert.equal(await page.locator(".nursery-offer").count(),0);
           assert(initial.includes("必要枚数のみを計算しました"),"The unconfirmed size must not offer M-size products");
           assert.equal(await page.locator(".nursery-size-link").count(),1);
+          const fallback = page.locator(".nursery-size-link");
+          assert.equal(await fallback.getAttribute("data-nav-source"),"nursery_unconfirmed_size");
+          assert.equal(await fallback.getAttribute("data-category-id"),"diapers");
+          assert.equal((await page.evaluate(()=>window.__events)).filter(e=>e[1]==="affiliate_click").length,0);
           await page.locator('[name="productSize"]').selectOption("pants-m");
           await page.locator("[data-nursery-form] button[type=submit]").click();
           const text=await result.innerText();
@@ -78,6 +82,29 @@ const local = http.createServer((req,res) => {
           for(let i=0;i<2;i++){
             assert((await links.nth(i).getAttribute("href")).startsWith("https://hb.afl.rakuten.co.jp/hgc/"));
             assert.match(await links.nth(i).getAttribute("rel"),/sponsored/);
+          }
+          // The offers are added after page load. Verify delegated GA4 click
+          // events, the direct-landing source label, and payload privacy.
+          assert.equal(await links.first().getAttribute("data-conversion-source"),"nursery_plan_offer");
+          await links.first().evaluate(el => {
+            const event = new MouseEvent("click",{bubbles:true,cancelable:true,button:0});
+            event.preventDefault(); // Avoid opening the synthetic affiliate URL.
+            el.dispatchEvent(event);
+          });
+          const sent = await page.evaluate(()=>window.__events);
+          const purchases = sent.filter(e=>e[1]==="product_result_click");
+          const affiliates = sent.filter(e=>e[1]==="affiliate_click");
+          assert.equal(purchases.length,1,engine+"/"+width+" product_result_click");
+          assert.equal(affiliates.length,1,engine+"/"+width+" affiliate_click");
+          assert.equal(purchases[0][2].conversion_source,"nursery_plan_offer");
+          assert.equal(affiliates[0][2].conversion_source,"nursery_plan_offer");
+          assert.equal(affiliates[0][2].click_position,"nursery_plan_offer");
+          assert.equal(affiliates[0][2].product_id,await links.first().getAttribute("data-product-id"));
+          assert.equal(affiliates[0][2].page_path,"/baby-cost-jp/guides/nursery-diapers/");
+          for(const e of [...purchases,...affiliates]){
+            for(const forbidden of ["attend","stock","nurseryDaily","homeAttend","period","shortage","mode","needed","productSize"]) {
+              assert(!Object.hasOwn(e[2],forbidden), "Unexpected private data field: "+forbidden);
+            }
           }
           const events=await page.evaluate(()=>window.__events);
           const planEvents=events.filter(ev=>ev[1]==="nursery_plan_complete");
