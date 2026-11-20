@@ -54,6 +54,14 @@ def render_nursery_diaper_guide(pants_m_products):
 <label>家庭と園で使える、同サイズの手持ち枚数<input name="stock" data-nursery-field type="number" inputmode="numeric" min="0" max="1000" step="1" value="20" required></label>
 <p class="nursery-note">園に預けた在庫を含める場合は二重計上しないでください。サイズが異なるおむつは合計に入れません。</p>
 </fieldset>
+<fieldset class="nursery-fields"><legend>4. 購入するおむつのタイプ・サイズを確認</legend>
+<label>現在使用しているおむつ
+<select name="productSize" data-nursery-field>
+<option value="other" selected>パンツM以外・まだ確認していない（必要枚数のみ）</option>
+<option value="pants-m">パンツMを使用中（販売セットの金額も比較）</option>
+</select></label>
+<p class="nursery-note">タイプ・サイズを確認していない段階では、商品や購入先を表示しません。必要枚数の計算はそのまま利用できます。</p>
+</fieldset>
 <p class="nursery-error" data-nursery-error role="alert" hidden></p>
 <button class="nursery-submit" type="submit">不足枚数と買い方を計算する →</button>
 </form>
