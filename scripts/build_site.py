@@ -33,6 +33,7 @@ from src.render import (  # noqa: E402
     segment_url,
     write_page,
 )
+from src.nursery_guide import render_nursery_diaper_guide  # noqa: E402
 
 QUALITY_AUDIT_REASONS = {
     "ambiguous_diaper_size",
@@ -408,7 +409,7 @@ def main(fixture: bool = False, pages: int = 2):
         "categories": {},
         "excluded_problem_products": [],
     }
-    sitemap_urls = [SITE_URL, f"{SITE_URL}diapers/", f"{SITE_URL}method/", PAGE_URL]
+    sitemap_urls = [SITE_URL, f"{SITE_URL}diapers/", f"{SITE_URL}method/", PAGE_URL, f"{SITE_URL}guides/nursery-diapers/"]
 
     for category_id, category in categories.items():
         category_rows = []
@@ -588,6 +589,10 @@ def main(fixture: bool = False, pages: int = 2):
     home_html = home_html.replace(home_anchor, HOME_ENTRY + home_anchor, 1)
     write_page(SITE_DIR / "index.html", home_html)
     write_page(SITE_DIR / "guides" / "toddler-meals" / "index.html", render_toddler_meal_guide())
+    write_page(SITE_DIR / "guides" / "nursery-diapers" / "index.html", render_nursery_diaper_guide([
+        dict(product, url=product.get("affiliate_url", ""))
+        for product in latest["categories"].get("pants-m", {}).get("products", [])
+    ]))
     write_page(SITE_DIR / "diapers" / "index.html", render_diaper_index(categories, updated_at, latest["categories"]))
     write_page(SITE_DIR / "method" / "index.html", render_method())
     write_page(SITE_DIR / "404.html", '<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,follow"><title>ページが見つかりません</title><h1>ページが見つかりません</h1><p>比較条件をトップページから選び直してください。</p><a href="'+SITE_URL+'">ベビーコスパ比較へ</a></html>')
