@@ -42,8 +42,8 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
   canonical:d.querySelector('link[rel=canonical]').href,robots:d.querySelector('meta[name=robots]').content,
   h1:d.querySelector('h1').textContent,jsonld:[...d.querySelectorAll('script[type="application/ld+json"]')].map(x=>JSON.parse(x.textContent))});
  const expected=seo(doc);
- expected.title='おむつ パンツMの価格比較｜必要セット数・30日分の支払額を計算';
- expected.description='パンツMのおむつを1枚単価と購入時の支払総額で比較。1日の使用枚数と日数から必要セット数・余剰枚数を計算し、サイズ変更前の買いすぎも確認できます。';
+ expected.title='おむつ パンツMの価格比較｜14日・30日分の必要セット数と支払額';
+ expected.description='パンツMのおむつを14日・30日など使う期間と手持ち在庫で比較。1日の使用枚数から必要セット数・支払総額・余剰枚数を計算し、サイズ変更前の買いすぎも確認できます。';
  for(const schema of expected.jsonld.flat())if(schema['@type']==='WebPage'){schema.name=expected.title;schema.description=expected.description;}
  for(const schema of expected.jsonld.flat())if(schema['@type']==='BreadcrumbList'){const current=schema.itemListElement.find(x=>x.item===base+route);assert(current);current.name=expected.title;}
  assert.deepEqual(seo(newDOM.window.document),expected);
@@ -94,7 +94,18 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
     const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(origin+'/before/',{waitUntil:'networkidle'});
     await page.locator('.products').scrollIntoViewIfNeeded();await page.screenshot({path:output+'/'+engine+'-'+width+'-before.png'});
+    // Campaign deep link: fixed 14-day usage window, no personal values in URL or GA4.
+    await page.goto(url+'?test=1&plan=14d&stock=999#purchase-planner',{waitUntil:'networkidle'});
+    assert.equal(await page.locator('[data-purchase-days]').inputValue(),'14');
+    assert.equal(await page.locator('[data-purchase-size-days]').inputValue(),'14');
+    assert.equal(await page.locator('[data-purchase-stock]').inputValue(),'0');
+    assert.equal(await page.locator('.purchase-size').evaluate(el=>el.open),true);
+    assert.match(await page.locator('[data-purchase-summary]').innerText(),/必要70枚/);
+    assert.equal(await page.locator('[data-purchase-days-choice="14"]').getAttribute('aria-pressed'),'true');
+    assert.equal((await page.evaluate(()=>window.__events)).filter(x=>x[1]==='purchase_planner_use').length,0);
     await page.goto(url+'?test=1',{waitUntil:'networkidle'});
+    assert.equal(await page.locator('[data-purchase-days]').inputValue(),'30');
+    assert.equal(await page.locator('[data-purchase-size-days]').inputValue(),'');
     assert(await page.locator('[data-purchase-entry]').evaluate(el=>el.getBoundingClientRect().height>=44));
     await page.screenshot({path:output+'/'+engine+'-'+width+'-entry.png'});
     await page.locator('[data-purchase-entry]').click();
