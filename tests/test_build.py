@@ -388,7 +388,7 @@ class BuildTests(unittest.TestCase):
         self.assertIn(f'<meta http-equiv="refresh" content="0; url={parent}">', stub)
         self.assertIn(f'<link rel="canonical" href="{parent}">', stub)
         self.assertIn(f'<a href="{parent}">', stub)
-        self.assertNotIn("http-equiv=\\"refresh\\" content=\\"10;", stub)
+        self.assertNotIn('content="10;', stub)
         self.assertNotIn(SITE_URL + route, (ROOT / "site/sitemap.xml").read_text(encoding="utf-8"))
         pages, errors = inspect_pages(ROOT / "site", SITE_URL)
         self.assertEqual(errors, [])
