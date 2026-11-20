@@ -188,6 +188,44 @@ class ParsingTests(unittest.TestCase):
         self.assertIsNotNone(parsed)
         self.assertEqual(parsed["quantity"]["total"], 186)
 
+    def test_explicit_regional_postage_exception_is_not_free_shipping(self):
+        from src.parsing import parse_for_segment_detailed
+        seg = {"type": "pants", "size": "l"}
+        excluded = [
+            (
+                "【パンツ Lサイズ】メリーズさらさらエアスルー (9~14kg)162枚 "
+                "54枚×3パック★SDGs提携協力倉庫より発送★送料無料"
+                "(沖縄・北海道・離島を除く)☆"
+                "(北海道は1000円。沖縄・離島は2000円自動加算。）",
+                "",
+            ),
+            ("メリーズ パンツ Lサイズ 54枚×3パック", "北海道・沖縄は別途送料が必要です"),
+            ("メリーズ パンツ Lサイズ 54枚×3パック", "離島は追加配送料が発生します"),
+            ("メリーズ パンツ Lサイズ 54枚×3パック", "沖縄県は送料別となります"),
+        ]
+        for title, supplemental in excluded:
+            with self.subTest(title=title, supplemental=supplemental):
+                row, reason = parse_for_segment_detailed(
+                    title, "diapers", seg, supplemental_text=supplemental
+                )
+                self.assertIsNone(row)
+                self.assertEqual(reason, "regional_shipping_surcharge")
+
+    def test_no_false_postage_exception_for_ordinary_shipping_claims(self):
+        from src.parsing import parse_for_segment_detailed
+        seg = {"type": "pants", "size": "l"}
+        admitted = [
+            "メリーズ パンツ Lサイズ 54枚×3パック 送料無料",
+            "メリーズ パンツ Lサイズ 54枚×3パック 北海道の倉庫から発送 送料無料",
+            "メリーズ パンツ Lサイズ 54枚×3パック 北海道・沖縄も追加料金なし",
+            "メリーズ パンツ Lサイズ 54枚×3パック 全国どこでも送料無料",
+        ]
+        for title in admitted:
+            with self.subTest(title=title):
+                row, reason = parse_for_segment_detailed(title, "diapers", seg)
+                self.assertEqual(reason, "")
+                self.assertIsNotNone(row)
+
     def test_wipes_excludes_flushable(self):
         row = parse_for_segment("トイレに流せる おしりふき 72枚×12個", "wipes", {})
         self.assertIsNone(row)
