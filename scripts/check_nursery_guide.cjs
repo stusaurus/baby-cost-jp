@@ -88,7 +88,19 @@ const local = http.createServer((req,res) => {
           for (const unsafe of ["attend","stock","nurseryDaily","homeAttend","period","shortage","mode","needed","productSize"]) {
             assert(!Object.hasOwn(payload,unsafe));
           }
-          assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth),true,engine+"/"+width+" horizontal overflow");
+          const overflow = await page.evaluate(() => ({
+            documentWidth: document.documentElement.scrollWidth,
+            viewportWidth: innerWidth,
+            elements: [...document.querySelectorAll("body *")].filter((el) => {
+              const rect = el.getBoundingClientRect();
+              return rect.width > 0 && (rect.right > innerWidth + 1 || rect.left < -1);
+            }).slice(0, 12).map((el) => ({
+              tag: el.tagName, className: String(el.className).slice(0, 65),
+              width: Math.round(el.getBoundingClientRect().width),
+              right: Math.round(el.getBoundingClientRect().right)
+            }))
+          }));
+          assert(overflow.documentWidth <= overflow.viewportWidth,engine+"/"+width+" horizontal overflow "+JSON.stringify(overflow));
           if(width===390)await page.screenshot({path:path.join(out,engine+"-"+width+"-bring.png"),fullPage:true});
 
           await page.locator('[name="mode"]').selectOption("subscription");
