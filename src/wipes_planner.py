@@ -53,7 +53,6 @@ def render_wipes_planner(products, display_name, script_url):
         for row in candidates:
             row["payment"] = row["sets"] * row["price"]
             row["excess"] = row["sets"] * row["pieces"] - example_shortage
-        ]
         cheapest = min(candidates, key=lambda p: (p["payment"], p["excess"], p["rank"]))
         least_excess = min(candidates, key=lambda p: (p["excess"], p["payment"], p["rank"]))
         safe_name = html.escape(cheapest["name"], quote=True)
