@@ -207,3 +207,50 @@
   .nursery-related a{display:flex;width:100%;justify-content:center}
   .nursery-related a+a{margin:10px 0 0}
 }
+
+
+/* Wipes monthly purchase planner integrated into the existing indexed listing. */
+.wipes-planner{margin:0 0 32px;padding:clamp(17px,3vw,28px);background:#f5f7ef;border:1px solid #cbd9ce;scroll-margin-top:85px}
+.wipes-planner h2{font-size:clamp(23px,3vw,29px);margin:8px 0 14px}
+.wipes-planner>p{font-size:13px;line-height:1.95;max-width:900px}
+.wipes-planner a{overflow-wrap:anywhere}
+.wipes-static-example{margin:18px 0;padding:20px 22px;background:#fffefa;border:1px solid var(--line)}
+.wipes-static-example h3{font:600 18px/1.5 var(--serif);margin:0 0 12px;color:var(--ink)}
+.wipes-static-example p{font-size:13px;line-height:1.85;margin:9px 0}
+.wipes-planner .wipes-caveat,.wipes-planner .wipes-plan-caveat{font-size:11px;color:var(--muted);line-height:1.9}
+.wipes-plan-form{display:grid;gap:14px;margin:22px 0 0}
+.wipes-plan-form fieldset{min-width:0;margin:0;border:1px solid #cfdbd0;padding:17px 18px;background:#edf1e7;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.wipes-plan-form legend{font:600 17px var(--serif);color:var(--ink);padding:0 6px}
+.wipes-plan-form label{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:12px;color:var(--ink)}
+.wipes-plan-form input,.wipes-plan-form select{box-sizing:border-box;display:block;width:100%;max-width:100%;min-width:0;height:47px;border:1px solid #bbcdbd;border-radius:3px;background:#fffef9;color:var(--ink);padding:6px 12px;font:16px sans-serif}
+.wipes-plan-form input:focus-visible,.wipes-plan-form select:focus-visible{outline:3px solid #8faf9c;outline-offset:2px}
+.wipes-plan-submit{min-height:50px;padding:11px 16px;border:1px solid var(--ink);background:var(--ink);color:#fffefa;font-size:13px;font-weight:700}
+.wipes-plan-submit:hover{background:#3f6668}
+.wipes-plan-error{color:#9a2727;border-left:3px solid #9a2727;background:#fff4f1;padding:9px 12px;font-size:12px}
+.wipes-plan-output{margin-top:24px;padding:22px 0 0;border-top:1px solid #cbd9ce}
+.wipes-plan-output h3{font:600 21px var(--serif);color:var(--ink);margin:0 0 16px}
+.wipes-plan-output>p{font-size:12px}
+.wipes-plan-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.wipes-plan-stat{background:#e9efe5;border:1px solid #d4e0d1;padding:12px;display:flex;flex-direction:column;align-items:flex-start;min-width:0}
+.wipes-plan-stat span{font-size:11px}
+.wipes-plan-stat strong{font:500 25px var(--number);color:var(--ink)}
+.wipes-plan-offers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+.wipes-plan-offer{min-width:0;border:1px solid #d5decf;background:#fffefa;padding:18px}
+.wipes-plan-offer h4{margin:0 0 10px;font:600 17px var(--serif);color:var(--ink)}
+.wipes-plan-offer-name{font-size:12px;line-height:1.8;overflow-wrap:anywhere}
+.wipes-plan-offer dl{margin:13px 0}
+.wipes-plan-offer dl>div{padding:8px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px}
+.wipes-plan-offer dt{font-size:11px}
+.wipes-plan-offer dd{margin:0;font-size:12px;font-weight:700;text-align:right}
+.wipes-plan-offer a{display:flex;align-items:center;justify-content:center;min-height:44px;font-size:12px;text-align:center;padding:8px 12px;margin:8px 0 0;text-decoration:none;border:1px solid #729482;color:var(--ink)}
+.wipes-plan-offer .wipes-plan-buy{background:var(--ink);border-color:var(--ink);color:#fffefa;font-weight:700}
+.wipes-plan-tradeoff{font-weight:600;color:var(--ink)}
+.wipes-plan-no-buy{border:1px solid #8cac9b;padding:13px 16px;background:#eaf4e6;font-size:13px}
+@media(max-width:650px){
+ .wipes-planner{padding:18px 15px}
+ .wipes-static-example{padding:16px 13px}
+ .wipes-plan-form fieldset{grid-template-columns:minmax(0,1fr);padding:16px 12px}
+ .wipes-plan-stats{grid-template-columns:minmax(0,1fr)}
+ .wipes-plan-offers{grid-template-columns:minmax(0,1fr)}
+ .wipes-plan-offer{padding:16px 13px}
+}
