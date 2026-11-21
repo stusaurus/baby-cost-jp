@@ -96,7 +96,7 @@ server=http.createServer(localGet);
           assert.equal(before.filter(e=>e[1]==="wipes_plan_complete").length,1);
           assert.equal(before.filter(e=>e[1]==="affiliate_click").length,0);
           assert.deepEqual(Object.keys(before.filter(e=>e[1]==="wipes_plan_complete")[0][2]).sort(),
-            ["calculator_type","category_id","page_path","product_type","result_count","site_id","size"].sort());
+            ["calculator_type","category_id","page_path","product_type","site_id","size"].sort());
           await links.first().evaluate(a=>{
             const click=new MouseEvent("click",{bubbles:true,cancelable:true,button:0});
             click.preventDefault();
