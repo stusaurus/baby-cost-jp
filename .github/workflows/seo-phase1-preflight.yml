@@ -48,6 +48,7 @@ jobs:
           node scripts/check_purchase_planner.cjs
           node scripts/check_toddler_guide.cjs
           node scripts/check_nursery_guide.cjs
+          node scripts/check_wipes_planner.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -57,4 +58,5 @@ jobs:
             purchase-planner-evidence
             toddler-meal-evidence
             nursery-qa-evidence
+            wipes-qa-evidence
           if-no-files-found: error
