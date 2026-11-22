@@ -13,7 +13,7 @@ from src.config import load_categories
 from src.render import render_comparison,render_diaper_index
 import json
 cats=load_categories();cat=cats['diapers']
-segment=next(s for s in cat['segments'] if s['id']=='tape-tape-s')
+segment=next(s for s in cat['segments'] if s['id']=='tape-s')
 def p(item, price, count):
   return dict(name=f'赤ちゃん用 テープ Sサイズ {count}枚',source_id=item,
       price_yen=price,unit_price=price/count,unit_metric='per_piece',
@@ -26,7 +26,7 @@ def p(item, price, count):
 offers=[p('tape-s-74',2680,74),p('tape-s-248',6920,248)]
 now=datetime(2026,11,22,tzinfo=timezone.utc)
 print(json.dumps({'page':render_comparison(cats,'diapers',cat,segment,offers,now),
-                  'hub':render_diaper_index(cats,now,{'tape-tape-s':{'products':offers}})},ensure_ascii=False))
+                  'hub':render_diaper_index(cats,now,{'tape-s':{'products':offers}})},ensure_ascii=False))
 `;
 const result=spawnSync('python',['-c',python],{encoding:'utf8'});
 assert.equal(result.status,0,result.stderr);
