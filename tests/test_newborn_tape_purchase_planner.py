@@ -93,7 +93,7 @@ class NewbornTapePurchasePlannerTests(unittest.TestCase):
         self.assertIsNone(purchase_inputs(sku('unknown', 2600, 82, shipping='unknown')))
 
     def test_other_diaper_sizes_cannot_inherit_newborn_planner(self):
-        html = self.page(segment='tape-s')
+        html = self.page(segment='tape-m')
         self.assertNotIn('id="purchase-planner"', html)
         self.assertNotIn("新生児テープをあと14日", html)
         m = self.page(segment='pants-m')
