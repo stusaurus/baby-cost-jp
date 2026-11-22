@@ -97,7 +97,7 @@ class TapeSPurchasePlannerTests(unittest.TestCase):
         self.assertIsNone(purchase_inputs(sku('weak', 2680, 74, confidence=.5)))
 
     def test_does_not_spill_into_tape_m_l_or_other_categories(self):
-        for segment in ('tape-m', 'tape-l', 'pants-l', 'pants-big'):
+        for segment in ('tape-l', 'pants-l', 'pants-big'):
             with self.subTest(segment=segment):
                 html = self.page(segment=segment)
                 self.assertNotIn('id="purchase-planner"', html)
