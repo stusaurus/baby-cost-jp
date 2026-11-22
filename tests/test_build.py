@@ -93,7 +93,9 @@ class BuildTests(unittest.TestCase):
         }]
         html = render_fourteen_day_purchase_decision(single)
         self.assertEqual(html.count('class="fourteen-day-option"'), 1)
-        self.assertIn("同じ商品", html)
+        self.assertIn("今回の掲載商品", html)
+        self.assertIn("ほかの商品と支払額・余りを比較することはできません", html)
+        self.assertNotIn("支払額と余りが最小の候補は同じ商品", html)
         self.assertNotIn("¥0増やすと", html)
 
     def test_pants_m_has_crawlable_14day_decision_without_other_segment_spill(self):
