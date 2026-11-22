@@ -157,7 +157,7 @@ server=http.createServer((req,res)=>{
                     assert.equal(await page.locator('[data-compare-add]').count(),0);
                     assert.equal(await page.locator('.compare-modal').count(),0);
                     assert.equal(await page.locator('.strength-tag').count(),0);
-                    assert.match(await page.locator('#14day-example').innerText(),/ほかの商品と支払額・余りを比較することはできません/);
+                    assert.match(await page.locator('[id="14day-example"]').innerText(),/ほかの商品と支払額・余りを比較することはできません/);
                     if(width===390){
                         await page.locator('[data-purchase-planner]').screenshot({path:path.join(output,engine+'-390-single-offer.png')});
                     }
