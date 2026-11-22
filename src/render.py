@@ -213,8 +213,24 @@ def render_diaper_index(categories, updated_at, snapshots=None):
         f'パンツMの14日分・30日分の買い足しを計算する →</a></section>'
         if pants_m and len(pants_m_products) >= 2 else ''
     )
+    newborn = next((seg for seg in categories['diapers']['segments']
+                    if seg.get('id') == 'tape-newborn'), None)
+    newborn_products = ((snapshots or {}).get('tape-newborn') or {}).get('products', [])
+    newborn_entry = (
+        f'<section class="home-section diaper-planner-entry newborn-planner-entry">'
+        f'<div class="section-kicker">NEWBORN / BUYING PLAN</div>'
+        f'<h2>新生児用おむつは何枚・何セット準備する？</h2>'
+        f'<p>1日あたりの交換枚数、7日・14日・30日、手持ち在庫から、'
+        f'販売単位で買うセット数・支払総額・余る枚数を計算できます。'
+        f'サイズアップを見越して買いすぎに注意しましょう。</p>'
+        f'<a class="purchase-entry" data-nav-source="diaper_index_newborn_planner" '
+        f'data-category-id="diapers" href="{segment_url(categories["diapers"], newborn)}#purchase-planner">'
+        f'新生児テープの購入枚数・支払額を計算する →</a></section>'
+        if newborn and len(newborn_products) >= 2
+        and all(purchase_inputs(p) is not None for p in newborn_products) else ''
+    )
     nursery_entry = f'<section class="home-section nursery-diaper-entry"><div class="section-kicker">HOME × NURSERY</div><h2>園で使う分も、買いすぎずに準備。</h2><p>登園日・家庭での使用枚数・園への持参分・サブスクを分けて、今必要な枚数を計算できます。</p><a href="{SITE_URL}guides/nursery-diapers/" data-nav-source="diaper_index_nursery_planner" data-category-id="diapers">保育園のおむつ必要枚数を計算する →</a></section>'
-    body=f'''<section class="page-head diaper-head"><a href="{SITE_URL}">← トップ</a><div class="section-kicker">DIAPERS</div><h1>紙おむつを<br>1枚あたりで比較</h1><p>テープ／パンツとサイズをそろえた商品だけを比較します。</p>{trust_strip()}</section>{selector(categories)}{planner_entry}{nursery_entry}{diaper_price_overview(categories, snapshots)}<section class="home-section"><h2>すべての比較条件</h2><div class="choices">{''.join(rows)}</div></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    body=f'''<section class="page-head diaper-head"><a href="{SITE_URL}">← トップ</a><div class="section-kicker">DIAPERS</div><h1>紙おむつを<br>1枚あたりで比較</h1><p>テープ／パンツとサイズをそろえた商品だけを比較します。</p>{trust_strip()}</section>{selector(categories)}{newborn_entry}{planner_entry}{nursery_entry}{diaper_price_overview(categories, snapshots)}<section class="home-section"><h2>すべての比較条件</h2><div class="choices">{''.join(rows)}</div></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     return shell('おむつの価格比較｜テープ・パンツ・サイズ別の1枚単価','おむつをテープ・パンツとサイズ別に比較。送料込み対象の1枚単価、支払総額、確認済み商品数を一覧で確認し、同じ条件の商品を選べます。',body,f'{SITE_URL}diapers/')
 
 
