@@ -36,12 +36,17 @@ function localGet(req,res) {
     res.statusCode=404;res.end("no such route");return;
   }
   const suffix = requested.pathname.substring("/baby-cost-jp/".length);
-  const safePath = path.resolve(root,suffix.endsWith("/")?suffix+"index.html":suffix);
+  const safePath = path.resolve(root,(!suffix || suffix.endsWith("/"))?suffix+"index.html":suffix);
   if (!safePath.startsWith(root+path.sep) || !fs.existsSync(safePath)) {
     res.statusCode=404;res.end("not found");return;
   }
   res.setHeader("Content-Type",safePath.endsWith(".js")?"text/javascript":safePath.endsWith(".css")?"text/css":"text/html");
-  res.end(fs.readFileSync(safePath));
+  const contents=fs.readFileSync(safePath);
+  // Localize the generated homepage's absolute GitHub Pages links as well as
+  // the wipes page itself. Test real navigation without leaving the fixture.
+  res.end(safePath.endsWith(".html")
+    ?contents.toString("utf8").replaceAll(source,addr+"/baby-cost-jp/")
+    :contents);
 }
 server=http.createServer(localGet);
 
@@ -152,6 +157,23 @@ server=http.createServer(localGet);
           assert.equal(await p.locator("[data-wipes-plan-error]").isVisible(),false);
           assert((await result.innerText()).includes("追加購入は0セット"));
           assert.deepEqual(pageErrors,[],engine+"/"+width+" browser errors");
+          // Real rendered homepage, not a mocked anchor. Follow the new
+          // content-based discovery link to the existing wipes calculator.
+          await p.goto(origin+"/baby-cost-jp/",{waitUntil:"networkidle"});
+          const entry=p.locator('a[data-nav-source="home_wipes_planner"]');
+          assert.equal(await entry.count(),1);
+          assert.equal(await entry.getAttribute("href"),origin+"/baby-cost-jp/wipes/#wipes-plan");
+          assert((await entry.evaluate(el=>el.getBoundingClientRect().height))>=44,
+            engine+"/"+width+" home wipes touch target below 44px");
+          const homeWidth=await p.evaluate(()=>document.documentElement.scrollWidth);
+          assert(homeWidth<=width+1,engine+"/"+width+" home horizontal overflow "+homeWidth);
+          if(width===390)await p.screenshot({path:path.join(evidence,engine+"-"+width+"-home-entry.png"),fullPage:true});
+          await entry.click();
+          await p.waitForURL("**/baby-cost-jp/wipes/#wipes-plan");
+          assert.equal(await p.locator("#wipes-plan").count(),1);
+          assert.equal(await p.locator("[data-wipes-plan-form]").count(),1);
+          assert((await p.evaluate(()=>document.documentElement.scrollWidth))<=width+1);
+          assert.deepEqual(pageErrors,[],engine+"/"+width+" navigation browser errors");
           results.push({engine,width,correctMath:true,checkoutVsWaste:true,validAffiliate:true,analyticsSafe:true,invalidRejected:true,zeroPurchase:true,noOverflow:true});
           await context.close();
         }
