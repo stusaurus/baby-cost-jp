@@ -9,6 +9,7 @@ const {chromium, webkit} = require(process.env.PLAYWRIGHT_MODULE || 'playwright'
 
 const python = `
 from datetime import datetime, timezone
+import sys
 from src.config import load_categories
 from src.render import render_comparison
 category = load_categories()['diapers']
@@ -24,11 +25,18 @@ def product(name, source_id, price, pieces):
         shop='テスト用店舗', attributes={})
 products = [product('赤ちゃん用 パンツ S 156枚','s-156',5070,156),
             product('赤ちゃん用 パンツ S 62枚','s-62',2840,62)]
-print(render_comparison({'diapers': category},'diapers',category,segment,products,
+print(render_comparison({'diapers': category},'diapers',category,segment,
+                        products[:1] if len(sys.argv) > 1 else products,
                         datetime(2026,11,22,0,0,tzinfo=timezone.utc)))
 `;
 const generated = spawnSync('python',['-c',python], {encoding:'utf8'});
 assert.equal(generated.status,0,generated.stderr);
+const onlyOne = spawnSync('python',['-c',python,'single'],{encoding:'utf8'});
+assert.equal(onlyOne.status,0,onlyOne.stderr);
+const singleHtml=onlyOne.stdout;
+assert(singleHtml.includes('id="purchase-planner"'));
+assert(singleHtml.includes('検証できたパンツSは1商品だけ'));
+assert(singleHtml.includes('content="noindex,follow"'));
 const source='https://stusaurus.github.io/baby-cost-jp/';
 const html=generated.stdout;
 assert(html.includes('id="purchase-planner"') && html.includes('パンツSをあと14日'));
@@ -41,7 +49,7 @@ server=http.createServer((req,res)=>{
     if(u.pathname===route){
         const origin='http://127.0.0.1:'+server.address().port;
         res.setHeader('Content-Type','text/html; charset=utf-8');
-        res.end(html.replaceAll(source,origin+'/baby-cost-jp/'));return;
+        res.end((u.searchParams.has('single') ? singleHtml : html).replaceAll(source,origin+'/baby-cost-jp/'));return;
     }
     if(u.pathname.startsWith('/baby-cost-jp/static/')){
         const file=path.basename(u.pathname);
@@ -129,6 +137,23 @@ server=http.createServer((req,res)=>{
                     assert(!events.some(e=>e[2]&&(
                         'daily' in e[2]||'stock' in e[2]||
                         'days' in e[2]||'sizeDays' in e[2])));
+                    // Live-equivalent one-offer state: retain calculator without
+                    // suggesting multiple retailers or claiming indexability.
+                    await page.goto(origin+route+'?single=1',{waitUntil:'networkidle'});
+                    assert.equal(await page.locator('.product').count(),1);
+                    assert.equal(await page.locator('[data-purchase-planner]').count(),1);
+                    assert.equal(await page.locator('meta[name="robots"]').getAttribute('content'),'noindex,follow');
+                    assert.match(await page.locator('.neutral-note').last().innerText(),/1商品だけ/);
+                    assert.equal(await page.locator('[data-plan-sets]').innerText(),'1セット');
+                    assert.equal(await page.locator('[data-plan-payment]').innerText(),'¥5,070');
+                    assert.equal(await page.locator('[data-plan-surplus]').innerText(),'6枚');
+                    assert.equal(await page.locator('.product-actions .cta').count(),1);
+                    assert.equal(await page.locator('[data-purchase-planner]').isVisible(),true);
+                    if(width===390){
+                        await page.locator('[data-purchase-planner]').screenshot({path:path.join(output,engine+'-390-single-offer.png')});
+                    }
+                    const singleOverflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
+                    assert.equal(singleOverflow,false);
                     result.push({engine,width,correctSets:true,checkout:true,sizeReview:true,verifiedLinks:true,
                         badInputRejected:true,noBuy:true,noOverflow:true,eventsSafe:true});
                     await context.close();

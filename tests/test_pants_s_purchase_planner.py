@@ -67,13 +67,28 @@ class PantsSPurchasePlannerTests(unittest.TestCase):
         self.assertNotIn("pants_m_nursery_planner", html)
         self.assertNotIn("犬用", html)
 
-    def test_s_cannot_show_planner_for_unverified_or_sparse_catalog(self):
+    def test_single_verified_realistic_s_offer_is_calculable_but_not_indexable(self):
+        product = self.product("メリーズ ファーストプレミアム パンツ S 52枚×3", "s-one", 5070, 156)
+        html = self.page("pants-s", [product])
+        self.assertIn('id="purchase-planner"', html)
+        self.assertIn('id="14day-example"', html)
+        self.assertIn("検証できたパンツSは1商品だけ", html)
+        self.assertIn("複数商品の価格比較や最安値の保証はできません", html)
+        self.assertIn("パンツSをあと14日使う", html)
+        self.assertIn("¥5,070", html)
+        self.assertIn("106枚", html)
+        self.assertIn("同じ商品", html)
+        self.assertIn('content="noindex,follow"', html)
+        self.assertIn('data-purchase-product=', html)
+
+    def test_s_cannot_show_planner_for_unverified_or_empty_catalog(self):
         good = self.product("赤ちゃん用 パンツ S 156枚", "s-156", 5070, 156)
         for products in [
             [],
-            [good],
-            [good, self.product("送料未確認 パンツ S 62枚", "s-unverified", 2840, 62, shipping="unknown")],
-            [good, self.product("数量根拠が弱い パンツ S 62枚", "s-weak", 2840, 62, confidence=.5)],
+            [self.product("送料未確認 パンツ S 62枚", "s-unverified", 2840, 62, shipping="unknown")],
+            [self.product("数量根拠が弱い パンツ S 62枚", "s-weak", 2840, 62, confidence=.5)],
+            [good, self.product("送料未確認 パンツ S 62枚", "s-unverified2", 2840, 62, shipping="unknown")],
+            [good, self.product("数量根拠が弱い パンツ S 62枚", "s-weak2", 2840, 62, confidence=.5)],
         ]:
             with self.subTest(products=len(products)):
                 html = self.page("pants-s", products)
