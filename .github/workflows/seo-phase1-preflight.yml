@@ -49,6 +49,7 @@ jobs:
           node scripts/check_pants_s_planner.cjs
           node scripts/check_newborn_tape_planner.cjs
           node scripts/check_tape_s_planner.cjs
+          node scripts/check_tape_m_planner.cjs
           node scripts/check_toddler_guide.cjs
           node scripts/check_nursery_guide.cjs
           node scripts/check_wipes_planner.cjs
@@ -62,6 +63,7 @@ jobs:
             pants-s-qa-evidence
             newborn-qa-evidence
             tape-s-qa-evidence
+            tape-m-qa-evidence
             toddler-meal-evidence
             nursery-qa-evidence
             wipes-qa-evidence
