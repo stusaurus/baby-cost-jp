@@ -149,6 +149,15 @@ server=http.createServer((req,res)=>{
                     assert.equal(await page.locator('[data-plan-surplus]').innerText(),'6枚');
                     assert.equal(await page.locator('.product-actions .cta').count(),1);
                     assert.equal(await page.locator('[data-purchase-planner]').isVisible(),true);
+                    // One genuine SKU is a useful purchase plan, not a ranking.
+                    assert.match(await page.locator('.answer-label').innerText(),/確認した1商品の単価/);
+                    assert.match(await page.locator('.rank-badge').innerText(),/掲載中/);
+                    assert.match(await page.locator('.result-title').innerText(),/掲載商品/);
+                    assert.equal(await page.locator('.view-switcher').count(),0);
+                    assert.equal(await page.locator('[data-compare-add]').count(),0);
+                    assert.equal(await page.locator('.compare-modal').count(),0);
+                    assert.equal(await page.locator('.strength-tag').count(),0);
+                    assert.match(await page.locator('#14day-example').innerText(),/ほかの商品と支払額・余りを比較することはできません/);
                     if(width===390){
                         await page.locator('[data-purchase-planner]').screenshot({path:path.join(output,engine+'-390-single-offer.png')});
                     }
