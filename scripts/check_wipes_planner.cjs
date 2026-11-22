@@ -41,7 +41,12 @@ function localGet(req,res) {
     res.statusCode=404;res.end("not found");return;
   }
   res.setHeader("Content-Type",safePath.endsWith(".js")?"text/javascript":safePath.endsWith(".css")?"text/css":"text/html");
-  res.end(fs.readFileSync(safePath));
+  const contents=fs.readFileSync(safePath);
+  // Localize the generated homepage's absolute GitHub Pages links as well as
+  // the wipes page itself. Test real navigation without leaving the fixture.
+  res.end(safePath.endsWith(".html")
+    ?contents.toString("utf8").replaceAll(source,addr+"/baby-cost-jp/")
+    :contents);
 }
 server=http.createServer(localGet);
 
