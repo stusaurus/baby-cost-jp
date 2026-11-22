@@ -36,7 +36,7 @@ function localGet(req,res) {
     res.statusCode=404;res.end("no such route");return;
   }
   const suffix = requested.pathname.substring("/baby-cost-jp/".length);
-  const safePath = path.resolve(root,suffix.endsWith("/")?suffix+"index.html":suffix);
+  const safePath = path.resolve(root,(!suffix || suffix.endsWith("/"))?suffix+"index.html":suffix);
   if (!safePath.startsWith(root+path.sep) || !fs.existsSync(safePath)) {
     res.statusCode=404;res.end("not found");return;
   }
