@@ -257,7 +257,8 @@
 
 /* Baby diaper hub: make the newborn quantity planner a comfortable tap target. */
 .newborn-planner-entry .purchase-entry,
-.tape-s-planner-entry .purchase-entry{
+.tape-s-planner-entry .purchase-entry,
+.tape-m-planner-entry .purchase-entry{
   display:inline-flex;align-items:center;min-height:48px;max-width:100%;
   padding:10px 14px;box-sizing:border-box;border:1px solid #608477;
   border-radius:10px;background:#fffef9;color:var(--ink);
