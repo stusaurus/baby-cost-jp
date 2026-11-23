@@ -4,7 +4,23 @@ from datetime import datetime, timezone
 
 from src.config import SITE_URL, load_categories
 from src.render import render_diaper_index
-from tests.test_home_diaper_purchase_paths import KINDS, offer
+KINDS = (
+    ("tape-newborn", "tape", "newborn"),
+    ("tape-s", "tape", "s"),
+    ("tape-m", "tape", "m"),
+    ("pants-s", "pants", "s"),
+    ("pants-m", "pants", "m"),
+)
+
+
+def offer(source, pieces=80, price=2800, *, confidence=.99, ship="rakuten_postage_filter"):
+    return dict(
+        source_id=source, name=f"赤ちゃん用 紙おむつ {pieces}枚",
+        price_yen=price, unit_price=price / pieces,
+        quantity=dict(total=pieces, base_unit="piece", evidence=f"{pieces}枚",
+                      confidence=confidence, pack_count=1),
+        shipping_basis=ship,
+    )
 
 NOW = datetime(2026, 11, 23, tzinfo=timezone.utc)
 
@@ -25,7 +41,14 @@ class CompactDiaperIndexTests(unittest.TestCase):
     def test_compact_hub_contains_one_purchase_section_and_five_buy_paths(self):
         html = render_diaper_index(self.categories, NOW, self.snapshots)
         self.assertEqual(html.count('id="diaper-purchase-paths"'), 1)
-        self.assertEqual(html.count('data-nav-source="diaper_index_compact_planner"'), 5)
+        for source in (
+            "diaper_index_newborn_planner",
+            "diaper_index_tape_s_planner",
+            "diaper_index_tape_m_planner",
+            "diaper_index_pants_s_planner",
+            "diaper_index_planner",
+        ):
+            self.assertEqual(html.count(f'data-nav-source="{source}"'), 1)
         self.assertEqual(html.count('class="home-purchase-path"'), 5)
         self.assertEqual(html.count('data-nav-source="diaper_index_purchase_jump"'), 1)
         self.assertEqual(html.count('data-nav-source="diaper_index_type_size_jump"'), 1)
@@ -62,7 +85,14 @@ class CompactDiaperIndexTests(unittest.TestCase):
             offer("ok"), offer("unverified", ship="unknown")
         ]}
         html = render_diaper_index(self.categories, NOW, altered)
-        self.assertEqual(html.count('data-nav-source="diaper_index_compact_planner"'), 3)
+        for source in (
+            "diaper_index_newborn_planner",
+            "diaper_index_tape_m_planner",
+            "diaper_index_planner",
+        ):
+            self.assertEqual(html.count(f'data-nav-source="{source}"'), 1)
+        self.assertNotIn('data-nav-source="diaper_index_tape_s_planner"', html)
+        self.assertNotIn('data-nav-source="diaper_index_pants_s_planner"', html)
         self.assertNotIn('diapers/tape/s/#purchase-planner', html)
         self.assertNotIn('diapers/pants/s/#purchase-planner', html)
         self.assertIn(f'href="{SITE_URL}diapers/tape/s/"', html)
@@ -73,7 +103,11 @@ class CompactDiaperIndexTests(unittest.TestCase):
         html = render_diaper_index(self.categories, NOW, {})
         self.assertNotIn('id="diaper-purchase-paths"', html)
         self.assertNotIn('href="#diaper-purchase-paths"', html)
-        self.assertNotIn('data-nav-source="diaper_index_compact_planner"', html)
+        self.assertNotIn('data-nav-source="diaper_index_newborn_planner"', html)
+        self.assertNotIn('data-nav-source="diaper_index_tape_s_planner"', html)
+        self.assertNotIn('data-nav-source="diaper_index_tape_m_planner"', html)
+        self.assertNotIn('data-nav-source="diaper_index_pants_s_planner"', html)
+        self.assertNotIn('data-nav-source="diaper_index_planner"', html)
         self.assertIn('href="#diaper-selector"', html)
         self.assertIn('href="#diaper-price-by-size"', html)
         self.assertIn('id="diaper-price-by-size"', html)
