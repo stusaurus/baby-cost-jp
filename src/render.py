@@ -188,7 +188,14 @@ def home_diaper_purchase_paths(categories, segment_snapshots, *, hub=False):
         if not segment or len(products) < 2 or not all(purchase_inputs(p) is not None for p in products):
             continue
         url = segment_url(categories['diapers'], segment) + '#purchase-planner'
-        nav_source = 'diaper_index_compact_planner' if hub else 'home_diaper_purchase_planner'
+        hub_sources = {
+            'tape-newborn': 'diaper_index_newborn_planner',
+            'tape-s': 'diaper_index_tape_s_planner',
+            'tape-m': 'diaper_index_tape_m_planner',
+            'pants-s': 'diaper_index_pants_s_planner',
+            'pants-m': 'diaper_index_planner',
+        }
+        nav_source = hub_sources[key] if hub else 'home_diaper_purchase_planner'
         links.append(
             f'<a class="home-purchase-path" href="{url}" '
             f'data-nav-source="{nav_source}" data-category-id="diapers" '
