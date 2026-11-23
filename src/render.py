@@ -78,14 +78,18 @@ def shell(title, desc, body, canonical, noindex=False):
 def trust_strip():
     return f'''<div class="trust-strip" aria-label="比較方針"><span>{icon_svg('check')}送料込み対象</span><span>{icon_svg('check')}選択式商品は除外</span><span>{icon_svg('check')}単価を自動計算</span><span>{icon_svg('check')}毎日更新</span></div>'''
 
-def selector(categories, current_type='', current_size=''):
+def selector(categories, current_type='', current_size='', *, show_index_link=True):
     segs=[]
     for s in categories['diapers']['segments']:
         segs.append({'type':s['type'],'size':s['size'],'url':segment_url(categories['diapers'],s)})
+    index_link = (
+        f'<p class="fit-note"><a href="{SITE_URL}diapers/">タイプ・サイズ別の価格一覧を見る →</a></p>'
+        if show_index_link else ''
+    )
     return f'''<section class="selector visual-selector" id="diaper-selector" data-segments='{esc(json.dumps(segs,ensure_ascii=False))}' data-current-type="{esc(current_type)}" data-current-size="{esc(current_size)}">
       <div class="selector-heading"><div><div class="section-kicker">DIAPER FINDER</div><h2>紙おむつの売り場</h2><p class="section-lead">タイプとサイズをそろえて、1枚あたりで比べます。</p></div></div>
       <div class="filter-label">タイプ</div><div class="type-chips" role="group" aria-label="おむつタイプ"><button type="button" class="filter-chip type-chip" data-value="pants">{icon_svg("diapers")}<span>パンツ</span><small>はくタイプ</small></button><button type="button" class="filter-chip type-chip" data-value="tape">{icon_svg("diapers")}<span>テープ</span><small>とめるタイプ</small></button></div>
-      <div class="filter-label">サイズ</div><div class="size-chips" role="group" aria-label="おむつサイズ"></div><p class="fit-note">月齢だけでサイズは決まりません。メーカーの体重目安と、脚まわり・お腹のフィットを確認してください。</p><p class="fit-note"><a href="{SITE_URL}diapers/">タイプ・サイズ別の価格一覧を見る →</a></p>
+      <div class="filter-label">サイズ</div><div class="size-chips" role="group" aria-label="おむつサイズ"></div><p class="fit-note">月齢だけでサイズは決まりません。メーカーの体重目安と、脚まわり・お腹のフィットを確認してください。</p>{index_link}
       <button id="diaper-go" class="selector-go">この条件で比較する <span>→</span></button>
     </section>'''
 def _home_price(snapshot, metric):
@@ -162,7 +166,7 @@ def suitability_note(category_id, segment):
             if 0<=i<len(sizes): links+=f'<a href="{SITE_URL}diapers/{segment["type"]}/{sizes[i]}/" data-nav-source="size_neighbor" data-category-id="diapers">{SIZE[sizes[i]]}サイズも確認 →</a> '
     return f'<aside class="suitability-note"><h2>価格の前に、適性を確認</h2><p>{copy}</p><div class="growth-links">{links}<a href="{SITE_URL}#growth-finder">成長に合わせたお世話のヒント →</a></div></aside>'
 
-def home_diaper_purchase_paths(categories, segment_snapshots):
+def home_diaper_purchase_paths(categories, segment_snapshots, *, hub=False):
     """Render crawlable, buyer-focused direct links only for truly comparable SKUs.
 
     A card requires two or more offers, with every displayed offer passing the
@@ -184,9 +188,10 @@ def home_diaper_purchase_paths(categories, segment_snapshots):
         if not segment or len(products) < 2 or not all(purchase_inputs(p) is not None for p in products):
             continue
         url = segment_url(categories['diapers'], segment) + '#purchase-planner'
+        nav_source = 'diaper_index_compact_planner' if hub else 'home_diaper_purchase_planner'
         links.append(
             f'<a class="home-purchase-path" href="{url}" '
-            f'data-nav-source="home_diaper_purchase_planner" data-category-id="diapers" '
+            f'data-nav-source="{nav_source}" data-category-id="diapers" '
             f'data-product-type="{kind}" data-size="{size}">'
             f'<span class="home-purchase-path-title">{esc(label)} <span aria-hidden="true">↗</span></span>'
             f'<span class="home-purchase-path-detail">{esc(detail)}</span>'
@@ -195,11 +200,19 @@ def home_diaper_purchase_paths(categories, segment_snapshots):
         )
     if not links:
         return ''
+    section_class = 'home-diaper-purchase diaper-hub-purchase' if hub else 'home-diaper-purchase'
+    heading = '買い足すサイズから、必要な支払額を計算' if hub else 'おむつは何枚・何セット買えばいい？'
+    all_sizes_link = (
+        '' if hub else
+        f'<a class="home-purchase-all" href="{SITE_URL}diapers/" '
+        'data-nav-source="home_diaper_size_list" data-category-id="diapers">'
+        'その他のサイズ・テープ／パンツの価格一覧を見る →</a>'
+    )
     return (
-        '<section class="home-diaper-purchase" id="diaper-purchase-paths" '
+        f'<section class="{section_class}" id="diaper-purchase-paths" '
         'aria-labelledby="diaper-purchase-title">'
         '<div class="section-kicker">DIAPER / PURCHASE PLANNER</div>'
-        '<h2 id="diaper-purchase-title">おむつは何枚・何セット買えばいい？</h2>'
+        f'<h2 id="diaper-purchase-title">{heading}</h2>'
         '<p>今使うタイプ・サイズから選んで、1日の使用枚数・買う日数・'
         '使える手持ち在庫を入力。商品の販売セット単位で、'
         '<strong>支払総額と余る枚数</strong>を比べられます。</p>'
@@ -207,9 +220,7 @@ def home_diaper_purchase_paths(categories, segment_snapshots):
         'サイズ変更前は買いすぎに注意。掲載するのは購入数量と送料条件を確認できた商品のみです。</p>'
         '<nav class="home-purchase-path-grid" aria-label="おむつのサイズ別購入計算機への直接リンク">'
         + ''.join(links) + '</nav>'
-        f'<a class="home-purchase-all" href="{SITE_URL}diapers/" '
-        'data-nav-source="home_diaper_size_list" data-category-id="diapers">'
-        'その他のサイズ・テープ／パンツの価格一覧を見る →</a>'
+        + all_sizes_link +
         '</section>'
     )
 
@@ -247,7 +258,7 @@ def diaper_price_overview(categories, snapshots):
             unit = total = '比較準備中' if snapshot is not None else '未確認'
         label = TYPE[segment['type']] + '・' + SIZE[segment['size']]
         rows.append(f'<tr><th scope="row"><a href="{segment_url(categories["diapers"], segment)}">{esc(label)}</a></th><td>{count}</td><td>{unit}</td><td>{total}</td></tr>')
-    return f'''<section class="home-section diaper-price-overview">
+    return f'''<section class="home-section diaper-price-overview" id="diaper-price-by-size">
 <div class="section-kicker">PRICE BY SIZE</div><h2>おむつのタイプ・サイズ別 価格早見表</h2>
 <p>今使っているタイプとサイズの行から、送料込み対象の1枚単価と支払総額を確認できます。異なるサイズ同士の安さランキングではありません。</p>
 <p class="small">表は横にスクロールできます。</p><div class="seo-table-scroll" role="region" aria-label="タイプ・サイズ別の価格表。横にスクロールできます" tabindex="0"><table class="seo-data-table"><caption>掲載商品内の最小値。1枚単価と支払総額は、別の商品になる場合があります。</caption><thead><tr><th scope="col">タイプ・サイズ</th><th scope="col">確認済み商品</th><th scope="col">最小1枚単価</th><th scope="col">最小支払総額</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>
@@ -256,74 +267,44 @@ def diaper_price_overview(categories, snapshots):
 
 
 def render_diaper_index(categories, updated_at, snapshots=None):
-    rows=[]
-    for s in categories['diapers']['segments']:
-        rows.append(f'<a class="choice choice--{s["type"]}" data-nav-source="diaper_index" data-category-id="diapers" href="{segment_url(categories["diapers"],s)}"><span class="choice-type">{TYPE[s["type"]]}</span><b>{SIZE[s["size"]]}</b><span>1枚あたりを見る →</span></a>')
-    # Only surface the purchase planner when the pants-M comparison is indexable.
-    pants_m = next((segment for segment in categories['diapers']['segments']
-                    if segment.get('id') == 'pants-m'), None)
-    pants_m_products = ((snapshots or {}).get('pants-m') or {}).get('products', [])
-    planner_entry = (
-        f'<section class="home-section diaper-planner-entry"><h2>パンツMは、何セット買えばいい？</h2>'
-        f'<p>1日に使う枚数と日数から、必要な購入セット数・支払総額・余る枚数を比較できます。'
-        f'サイズ変更が近い場合は買いすぎにも注意しましょう。</p>'
-        f'<a class="purchase-entry" data-nav-source="diaper_index_planner" '
-        f'data-category-id="diapers" href="{segment_url(categories["diapers"], pants_m)}#purchase-planner">'
-        f'パンツMの14日分・30日分の買い足しを計算する →</a></section>'
-        if pants_m and len(pants_m_products) >= 2 else ''
+    """Short, crawlable shopping journey: verified plans -> size selector -> prices."""
+    planner = home_diaper_purchase_paths(categories, snapshots, hub=True)
+    planner_jump = (
+        '<a href="#diaper-purchase-paths" data-nav-source="diaper_index_purchase_jump">'
+        '必要枚数・購入セット数を計算する</a>'
+        if planner else ''
     )
-    newborn = next((seg for seg in categories['diapers']['segments']
-                    if seg.get('id') == 'tape-newborn'), None)
-    newborn_products = ((snapshots or {}).get('tape-newborn') or {}).get('products', [])
-    newborn_entry = (
-        f'<section class="home-section diaper-planner-entry newborn-planner-entry">'
-        f'<div class="section-kicker">NEWBORN / BUYING PLAN</div>'
-        f'<h2>新生児用おむつは何枚・何セット準備する？</h2>'
-        f'<p>1日あたりの交換枚数、7日・14日・30日、手持ち在庫から、'
-        f'販売単位で買うセット数・支払総額・余る枚数を計算できます。'
-        f'サイズアップを見越して買いすぎに注意しましょう。</p>'
-        f'<a class="purchase-entry" data-nav-source="diaper_index_newborn_planner" '
-        f'data-category-id="diapers" href="{segment_url(categories["diapers"], newborn)}#purchase-planner">'
-        f'新生児テープの購入枚数・支払額を計算する →</a></section>'
-        if newborn and len(newborn_products) >= 2
-        and all(purchase_inputs(p) is not None for p in newborn_products) else ''
+    nursery_entry = (
+        '<aside class="diaper-hub-nursery" aria-labelledby="diaper-hub-nursery-title">'
+        '<div><div class="section-kicker">HOME × NURSERY</div>'
+        '<h2 id="diaper-hub-nursery-title">保育園用もまとめて必要？</h2>'
+        '<p>家庭と園の枚数、持参かサブスクかを分けて買い足す量を計算できます。</p></div>'
+        f'<a href="{SITE_URL}guides/nursery-diapers/" data-nav-source="diaper_index_nursery_planner" '
+        'data-category-id="diapers">保育園のおむつ必要枚数を計算 →</a></aside>'
     )
-    tape_s = next((seg for seg in categories['diapers']['segments']
-                   if seg.get('id') == 'tape-s'), None)
-    tape_s_products = ((snapshots or {}).get('tape-s') or {}).get('products', [])
-    tape_s_entry = (
-        f'<section class="home-section diaper-planner-entry tape-s-planner-entry">'
-        f'<div class="section-kicker">NEXT SIZE / BUYING PLAN</div>'
-        f'<h2>テープSへのサイズアップ。何枚・何セット買う？</h2>'
-        f'<p>今のSサイズの手持ち在庫と使用予定の日数から、'
-        f'販売単位の購入セット数・支払総額・余る枚数を比較できます。'
-        f'新生児用の在庫とは分けて計算しましょう。</p>'
-        f'<a class="purchase-entry" data-nav-source="diaper_index_tape_s_planner" '
-        f'data-category-id="diapers" href="{segment_url(categories["diapers"], tape_s)}#purchase-planner">'
-        f'テープSの買い足し枚数・支払額を計算する →</a></section>'
-        if tape_s and len(tape_s_products) >= 2
-        and all(purchase_inputs(p) is not None for p in tape_s_products) else ''
+    jumps = (
+        f'{planner_jump}'
+        '<a href="#diaper-selector" data-nav-source="diaper_index_type_size_jump">'
+        'タイプ・サイズを選んで比較する</a>'
+        '<a href="#diaper-price-by-size" data-nav-source="diaper_index_price_jump">'
+        '全サイズの価格早見表を見る</a>'
     )
-    tape_m = next((seg for seg in categories['diapers']['segments']
-                   if seg.get('id') == 'tape-m'), None)
-    tape_m_products = ((snapshots or {}).get('tape-m') or {}).get('products', [])
-    tape_m_entry = (
-        f'<section class="home-section diaper-planner-entry tape-m-planner-entry">'
-        f'<div class="section-kicker">TAPE M / BUYING PLAN</div>'
-        f'<h2>テープMは、何セット・いくら買い足す？</h2>'
-        f'<p>1日の交換枚数、使う予定の日数、Mサイズの手持ち在庫で、'
-        f'商品ごとの購入数・支払額・余る枚数を計算。'
-        f'Sサイズから移る際も買いすぎを避けましょう。</p>'
-        f'<a class="purchase-entry" data-nav-source="diaper_index_tape_m_planner" '
-        f'data-category-id="diapers" href="{segment_url(categories["diapers"], tape_m)}#purchase-planner">'
-        f'テープMの購入セット数・支払総額を計算する →</a></section>'
-        if tape_m and len(tape_m_products) >= 2
-        and all(purchase_inputs(p) is not None for p in tape_m_products) else ''
+    body = f'''<section class="page-head diaper-head">
+<a href="{SITE_URL}">← トップ</a><div class="section-kicker">DIAPERS</div>
+<h1>おむつの必要枚数・<br>価格をサイズ別に比較</h1>
+<p>テープ・パンツと今使っているサイズを選び、1枚単価だけでなく、
+実際に必要なセット数・支払総額・余りも確認できます。</p>
+{trust_strip()}
+<nav class="diaper-hub-jumps" aria-label="このページの目的別ショートカット">{jumps}</nav>
+</section>{planner}{selector(categories, show_index_link=False)}
+{diaper_price_overview(categories, snapshots)}{nursery_entry}
+<p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    return shell(
+        'おむつの必要枚数・価格比較｜テープ・パンツのサイズ別購入計算',
+        '紙おむつのテープ・パンツ、サイズ別の必要枚数と購入セット数を計算。'
+        '検証済み商品の1枚単価、購入する支払総額、余る枚数を比較し、買いすぎを防ぎます。',
+        body, f'{SITE_URL}diapers/'
     )
-    nursery_entry = f'<section class="home-section nursery-diaper-entry"><div class="section-kicker">HOME × NURSERY</div><h2>園で使う分も、買いすぎずに準備。</h2><p>登園日・家庭での使用枚数・園への持参分・サブスクを分けて、今必要な枚数を計算できます。</p><a href="{SITE_URL}guides/nursery-diapers/" data-nav-source="diaper_index_nursery_planner" data-category-id="diapers">保育園のおむつ必要枚数を計算する →</a></section>'
-    body=f'''<section class="page-head diaper-head"><a href="{SITE_URL}">← トップ</a><div class="section-kicker">DIAPERS</div><h1>紙おむつを<br>1枚あたりで比較</h1><p>テープ／パンツとサイズをそろえた商品だけを比較します。</p>{trust_strip()}</section>{selector(categories)}{newborn_entry}{tape_s_entry}{tape_m_entry}{planner_entry}{nursery_entry}{diaper_price_overview(categories, snapshots)}<section class="home-section"><h2>すべての比較条件</h2><div class="choices">{''.join(rows)}</div></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
-    return shell('おむつの価格比較｜テープ・パンツ・サイズ別の1枚単価','おむつをテープ・パンツとサイズ別に比較。送料込み対象の1枚単価、支払総額、確認済み商品数を一覧で確認し、同じ条件の商品を選べます。',body,f'{SITE_URL}diapers/')
-
 
 def compare_panel(share=False):
     markup = '''<div class="compare-dock" data-compare-dock hidden aria-label="比較トレー"><span class="tray-name">COMPARISON TRAY</span><div class="tray-slots" data-tray-slots></div><div class="compare-dock-copy"><span data-compare-count aria-live="polite">0件選択</span><small data-compare-remaining>あと3商品選べます</small></div><div class="compare-dock-actions"><button type="button" class="compare-clear" data-compare-clear>クリア</button><button type="button" class="compare-open" data-compare-open disabled>くらべてみる</button></div></div><div class="compare-modal" data-compare-modal hidden><div class="compare-modal-backdrop" data-compare-close></div><section class="compare-dialog" role="dialog" aria-modal="true" aria-labelledby="compare-dialog-title"><div class="compare-dialog-head"><div><div class="section-kicker">SIDE BY SIDE</div><h2 id="compare-dialog-title">トレーの中で、くらべてみよう。</h2></div><button type="button" class="compare-close" data-compare-close aria-label="閉じる">×</button></div><div class="compare-table" data-compare-table></div><p class="compare-note">価格・在庫は変動します。購入前に楽天の商品ページで最新情報をご確認ください。</p></section></div>'''
