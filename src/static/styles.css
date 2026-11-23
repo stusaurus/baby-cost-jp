@@ -330,14 +330,14 @@
 .diaper-hub-purchase .home-purchase-path-count{font-size:10px}
 .diaper-head{margin-bottom:22px}
 .diaper-head .trust-strip{margin:12px 0}
-.diaper-hub-nursery{
+.diaper-hub-nursery,.diaper-hub-m-type-entry{
   display:flex;align-items:center;justify-content:space-between;gap:12px 24px;
   margin:10px 0 35px;padding:19px 22px;border:1px solid #d2dccc;
   background:#f3f5ef;color:var(--body);
 }
-.diaper-hub-nursery h2{font:600 19px var(--serif);margin:4px 0}
-.diaper-hub-nursery p{font-size:12px;line-height:1.8;margin:4px 0}
-.diaper-hub-nursery a{
+.diaper-hub-nursery h2,.diaper-hub-m-type-entry h2{font:600 19px var(--serif);margin:4px 0}
+.diaper-hub-nursery p,.diaper-hub-m-type-entry p{font-size:12px;line-height:1.8;margin:4px 0}
+.diaper-hub-nursery a,.diaper-hub-m-type-entry a{
   flex-shrink:0;display:inline-flex;align-items:center;box-sizing:border-box;
   min-height:46px;padding:9px 12px;border:1px solid #749a84;
   background:#fffef9;font-size:12px;color:var(--ink);text-decoration:none;
@@ -355,7 +355,56 @@
  .diaper-hub-purchase .home-purchase-path-title{font-size:14px}
  .diaper-hub-purchase .home-purchase-path-detail{font-size:10px}
  .diaper-hub-purchase .home-purchase-path-count{font-size:10px}
- .diaper-hub-nursery{display:block;padding:17px 14px}
- .diaper-hub-nursery a{margin-top:10px;max-width:100%}
+ .diaper-hub-nursery,.diaper-hub-m-type-entry{display:block;padding:17px 14px}
+ .diaper-hub-nursery a,.diaper-hub-m-type-entry a{margin-top:10px;max-width:100%}
  .diaper-head{margin-bottom:17px}
+}
+
+
+/* M-size type comparison: actual checkout cost and bundle leftovers. */
+.m-type-guide-head{margin-bottom:22px}
+.m-type-guide-head h1{max-width:910px;line-height:1.35}
+.m-type-choice,.m-type-results,.m-type-faq,.m-type-empty{
+  max-width:1100px;margin:22px auto;border:1px solid #d5ded5;
+  padding:clamp(18px,3vw,30px);background:#fffefa;color:var(--body)
+}
+.m-type-results{background:#f1f5ef}
+.m-type-choice h2,.m-type-results h2,.m-type-faq h2,.m-type-empty h2{
+  margin:4px 0 13px;font:600 clamp(20px,3vw,28px)/1.4 var(--serif)
+}
+.m-type-choice p,.m-type-results>p,.m-type-faq p,.m-type-empty p{
+  line-height:1.9;font-size:13px;margin:8px 0 12px;
+}
+.m-type-choice a,.m-type-faq a{overflow-wrap:anywhere}
+.m-type-scroll{max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+.m-type-table{border-collapse:collapse;width:100%;min-width:760px;font-size:13px;text-align:left}
+.m-type-table th,.m-type-table td{
+  border-bottom:1px solid #cad6cd;padding:14px 12px;vertical-align:top;line-height:1.65
+}
+.m-type-table thead th{font-weight:700;background:#e5eee5}
+.m-type-table tbody th{width:135px;white-space:nowrap}
+.m-type-table tbody th small{display:block;white-space:normal;color:var(--muted);font-size:11px;font-weight:400}
+.m-type-table td:nth-child(2),.m-type-table td:nth-child(3){min-width:170px}
+.m-type-table td strong{display:block;font-size:18px;color:var(--ink)}
+.m-type-table td small{display:block;font-size:11px;line-height:1.65;margin-top:4px;color:var(--muted)}
+.m-type-product-name{display:block;margin-top:8px;font-size:11px;line-height:1.65}
+.m-type-results .m-type-caveat{color:var(--muted);font-size:11px;line-height:1.9;margin:13px 0 0}
+.m-type-faq h3{font:600 16px/1.6 var(--serif);margin:20px 0 6px}
+.m-type-paths{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;max-width:1100px;margin:20px auto}
+.m-type-paths a{display:flex;align-items:center;min-height:48px;padding:12px 16px;
+  border:1px solid #809b89;color:var(--ink);background:#f1f5ef;
+  font-size:13px;line-height:1.65;text-decoration:none;box-sizing:border-box
+}
+.m-type-paths a:hover,.m-type-paths a:focus-visible{background:#e6eee5;border-color:var(--ink);outline-offset:3px}
+.m-type-updated,.m-type-back{max-width:1100px;margin:12px auto;font-size:12px;line-height:1.8;color:var(--muted)}
+.m-type-related{margin:14px 0}
+.m-type-related a{display:inline-flex;align-items:center;box-sizing:border-box;min-height:44px;
+  max-width:100%;border:1px solid #8aab96;padding:10px 12px;
+  font-size:12px;text-decoration:none;color:var(--ink);background:#f3f5ef;overflow-wrap:anywhere
+}
+@media(max-width:680px){
+  .m-type-paths{grid-template-columns:minmax(0,1fr);gap:8px}
+  .m-type-choice,.m-type-results,.m-type-faq,.m-type-empty{padding:18px 14px}
+  .m-type-table{min-width:740px}
+  .m-type-guide-head h1{font-size:clamp(26px,6vw,34px)}
 }
