@@ -264,7 +264,7 @@ def diaper_price_overview(categories, snapshots):
         else:
             unit = total = '比較準備中' if snapshot is not None else '未確認'
         label = TYPE[segment['type']] + '・' + SIZE[segment['size']]
-        rows.append(f'<tr><th scope="row"><a href="{segment_url(categories["diapers"], segment)}">{esc(label)}</a></th><td>{count}</td><td>{unit}</td><td>{total}</td></tr>')
+        rows.append(f'<tr><th scope="row"><a href="{segment_url(categories["diapers"], segment)}" data-nav-source="diaper_index" data-category-id="diapers">{esc(label)}</a></th><td>{count}</td><td>{unit}</td><td>{total}</td></tr>')
     return f'''<section class="home-section diaper-price-overview" id="diaper-price-by-size">
 <div class="section-kicker">PRICE BY SIZE</div><h2>おむつのタイプ・サイズ別 価格早見表</h2>
 <p>今使っているタイプとサイズの行から、送料込み対象の1枚単価と支払総額を確認できます。異なるサイズ同士の安さランキングではありません。</p>
