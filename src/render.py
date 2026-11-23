@@ -162,7 +162,59 @@ def suitability_note(category_id, segment):
             if 0<=i<len(sizes): links+=f'<a href="{SITE_URL}diapers/{segment["type"]}/{sizes[i]}/" data-nav-source="size_neighbor" data-category-id="diapers">{SIZE[sizes[i]]}サイズも確認 →</a> '
     return f'<aside class="suitability-note"><h2>価格の前に、適性を確認</h2><p>{copy}</p><div class="growth-links">{links}<a href="{SITE_URL}#growth-finder">成長に合わせたお世話のヒント →</a></div></aside>'
 
-def render_home(categories, snapshots, deals, price_drops, recent_trends, updated_at):
+def home_diaper_purchase_paths(categories, segment_snapshots):
+    """Render crawlable, buyer-focused direct links only for truly comparable SKUs.
+
+    A card requires two or more offers, with every displayed offer passing the
+    same exact-quantity, price and shipping evidence gate as its calculator.
+    Never infer quantity from a product name or invent a last-known price.
+    """
+    choices = (
+        ('tape-newborn', '新生児・テープ', '出産準備で買いすぎない', 'tape', 'newborn'),
+        ('tape-s', 'S・テープ', 'サイズアップ後の必要枚数', 'tape', 's'),
+        ('tape-m', 'M・テープ', '手持ちから買い足す量を確認', 'tape', 'm'),
+        ('pants-s', 'S・パンツ', 'パンツSの販売セット数を比較', 'pants', 's'),
+        ('pants-m', 'M・パンツ', '14日・30日分の支払額を比較', 'pants', 'm'),
+    )
+    segments = {seg['id']: seg for seg in categories['diapers']['segments']}
+    links = []
+    for key, label, detail, kind, size in choices:
+        segment = segments.get(key)
+        products = ((segment_snapshots or {}).get(key) or {}).get('products', [])
+        if not segment or len(products) < 2 or not all(purchase_inputs(p) is not None for p in products):
+            continue
+        url = segment_url(categories['diapers'], segment) + '#purchase-planner'
+        links.append(
+            f'<a class="home-purchase-path" href="{url}" '
+            f'data-nav-source="home_diaper_purchase_planner" data-category-id="diapers" '
+            f'data-product-type="{kind}" data-size="{size}">'
+            f'<span class="home-purchase-path-title">{esc(label)} <span aria-hidden="true">↗</span></span>'
+            f'<span class="home-purchase-path-detail">{esc(detail)}</span>'
+            f'<span class="home-purchase-path-count">現在比較できる{len(products)}商品</span>'
+            '</a>'
+        )
+    if not links:
+        return ''
+    return (
+        '<section class="home-diaper-purchase" id="diaper-purchase-paths" '
+        'aria-labelledby="diaper-purchase-title">'
+        '<div class="section-kicker">DIAPER / PURCHASE PLANNER</div>'
+        '<h2 id="diaper-purchase-title">おむつは何枚・何セット買えばいい？</h2>'
+        '<p>今使うタイプ・サイズから選んで、1日の使用枚数・買う日数・'
+        '使える手持ち在庫を入力。商品の販売セット単位で、'
+        '<strong>支払総額と余る枚数</strong>を比べられます。</p>'
+        '<p class="home-purchase-safety">メーカー表示の体重目安とフィットを確認してください。'
+        'サイズ変更前は買いすぎに注意。掲載するのは購入数量と送料条件を確認できた商品のみです。</p>'
+        '<nav class="home-purchase-path-grid" aria-label="おむつのサイズ別購入計算機への直接リンク">'
+        + ''.join(links) + '</nav>'
+        f'<a class="home-purchase-all" href="{SITE_URL}diapers/" '
+        'data-nav-source="home_diaper_size_list" data-category-id="diapers">'
+        'その他のサイズ・テープ／パンツの価格一覧を見る →</a>'
+        '</section>'
+    )
+
+
+def render_home(categories, snapshots, deals, price_drops, recent_trends, updated_at, *, diaper_snapshots=None):
     entries=[]
     info=[('diapers','紙おむつ','サイズ・タイプを選ぶ'),('wipes','おしりふき','必要枚数・購入額を計算'),('formula','粉ミルク','100gあたりで比べる'),('diaper_bags','防臭袋','1枚あたりで比べる')]
     for i,(cid,name,caption) in enumerate(info,1):
@@ -171,7 +223,14 @@ def render_home(categories, snapshots, deals, price_drops, recent_trends, update
     stock=''.join(f'<span>{esc(categories[cid]["name"])} {_home_price(snapshots.get(cid),categories[cid]["metric"])}</span>' for cid in ('wipes','formula','diaper_bags') if snapshots.get(cid))
     first_pick_href = '#featured-deals' if deals else '#categories'
     first_pick_label = '今日の比較候補を先に見る' if deals else '商品から探す'
-    body=f'''<section class="shop-hero" aria-labelledby="shop-title"><picture class="shop-scene"><source media="(max-width:600px)" srcset="{SITE_URL}static/shop-mobile.webp"><img src="{SITE_URL}static/shop-wide.webp" width="1536" height="1024" alt="木の棚とコットンに、おむつ・おしりふき・ミルク・防臭袋を並べた小さなベビーショップ" fetchpriority="high" decoding="async"></picture><div class="shop-intro"><p class="eyebrow">THE LITTLE BABY SHOP</p><h1 id="shop-title">ベビー用品選びに、<br>小さな、いい出会い。</h1><p>気になる商品から、すぐ比べられる。<br>数量・送料の条件をそろえ、買う金額まで確認できます。</p><a class="shop-browse" href="{first_pick_href}">{first_pick_label} <span aria-hidden="true">↓</span></a><a class="growth-entry" href="#growth-finder">月齢・成長から探す →</a></div><nav class="shop-entries" id="categories" aria-label="ベビー用品の売り場">{''.join(entries)}</nav><span class="scene-note">売り場のイメージ</span></section><div class="shop-welcome"><span>4つの売り場、ひとつの比べ方。</span><p>取得対象内で比較・送料込み対象・毎日更新</p></div><div class="shop-stock-note">{stock}</div>{featured_deals_section(deals)}<section class="nursery-home-promo wipes-home-promo" aria-labelledby="home-wipes-title"><div class="section-kicker">ONE MONTH / BABY WIPES</div><h2 id="home-wipes-title">おしりふきは1か月に何枚必要？</h2><p>例えば1日20枚を30日間使うなら600枚。手持ち200枚を差し引くと、買い足しは400枚です。実際の使用枚数は家庭によって異なります。</p><p>1枚単価だけでなく、販売セット単位で必要な購入数・支払総額・余る枚数を比較できます。赤ちゃんの肌との相性と配送先の追加送料は購入前に確認してください。</p><a href="{SITE_URL}wipes/#wipes-plan" data-nav-source="home_wipes_planner" data-category-id="wipes">おしりふきの必要枚数と購入額を計算する →</a></section>{growth_finder()}<section class="nursery-home-promo"><div class="section-kicker">HOME × NURSERY</div><h2>保育園のおむつは、何枚買い足す？</h2><p>家庭と園に必要な枚数を分け、持参・サブスクと手持ち在庫の違いまで計算します。まとめ買いの前に、余る枚数も確認。</p><a href="{SITE_URL}guides/nursery-diapers/" data-nav-source="home_nursery_planner" data-category-id="diapers">家庭・園のおむつ必要枚数を計算する →</a></section>{selector(categories)}{price_drops_section(price_drops)}{recent_trends_section(recent_trends)}{how_visual()}<section class="quality-card quality-visual"><div><div class="section-kicker">OUR PROMISE</div><h2>「安いけど条件が違う」を入れません</h2><p>紙おむつはテープ／パンツとサイズを分離。販売ページでサイズを選ぶ商品や、数量を安全に読み取れない商品は除外します。</p>{trust_strip()}</div><a href="{SITE_URL}method/">比較ルールを見る →</a></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
+    diaper_paths = home_diaper_purchase_paths(categories, diaper_snapshots)
+    diaper_jump = (
+        '<a class="shop-planner-shortcut" href="#diaper-purchase-paths" '
+        'data-nav-source="home_diaper_planner_shortcut" data-category-id="diapers">'
+        'おむつの購入数・支払額を計算する →</a>'
+        if diaper_paths else ''
+    )
+    body=f'''<section class="shop-hero" aria-labelledby="shop-title"><picture class="shop-scene"><source media="(max-width:600px)" srcset="{SITE_URL}static/shop-mobile.webp"><img src="{SITE_URL}static/shop-wide.webp" width="1536" height="1024" alt="木の棚とコットンに、おむつ・おしりふき・ミルク・防臭袋を並べた小さなベビーショップ" fetchpriority="high" decoding="async"></picture><div class="shop-intro"><p class="eyebrow">THE LITTLE BABY SHOP</p><h1 id="shop-title">ベビー用品選びに、<br>小さな、いい出会い。</h1><p>気になる商品から、すぐ比べられる。<br>数量・送料の条件をそろえ、買う金額まで確認できます。</p><a class="shop-browse" href="{first_pick_href}">{first_pick_label} <span aria-hidden="true">↓</span></a><a class="growth-entry" href="#growth-finder">月齢・成長から探す →</a>{diaper_jump}</div><nav class="shop-entries" id="categories" aria-label="ベビー用品の売り場">{''.join(entries)}</nav><span class="scene-note">売り場のイメージ</span></section><div class="shop-welcome"><span>4つの売り場、ひとつの比べ方。</span><p>取得対象内で比較・送料込み対象・毎日更新</p></div><div class="shop-stock-note">{stock}</div>{diaper_paths}{featured_deals_section(deals)}<section class="nursery-home-promo wipes-home-promo" aria-labelledby="home-wipes-title"><div class="section-kicker">ONE MONTH / BABY WIPES</div><h2 id="home-wipes-title">おしりふきは1か月に何枚必要？</h2><p>例えば1日20枚を30日間使うなら600枚。手持ち200枚を差し引くと、買い足しは400枚です。実際の使用枚数は家庭によって異なります。</p><p>1枚単価だけでなく、販売セット単位で必要な購入数・支払総額・余る枚数を比較できます。赤ちゃんの肌との相性と配送先の追加送料は購入前に確認してください。</p><a href="{SITE_URL}wipes/#wipes-plan" data-nav-source="home_wipes_planner" data-category-id="wipes">おしりふきの必要枚数と購入額を計算する →</a></section>{growth_finder()}<section class="nursery-home-promo"><div class="section-kicker">HOME × NURSERY</div><h2>保育園のおむつは、何枚買い足す？</h2><p>家庭と園に必要な枚数を分け、持参・サブスクと手持ち在庫の違いまで計算します。まとめ買いの前に、余る枚数も確認。</p><a href="{SITE_URL}guides/nursery-diapers/" data-nav-source="home_nursery_planner" data-category-id="diapers">家庭・園のおむつ必要枚数を計算する →</a></section>{selector(categories)}{price_drops_section(price_drops)}{recent_trends_section(recent_trends)}{how_visual()}<section class="quality-card quality-visual"><div><div class="section-kicker">OUR PROMISE</div><h2>「安いけど条件が違う」を入れません</h2><p>紙おむつはテープ／パンツとサイズを分離。販売ページでサイズを選ぶ商品や、数量を安全に読み取れない商品は除外します。</p>{trust_strip()}</div><a href="{SITE_URL}method/">比較ルールを見る →</a></section><p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     return shell('ベビー用品コスパ比較 | 1枚・100g単価で比較','今のわが子に必要な消耗品を月齢・成長から発見。おむつはテープ・パンツとサイズ別、おしりふきは1枚、乳児用粉ミルクは100g単価で比較します。',body,SITE_URL)
 
 

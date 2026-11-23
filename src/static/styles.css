@@ -264,3 +264,41 @@
   border-radius:10px;background:#fffef9;color:var(--ink);
   text-decoration:none;white-space:normal;line-height:1.6;
 }
+
+
+/* Real buyer paths: static, crawlable links to calculators with accepted SKUs. */
+.home-diaper-purchase{
+  margin:clamp(22px,4vw,45px) auto 34px;padding:clamp(20px,3.5vw,34px);
+  background:#f0f4ed;border:1px solid #cad6c8;scroll-margin-top:88px;
+  max-width:100%;min-width:0;
+}
+.home-diaper-purchase h2{font:600 clamp(23px,3.3vw,31px)/1.45 var(--serif);color:var(--ink);margin:7px 0 13px}
+.home-diaper-purchase>p{font-size:13px;line-height:1.95;max-width:870px;margin:0 0 9px}
+.home-diaper-purchase .home-purchase-safety{font-size:11px;color:var(--muted);margin-bottom:19px}
+.home-purchase-path-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:16px 0 18px}
+.home-purchase-path{
+  display:flex;flex-direction:column;gap:6px;justify-content:center;
+  min-height:98px;min-width:0;border:1px solid #c7d8cd;background:#fffefa;
+  padding:15px 17px;text-decoration:none;color:var(--body);
+}
+.home-purchase-path:hover,.home-purchase-path:focus-visible{border-color:#527b6d;background:#f9fbf4;outline-offset:3px}
+.home-purchase-path-title{font:600 18px/1.5 var(--serif);color:var(--ink);display:flex;justify-content:space-between;align-items:center;gap:9px}
+.home-purchase-path-title span{font:normal 17px sans-serif}
+.home-purchase-path-detail{font-size:12px;line-height:1.65}
+.home-purchase-path-count{font-size:11px;line-height:1.5;color:var(--muted)}
+.home-purchase-all{display:inline-flex;align-items:center;min-height:46px;max-width:100%;padding:8px 2px;font-size:12px;color:var(--ink);overflow-wrap:anywhere}
+.shop-planner-shortcut{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:9px 12px;min-height:44px;max-width:100%;margin-top:10px;
+  font-size:12px;line-height:1.6;color:var(--ink);background:#fffefa;
+  border:1px solid #739484;text-decoration:none;white-space:normal;
+}
+.shop-planner-shortcut:hover,.shop-planner-shortcut:focus-visible{border-color:var(--ink);outline-offset:3px}
+@media(max-width:850px){.home-purchase-path-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){
+  .home-diaper-purchase{padding:19px 15px;margin-top:22px}
+  .home-purchase-path-grid{grid-template-columns:minmax(0,1fr);gap:8px}
+  .home-purchase-path{min-height:69px;padding:12px 14px;gap:3px}
+  .home-purchase-path-title{font-size:17px}
+  .home-purchase-path-detail{font-size:11px}
+}
