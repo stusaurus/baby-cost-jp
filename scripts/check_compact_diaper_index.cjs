@@ -97,7 +97,7 @@ const server=http.createServer((req,res)=>{
           assert.equal(await p.locator('nav.home-purchase-path-grid a.home-purchase-path').count(),5);
           assert.equal(await p.locator('table.seo-data-table tbody tr').count(),9);
           assert.equal(await p.locator('.choices').count(),0);
-          assert.equal(await p.locator('section.diaper-hub-nursery').count(),1);
+          assert.equal(await p.locator('aside.diaper-hub-nursery').count(),1);
           assert.equal(await p.locator('a[data-nav-source="diaper_index_price_jump"]').getAttribute('href'),'#diaper-price-by-size');
           assert.equal(await p.locator(".home-purchase-path-count").count(),5);
           const jumping=p.locator('[data-nav-source="diaper_index_purchase_jump"]');
