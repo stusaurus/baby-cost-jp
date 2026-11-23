@@ -5,9 +5,11 @@ published snapshot. This guide never asserts that price determines fit.
 """
 from __future__ import annotations
 
+import json
+
 from .config import SITE_URL
 from .purchase import purchase_inputs
-from .render import esc, presentation_product_name, shell
+from .render import esc, presentation_product_name, shell, static_version
 
 GUIDE_PATH = "guides/m-diapers-tape-vs-pants/"
 GUIDE_URL = SITE_URL + GUIDE_PATH
@@ -113,6 +115,78 @@ def render_m_diaper_type_guide(snapshots, updated_at):
             noindex=True,
         )
 
+    # One validated, static snapshot powers both the crawlable examples and
+    # the optional local-only interactive calculation. No dynamic price lookup.
+    def planner_offers(products):
+        return [
+            {
+                "id": str(p.get("source_id", "")),
+                "name": presentation_product_name(p.get("name", ""))[:120],
+                "price": purchase_inputs(p)["price"],
+                "total": purchase_inputs(p)["total"],
+                "verified": True,
+            }
+            for p in products
+        ]
+    safe_json = json.dumps(
+        {"tape": planner_offers(tape), "pants": planner_offers(pants)},
+        ensure_ascii=False, separators=(",", ":"),
+    ).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    interactive = (
+        '<section class="m-type-personal" data-m-type-planner aria-labelledby="m-type-personal-title">'
+        '<div class="section-kicker">YOUR BUYING PLAN</div>'
+        '<h2 id="m-type-personal-title">わが家の枚数・日数・在庫で、買い足し額を比較</h2>'
+        '<p>テープとパンツを同じ使用枚数・日数で計算します。'
+        '手持ち在庫はタイプごとに入力してください。別のタイプを同じ在庫として二重計上しません。</p>'
+        '<div class="m-type-personal-inputs">'
+        '<label for="m-type-daily">1日に使う枚数'
+        '<input id="m-type-daily" data-m-type-input="daily" type="number" min="1" max="30" step="1" inputmode="numeric" value="6">枚</label>'
+        '<label for="m-type-days">購入予定の日数'
+        '<input id="m-type-days" data-m-type-input="days" type="number" min="1" max="90" step="1" inputmode="numeric" value="14">日</label>'
+        '<label for="m-type-tape-stock">手持ちのテープM'
+        '<input id="m-type-tape-stock" data-m-type-input="tape-stock" type="number" min="0" max="10000" step="1" inputmode="numeric" value="0">枚</label>'
+        '<label for="m-type-pants-stock">手持ちのパンツM'
+        '<input id="m-type-pants-stock" data-m-type-input="pants-stock" type="number" min="0" max="10000" step="1" inputmode="numeric" value="0">枚</label>'
+        '</div>'
+        '<div class="m-type-personal-presets" role="group" aria-label="購入予定期間">'
+        '<span>期間を選ぶ：</span>'
+        '<button type="button" data-m-type-days-choice="7" aria-pressed="false">7日</button>'
+        '<button type="button" data-m-type-days-choice="14" aria-pressed="true">14日</button>'
+        '<button type="button" data-m-type-days-choice="30" aria-pressed="false">30日</button>'
+        '</div>'
+        '<p class="m-type-personal-error" data-m-type-error role="alert" hidden></p>'
+        '<div data-m-type-live hidden>'
+        '<p class="m-type-personal-needed">この期間の必要枚数：<strong data-m-type-field="needed"></strong></p>'
+        '<div class="m-type-personal-cards">'
+        '<article class="m-type-plan-card" data-m-type-card="tape">'
+        '<h3>テープM</h3>'
+        '<strong class="m-type-plan-payment" data-m-type-field="payment"></strong>'
+        '<dl><div><dt>不足枚数</dt><dd data-m-type-field="shortage"></dd></div>'
+        '<div><dt>必要な販売セット</dt><dd data-m-type-field="sets"></dd></div>'
+        '<div><dt>購入する枚数</dt><dd data-m-type-field="bought"></dd></div>'
+        '<div><dt>使用後の余り（在庫込み）</dt><dd data-m-type-field="surplus"></dd></div></dl>'
+        '<p class="m-type-plan-item" data-m-type-field="name"></p></article>'
+        '<article class="m-type-plan-card" data-m-type-card="pants">'
+        '<h3>パンツM</h3>'
+        '<strong class="m-type-plan-payment" data-m-type-field="payment"></strong>'
+        '<dl><div><dt>不足枚数</dt><dd data-m-type-field="shortage"></dd></div>'
+        '<div><dt>必要な販売セット</dt><dd data-m-type-field="sets"></dd></div>'
+        '<div><dt>購入する枚数</dt><dd data-m-type-field="bought"></dd></div>'
+        '<div><dt>使用後の余り（在庫込み）</dt><dd data-m-type-field="surplus"></dd></div></dl>'
+        '<p class="m-type-plan-item" data-m-type-field="name"></p></article>'
+        '</div>'
+        '<p class="m-type-personal-verdict" data-m-type-field="verdict" aria-live="polite"></p>'
+        '<p class="m-type-personal-stock-note" data-m-type-field="stock-note"></p>'
+        '</div>'
+        '<p class="m-type-personal-caveat">各タイプの掲載商品から、同じ1商品を販売セット単位で買い足した場合の最小支払額です。'
+        '異なる商品を混ぜた最適化や、現在の在庫・販売価格の保証ではありません。'
+        '比較結果は端末内だけで計算し、入力内容を保存・送信しません。'
+        '価格だけで赤ちゃんに合うタイプを選ばないでください。</p>'
+        f'<script type="application/json" data-m-type-snapshot>{safe_json}</script>'
+        f'<script defer src="{SITE_URL}static/m_type_planner.js?v={static_version("m_type_planner.js")}"></script>'
+        '</section>'
+    )
+
     rows = []
     example_days = (7, 14, 30)
     for days in example_days:
@@ -186,6 +260,6 @@ def render_m_diaper_type_guide(snapshots, updated_at):
     return shell(
         'Mサイズのおむつ テープとパンツはどちらが安い？｜必要セット数・購入総額比較',
         'テープMとパンツMのどちらが安い？同じ1日6枚で7日・14日・30日分の必要販売セット数・実支払額・余る枚数を、検証済み商品で比較。サイズ適合は別に確認。',
-        intro + choice + table + faq + footer,
+        intro + choice + interactive + table + faq + footer,
         GUIDE_URL,
     )

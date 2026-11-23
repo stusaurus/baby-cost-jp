@@ -59,7 +59,7 @@ const server=http.createServer((req,res)=>{
   res.end(pages[suffix].replaceAll(source,origin+base));return;
  }
  if(suffix.startsWith('static/')){
-  const allowed=new Set(['styles.css','app.js','purchase.js','analytics.js']);
+  const allowed=new Set(['styles.css','app.js','purchase.js','analytics.js','m_type_planner.js']);
   const name=path.basename(suffix);
   if(!allowed.has(name)){res.writeHead(404);res.end();return;}
   const file=path.resolve('src/static',name);
@@ -94,6 +94,34 @@ const server=http.createServer((req,res)=>{
      assert.equal(await page.locator('.m-type-table').innerText().then(s=>s.includes('¥4,200')),true);
      assert.equal(await page.locator('.m-type-table').innerText().then(s=>s.includes('¥6,920')),true);
      assert.equal(await page.locator('.m-type-scroll').getAttribute('tabindex'),'0');
+     const daily=page.locator('[data-m-type-input="daily"]');
+     const days=page.locator('[data-m-type-input="days"]');
+     const tapeStock=page.locator('[data-m-type-input="tape-stock"]');
+     const pantsStock=page.locator('[data-m-type-input="pants-stock"]');
+     const payment=type=>page.locator('[data-m-type-card="'+type+'"] [data-m-type-field="payment"]');
+     assert.equal(await daily.inputValue(),'6');
+     assert.equal(await days.inputValue(),'14');
+     assert.equal(await payment('tape').innerText(),'¥5,360');
+     assert.equal(await payment('pants').innerText(),'¥4,200');
+     await tapeStock.fill('84');
+     assert.equal(await payment('tape').innerText(),'¥0');
+     assert.equal(await payment('pants').innerText(),'¥4,200');
+     assert.equal(await page.locator('[data-m-type-field="stock-note"]').innerText()
+       .then(s=>s.includes('手持ち枚数が異なる')),true);
+     await tapeStock.fill('0');
+     await pantsStock.fill('84');
+     assert.equal(await payment('pants').innerText(),'¥0');
+     await pantsStock.fill('0');
+     await page.locator('[data-m-type-days-choice="30"]').click();
+     assert.equal(await days.inputValue(),'30');
+     assert.equal(await payment('tape').innerText(),'¥6,920');
+     assert.equal(await payment('pants').innerText(),'¥6,100');
+     await daily.fill('0');
+     assert.equal(await page.locator('[data-m-type-error]').isVisible(),true);
+     assert.equal(await page.locator('[data-m-type-live]').isVisible(),false);
+     await daily.fill('6');
+     await page.locator('[data-m-type-days-choice="14"]').click();
+     assert.equal(await payment('tape').innerText(),'¥5,360');
      assert.equal(await page.locator('[data-nav-source="m_type_tape_planner"]').count(),1);
      assert.equal(await page.locator('[data-nav-source="m_type_pants_planner"]').count(),1);
      assert((await page.evaluate(()=>document.documentElement.scrollWidth))<=width+1,engine+'/'+width+' guide overflow');
@@ -110,7 +138,7 @@ const server=http.createServer((req,res)=>{
       assert((await page.evaluate(()=>document.documentElement.scrollWidth))<=width+1,engine+'/'+width+'/'+type+' overflow');
      }
      assert.deepEqual(errors,[],engine+'/'+width+' page errors');
-     observations.push({engine,width,mHub:true,guideIndexable:true,threeScenarios:true,twoPlannerLinks:true,noOverflow:true,noPageErrors:true});
+     observations.push({engine,width,mHub:true,guideIndexable:true,threeScenarios:true,personalizedPlanner:true,independentStock:true,invalidInputBlocked:true,twoPlannerLinks:true,noOverflow:true,noPageErrors:true});
      await context.close();
     }
    }finally{await browser.close();}

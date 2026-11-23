@@ -1,5 +1,7 @@
 """M tape/pants purchase comparison uses only accepted SKU evidence and full sets."""
 import unittest
+import json
+import re
 from datetime import datetime, timezone
 
 from src.config import load_categories
@@ -70,6 +72,42 @@ class MTypeCheckoutGuideTests(unittest.TestCase):
         self.assertIn('1販売セット・計248枚購入 ／ 180枚使用後に68枚余る', html)
         self.assertIn('1販売セット・計180枚購入 ／ 180枚使用後に0枚余る', html)
 
+    def test_personalized_planner_only_uses_verified_local_snapshot(self):
+        html = render_m_diaper_type_guide(self.catalog, NOW)
+        self.assertIn('data-m-type-planner', html)
+        self.assertIn('data-m-type-input="daily"', html)
+        self.assertIn('data-m-type-input="days"', html)
+        self.assertIn('data-m-type-input="tape-stock"', html)
+        self.assertIn('data-m-type-input="pants-stock"', html)
+        self.assertIn('type="number" min="1" max="90"', html)
+        self.assertIn('data-m-type-days-choice="30"', html)
+        self.assertIn('m_type_planner.js?v=', html)
+        match = re.search(
+            r'<script type="application/json" data-m-type-snapshot>(.*?)</script>',
+            html,
+        )
+        self.assertIsNotNone(match)
+        snapshot = json.loads(match.group(1))
+        self.assertEqual([p["price"] for p in snapshot["tape"]], [2680, 6920])
+        self.assertEqual([p["total"] for p in snapshot["pants"]], [50, 180])
+        self.assertTrue(all(p["verified"] for group in snapshot.values() for p in group))
+        self.assertTrue(all("url" not in p for group in snapshot.values() for p in group))
+        self.assertIn('入力内容を保存・送信しません', html)
+        self.assertIn('異なる商品を混ぜた最適化', html)
+
+    def test_planner_snapshot_escapes_untrusted_product_titles(self):
+        changed = dict(self.catalog)
+        rows = list(self.catalog['tape-m']['products'])
+        rows[0] = dict(rows[0], name='おむつM </script><img src=x onerror=alert(1)>')
+        changed['tape-m'] = {'products': rows}
+        html = render_m_diaper_type_guide(changed, NOW)
+        self.assertNotIn('</script><img', html)
+        match = re.search(r'<script type="application/json" data-m-type-snapshot>(.*?)</script>', html)
+        self.assertIsNotNone(match)
+        parsed = json.loads(match.group(1))
+        self.assertEqual(parsed['tape'][0]['name'], 'おむつM </script><img src=x onerror=alert(1)>')
+        self.assertEqual(html.count('data-m-type-snapshot'), 1)
+
     def test_source_and_suitability_cautions_with_clear_outbound_links(self):
         html = render_m_diaper_type_guide(self.catalog, NOW)
         self.assertIn('https://jp.moony.com/ja/tips/baby/childcare/diapers/bm0084.html', html)
@@ -122,6 +160,8 @@ class MTypeCheckoutGuideTests(unittest.TestCase):
                 self.assertIn('content="noindex,follow"', html)
                 self.assertIn('購入総額を比較するための商品が不足', html)
                 self.assertNotIn('m-type-table', html)
+                self.assertNotIn('data-m-type-planner', html)
+                self.assertNotIn('data-m-type-snapshot', html)
                 self.assertNotIn('パンツの掲載候補が¥', html)
                 self.assertIn('diapers/tape/m/"', html)
                 self.assertIn('diapers/pants/m/"', html)
