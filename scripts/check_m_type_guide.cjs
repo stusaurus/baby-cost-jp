@@ -21,12 +21,14 @@ categories=load_categories()
 segment_map={s['id']:s for s in categories['diapers']['segments']}
 now=datetime(2026,11,23,22,0,tzinfo=timezone.utc)
 def product(id,n,price,type):
- return dict(source_id=id,name=f'赤ちゃん用 {type} Mサイズ {n}枚',
+ return dict(source_id='fixture:'+id,name=f'赤ちゃん用 {type} Mサイズ {n}枚',
              price_yen=price,unit_price=price/n,unit_metric='per_piece',
              quantity=dict(total=n,base_unit='piece',confidence=.99,
                            evidence=f'{n}枚',pack_count=1),
              shipping_basis='rakuten_postage_filter',
-             url='https://hb.afl.rakuten.co.jp/hgc/'+id,
+             url=('https://hb.afl.rakuten.co.jp/hgc/'+id+'/?'
+                  'pc=https%3A%2F%2Fitem.rakuten.co.jp%2Ffixture%2F'+id+'%2F'
+                  '&m=http%3A%2F%2Fm.rakuten.co.jp%2Ffixture%2Fi%2F'+id+'%2F'),
              image='',brand='テスト用',manufacturer='テスト用',shop='テスト用店舗',attributes={})
 snapshots={
  'tape-m': {'products':[product('tape-74',74,2680,'テープ'),
@@ -103,22 +105,43 @@ const server=http.createServer((req,res)=>{
      assert.equal(await days.inputValue(),'14');
      assert.equal(await payment('tape').innerText(),'¥5,360');
      assert.equal(await payment('pants').innerText(),'¥4,200');
+     const buy=type=>page.locator('[data-m-type-card="'+type+'"] [data-m-type-buy]');
+     assert.equal(await buy('tape').isVisible(),true);
+     assert.equal(await buy('pants').isVisible(),true);
+     assert.equal(await buy('tape').getAttribute('data-product-id'),'fixture:tape-74');
+     assert.equal(await buy('pants').getAttribute('data-product-id'),'fixture:pants-50');
+     assert.equal(await buy('tape').getAttribute('target'),'_blank');
+     assert((await buy('tape').getAttribute('rel')).includes('sponsored'));
+     assert((await buy('tape').getAttribute('href')).includes('/hgc/tape-74/'));
+     assert((await buy('pants').getAttribute('href')).includes('/hgc/pants-50/'));
+     assert.equal(await buy('pants').getAttribute('data-click-position'),'m_type_personal_result');
      await tapeStock.fill('84');
      assert.equal(await payment('tape').innerText(),'¥0');
      assert.equal(await payment('pants').innerText(),'¥4,200');
+     assert.equal(await buy('tape').isVisible(),false);
+     assert.equal(await buy('tape').getAttribute('href'),null);
+     assert.equal(await buy('pants').isVisible(),true);
      assert.equal(await page.locator('[data-m-type-field="stock-note"]').innerText()
        .then(s=>s.includes('手持ち枚数が異なる')),true);
      await tapeStock.fill('0');
      await pantsStock.fill('84');
      assert.equal(await payment('pants').innerText(),'¥0');
+     assert.equal(await buy('pants').isVisible(),false);
+     assert.equal(await buy('pants').getAttribute('href'),null);
      await pantsStock.fill('0');
      await page.locator('[data-m-type-days-choice="30"]').click();
      assert.equal(await days.inputValue(),'30');
      assert.equal(await payment('tape').innerText(),'¥6,920');
      assert.equal(await payment('pants').innerText(),'¥6,100');
+     assert.equal(await buy('tape').getAttribute('data-product-id'),'fixture:tape-248');
+     assert.equal(await buy('pants').getAttribute('data-product-id'),'fixture:pants-180');
+     assert((await buy('tape').getAttribute('href')).includes('/hgc/tape-248/'));
+     assert((await buy('pants').getAttribute('href')).includes('/hgc/pants-180/'));
      await daily.fill('0');
      assert.equal(await page.locator('[data-m-type-error]').isVisible(),true);
      assert.equal(await page.locator('[data-m-type-live]').isVisible(),false);
+     assert.equal(await buy('tape').getAttribute('href'),null);
+     assert.equal(await buy('pants').getAttribute('href'),null);
      await daily.fill('6');
      await page.locator('[data-m-type-days-choice="14"]').click();
      assert.equal(await payment('tape').innerText(),'¥5,360');
@@ -138,7 +161,7 @@ const server=http.createServer((req,res)=>{
       assert((await page.evaluate(()=>document.documentElement.scrollWidth))<=width+1,engine+'/'+width+'/'+type+' overflow');
      }
      assert.deepEqual(errors,[],engine+'/'+width+' page errors');
-     observations.push({engine,width,mHub:true,guideIndexable:true,threeScenarios:true,personalizedPlanner:true,independentStock:true,invalidInputBlocked:true,twoPlannerLinks:true,noOverflow:true,noPageErrors:true});
+     observations.push({engine,width,mHub:true,guideIndexable:true,threeScenarios:true,personalizedPlanner:true,exactProductAffiliate:true,noBuyLinkSuppressed:true,independentStock:true,invalidInputBlocked:true,twoPlannerLinks:true,noOverflow:true,noPageErrors:true});
      await context.close();
     }
    }finally{await browser.close();}

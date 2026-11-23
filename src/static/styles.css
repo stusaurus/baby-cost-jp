@@ -448,3 +448,17 @@
   .m-type-personal-cards{grid-template-columns:minmax(0,1fr);gap:11px}
   .m-type-plan-card{padding:14px}
 }
+
+/* Retailer handoff is visible only for a verified, selected M-size SKU. */
+.m-type-plan-buy,.m-type-plan-fallback{
+  display:flex;align-items:center;justify-content:center;min-height:50px;
+  margin-top:16px;padding:11px 13px;box-sizing:border-box;
+  border:1px solid #286b50;text-align:center;line-height:1.55;
+  text-decoration:none;font-size:13px;font-weight:700;
+  overflow-wrap:anywhere
+}
+.m-type-plan-buy{background:#285c47;color:#fff}
+.m-type-plan-buy:hover,.m-type-plan-buy:focus-visible{background:#174835;color:#fff}
+.m-type-plan-fallback{background:#fff;color:var(--ink)}
+.m-type-plan-fallback:hover,.m-type-plan-fallback:focus-visible{background:#e2eee4}
+.m-type-plan-buy[hidden],.m-type-plan-fallback[hidden]{display:none!important}

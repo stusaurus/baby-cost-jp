@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from src.config import load_categories
 from src.render import render_comparison, render_diaper_index
 from src.type_guide import (
-    GUIDE_URL, guide_available, lowest_checkout,
+    GUIDE_URL, guide_available, lowest_checkout, verified_retail_link,
     render_m_diaper_type_guide, verified_offers,
 )
 
@@ -91,7 +91,11 @@ class MTypeCheckoutGuideTests(unittest.TestCase):
         self.assertEqual([p["price"] for p in snapshot["tape"]], [2680, 6920])
         self.assertEqual([p["total"] for p in snapshot["pants"]], [50, 180])
         self.assertTrue(all(p["verified"] for group in snapshot.values() for p in group))
-        self.assertTrue(all("url" not in p for group in snapshot.values() for p in group))
+        self.assertTrue(all(p["url"] == "" for group in snapshot.values() for p in group))
+        self.assertEqual(html.count('data-m-type-buy'), 2)
+        self.assertEqual(html.count('data-affiliate="rakuten"'), 2)
+        self.assertIn('nofollow sponsored noopener', html)
+        self.assertIn('data-click-position="m_type_personal_result"', html)
         self.assertIn('入力内容を保存・送信しません', html)
         self.assertIn('異なる商品を混ぜた最適化', html)
 
@@ -107,6 +111,51 @@ class MTypeCheckoutGuideTests(unittest.TestCase):
         parsed = json.loads(match.group(1))
         self.assertEqual(parsed['tape'][0]['name'], 'おむつM </script><img src=x onerror=alert(1)>')
         self.assertEqual(html.count('data-m-type-snapshot'), 1)
+
+    def test_exact_rakuten_product_id_is_required_for_direct_checkout_link(self):
+        original = product('store:123456', 64, 2750)
+        url = (
+            'https://hb.afl.rakuten.co.jp/hgc/safe.example/?'
+            'pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fstore%2Fdiapers-m%2F'
+            '&m=http%3A%2F%2Fm.rakuten.co.jp%2Fstore%2Fi%2F123456%2F'
+        )
+        original['url'] = url
+        self.assertEqual(verified_retail_link(original), url)
+        catalog = dict(self.catalog)
+        rows = [original, self.catalog['tape-m']['products'][1]]
+        catalog['tape-m'] = {'products': rows}
+        html = render_m_diaper_type_guide(catalog, NOW)
+        match = re.search(
+            r'<script type="application/json" data-m-type-snapshot>(.*?)</script>',
+            html,
+        )
+        self.assertIsNotNone(match)
+        snapshot = json.loads(match.group(1))
+        self.assertEqual(snapshot['tape'][0]['id'], 'store:123456')
+        self.assertEqual(snapshot['tape'][0]['url'], url)
+        self.assertEqual(snapshot['tape'][1]['url'], '')
+        self.assertIn('data-m-type-fallback', html)
+
+        wrong = dict(original)
+        for changed in (
+            'javascript:alert(1)',
+            'https://hb.afl.rakuten.co.jp.evil.example/hgc/abc',
+            'https://hb.afl.rakuten.co.jp/hgc/abc?'
+                'pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fstore%2Fdiapers-m%2F'
+                '&m=http%3A%2F%2Fm.rakuten.co.jp%2Fstore%2Fi%2F999999%2F',
+            url.replace('item.rakuten.co.jp%2Fstore', 'item.rakuten.co.jp%2Fother'),
+            url.replace('m.rakuten.co.jp%2Fstore', 'm.rakuten.co.jp%2Fother'),
+            url.replace('https://hb', 'http://hb'),
+            url + '&m=https%3A%2F%2Fm.rakuten.co.jp%2Fstore%2Fi%2F123456%2F',
+        ):
+            with self.subTest(changed=changed[:60]):
+                wrong['url'] = changed
+                self.assertEqual(verified_retail_link(wrong), '')
+        wrong['url'] = url
+        wrong['source_id'] = 'store:999999'
+        self.assertEqual(verified_retail_link(wrong), '')
+        wrong['source_id'] = 'no-store-item-id'
+        self.assertEqual(verified_retail_link(wrong), '')
 
     def test_source_and_suitability_cautions_with_clear_outbound_links(self):
         html = render_m_diaper_type_guide(self.catalog, NOW)
@@ -162,6 +211,7 @@ class MTypeCheckoutGuideTests(unittest.TestCase):
                 self.assertNotIn('m-type-table', html)
                 self.assertNotIn('data-m-type-planner', html)
                 self.assertNotIn('data-m-type-snapshot', html)
+                self.assertNotIn('data-m-type-buy', html)
                 self.assertNotIn('パンツの掲載候補が¥', html)
                 self.assertIn('diapers/tape/m/"', html)
                 self.assertIn('diapers/pants/m/"', html)

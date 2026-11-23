@@ -19,7 +19,8 @@
       return {
         needed, stock, shortage, sets, bought: sets * offer.total,
         payment: sets * offer.price, surplus: stock + sets * offer.total - needed,
-        noBuy: false, name: offer.name, id: offer.id
+        noBuy: false, name: offer.name, id: offer.id,
+        unitPrice: offer.price / offer.total, url: offer.url || ''
       };
     });
     choices.sort((a, b) => a.payment - b.payment ||
@@ -58,6 +59,21 @@ if (typeof document !== 'undefined') (() => {
   const error = box.querySelector('[data-m-type-error]');
   const number = value => value.toLocaleString('ja-JP');
   const yen = value => '¥' + number(value);
+  const isRakuten = raw => {
+    if (typeof raw !== 'string' || !raw) return false;
+    try {
+      const url = new URL(raw);
+      return url.protocol === 'https:' && url.host === 'hb.afl.rakuten.co.jp' &&
+        url.pathname.startsWith('/hgc/') && url.pathname.length > 5;
+    } catch (_) { return false; }
+  };
+  const clearBuy = parent => {
+    const buy = parent.querySelector('[data-m-type-buy]');
+    const fallback = parent.querySelector('[data-m-type-fallback]');
+    buy.hidden = true; buy.removeAttribute('href');
+    ['productId', 'productName', 'unitPrice'].forEach(key => delete buy.dataset[key]);
+    fallback.hidden = true;
+  };
   const read = input => /^\d+$/.test(input.value) && input.checkValidity() &&
     Number.isSafeInteger(Number(input.value)) ? Number(input.value) : null;
   const set = (parent, key, value) => { parent.querySelector('[data-m-type-field="' + key + '"]').textContent = value; };
@@ -69,6 +85,22 @@ if (typeof document !== 'undefined') (() => {
     set(parent, 'bought', number(value.bought) + '枚');
     set(parent, 'surplus', number(value.surplus) + '枚');
     set(parent, 'name', value.name);
+    const buy = parent.querySelector('[data-m-type-buy]');
+    const fallback = parent.querySelector('[data-m-type-fallback]');
+    clearBuy(parent);
+    if (!value.noBuy) {
+      if (isRakuten(value.url) && typeof value.id === 'string' && value.id) {
+        // Link and event metadata come from the *same selected* SKU.
+        buy.href = value.url;
+        buy.dataset.productId = value.id;
+        buy.dataset.productName = value.name;
+        buy.dataset.unitPrice = value.unitPrice.toFixed(4);
+        buy.hidden = false;
+      } else {
+        // Never substitute a different retailer product or guessed URL.
+        fallback.hidden = false;
+      }
+    }
     parent.classList.toggle('m-type-plan-card--no-buy', value.noBuy);
   };
   const update = () => {
@@ -81,6 +113,7 @@ if (typeof document !== 'undefined') (() => {
     error.hidden = Boolean(value);
     result.hidden = !value;
     if (!value) {
+      ['tape', 'pants'].forEach(type => clearBuy(box.querySelector('[data-m-type-card="' + type + '"]')));
       error.textContent = '1日の枚数は1〜30枚、日数は1〜90日、各タイプの手持ちは0〜10000枚の整数で入力してください。';
       return;
     }

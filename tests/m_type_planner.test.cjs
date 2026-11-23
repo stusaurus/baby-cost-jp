@@ -56,7 +56,28 @@ test('invalid and unsafe catalogs or household inputs never generate prices', ()
   }
 });
 
-test('no input data leaves the local algorithm and output never links to a product', () => {
-  assert.equal(typeof compare(catalog,6,14,0,0).pants.name, 'string');
-  assert.equal('url' in compare(catalog,6,14,0,0).pants, false);
+test('the selected exact offer carries its own destination when available', () => {
+  const withLinks = {
+    tape: catalog.tape.map(o => ({...o, url:'https://hb.afl.rakuten.co.jp/hgc/' + o.id})),
+    pants: catalog.pants.map(o => ({...o, url:'https://hb.afl.rakuten.co.jp/hgc/' + o.id}))
+  };
+  const first = compare(withLinks, 6, 14, 0, 0);
+  assert.equal(first.tape.id, 'tape-74');
+  assert.equal(first.tape.url, 'https://hb.afl.rakuten.co.jp/hgc/tape-74');
+  assert.equal(first.tape.unitPrice, 2680 / 74);
+  assert.equal(first.pants.id, 'pants-50');
+  assert.equal(first.pants.url, 'https://hb.afl.rakuten.co.jp/hgc/pants-50');
+  const later = compare(withLinks, 6, 30, 0, 0);
+  assert.equal(later.tape.id, 'tape-248');
+  assert.equal(later.tape.url, 'https://hb.afl.rakuten.co.jp/hgc/tape-248');
+  assert.equal(later.pants.id, 'pants-180');
+  assert.equal(later.pants.url, 'https://hb.afl.rakuten.co.jp/hgc/pants-180');
+  const noBuy = compare(withLinks, 6, 14, 100, 0);
+  assert.equal(noBuy.tape.noBuy, true);
+  assert.equal(Object.hasOwn(noBuy.tape, 'url'), false);
+  assert.equal(noBuy.pants.noBuy, false);
+  assert.equal(typeof noBuy.pants.url, 'string');
+  assert.equal(Object.hasOwn(noBuy.pants, 'stock'), true);
+  // Raw household settings never become any retailer URL or analytics payload.
+  assert.equal(first.pants.url.includes('stock='), false);
 });
