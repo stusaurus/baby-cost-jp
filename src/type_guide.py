@@ -6,6 +6,8 @@ published snapshot. This guide never asserts that price determines fit.
 from __future__ import annotations
 
 import json
+import re
+from urllib.parse import parse_qs, urlsplit
 
 from .config import SITE_URL
 from .purchase import purchase_inputs
@@ -55,6 +57,53 @@ def lowest_checkout(products, needed):
         x["payment"], x["surplus"],
         str(x["product"].get("source_id", "")),
     ))
+
+
+def verified_retail_link(product):
+    """Only expose the exact catalog SKU's Rakuten affiliate link.
+
+    Verify store and item against the mobile destination encoded by the
+    Rakuten API; the desktop target must refer to that same store.
+    Never derive a shopping URL from a display title or accept redirects to
+    an arbitrary host.
+    """
+    if not isinstance(product, dict):
+        return ""
+    source_id = product.get("source_id")
+    if not isinstance(source_id, str) or source_id.count(":") != 1:
+        return ""
+    shop, item = source_id.split(":", 1)
+    if not (re.fullmatch(r"[A-Za-z0-9_-]+", shop) and
+            re.fullmatch(r"[A-Za-z0-9_-]+", item)):
+        return ""
+    url = product.get("affiliate_url") or product.get("url")
+    if not isinstance(url, str) or not url or any(ord(ch) < 33 for ch in url):
+        return ""
+    try:
+        outer = urlsplit(url)
+        if (outer.scheme != "https" or outer.netloc != "hb.afl.rakuten.co.jp" or
+                not outer.path.startswith("/hgc/") or not outer.path[5:].strip("/") or
+                outer.fragment):
+            return ""
+        params = parse_qs(outer.query)
+        mobile, desktop = params.get("m", []), params.get("pc", [])
+        if len(mobile) != 1 or len(desktop) != 1:
+            return ""
+        m, pc = urlsplit(mobile[0]), urlsplit(desktop[0])
+        if (m.scheme not in ("http", "https") or
+                m.netloc != "m.rakuten.co.jp" or
+                pc.scheme != "https" or pc.netloc != "item.rakuten.co.jp"):
+            return ""
+        mobile_parts = m.path.strip("/").split("/")
+        desktop_parts = pc.path.strip("/").split("/")
+        if (len(mobile_parts) != 3 or
+                [p.lower() for p in mobile_parts] !=
+                [shop.lower(), "i", item.lower()] or
+                len(desktop_parts) < 2 or desktop_parts[0].lower() != shop.lower()):
+            return ""
+    except ValueError:
+        return ""
+    return url
 
 
 def render_m_diaper_type_guide(snapshots, updated_at):
@@ -125,6 +174,7 @@ def render_m_diaper_type_guide(snapshots, updated_at):
                 "price": purchase_inputs(p)["price"],
                 "total": purchase_inputs(p)["total"],
                 "verified": True,
+                "url": verified_retail_link(p),
             }
             for p in products
         ]
@@ -165,7 +215,14 @@ def render_m_diaper_type_guide(snapshots, updated_at):
         '<div><dt>必要な販売セット</dt><dd data-m-type-field="sets"></dd></div>'
         '<div><dt>購入する枚数</dt><dd data-m-type-field="bought"></dd></div>'
         '<div><dt>使用後の余り（在庫込み）</dt><dd data-m-type-field="surplus"></dd></div></dl>'
-        '<p class="m-type-plan-item" data-m-type-field="name"></p></article>'
+        '<p class="m-type-plan-item" data-m-type-field="name"></p>'
+        '<a class="m-type-plan-buy" data-m-type-buy hidden target="_blank" '
+        'rel="nofollow sponsored noopener" data-affiliate="rakuten" '
+        'data-category-id="diapers" data-product-type="tape" data-size="m" '
+        'data-unit-metric="per_piece" data-conversion-source="m_type_personal_planner" '
+        'data-click-position="m_type_personal_result">楽天でこの商品の価格・在庫を見る →</a>'
+        f'<a class="m-type-plan-fallback" data-m-type-fallback hidden href="{TYPE_PATHS["tape-m"].split("#")[0]}">'
+        'テープMの比較ページで商品を確認 →</a></article>'
         '<article class="m-type-plan-card" data-m-type-card="pants">'
         '<h3>パンツM</h3>'
         '<strong class="m-type-plan-payment" data-m-type-field="payment"></strong>'
@@ -173,7 +230,14 @@ def render_m_diaper_type_guide(snapshots, updated_at):
         '<div><dt>必要な販売セット</dt><dd data-m-type-field="sets"></dd></div>'
         '<div><dt>購入する枚数</dt><dd data-m-type-field="bought"></dd></div>'
         '<div><dt>使用後の余り（在庫込み）</dt><dd data-m-type-field="surplus"></dd></div></dl>'
-        '<p class="m-type-plan-item" data-m-type-field="name"></p></article>'
+        '<p class="m-type-plan-item" data-m-type-field="name"></p>'
+        '<a class="m-type-plan-buy" data-m-type-buy hidden target="_blank" '
+        'rel="nofollow sponsored noopener" data-affiliate="rakuten" '
+        'data-category-id="diapers" data-product-type="pants" data-size="m" '
+        'data-unit-metric="per_piece" data-conversion-source="m_type_personal_planner" '
+        'data-click-position="m_type_personal_result">楽天でこの商品の価格・在庫を見る →</a>'
+        f'<a class="m-type-plan-fallback" data-m-type-fallback hidden href="{TYPE_PATHS["pants-m"].split("#")[0]}">'
+        'パンツMの比較ページで商品を確認 →</a></article>'
         '</div>'
         '<p class="m-type-personal-verdict" data-m-type-field="verdict" aria-live="polite"></p>'
         '<p class="m-type-personal-stock-note" data-m-type-field="stock-note"></p>'
@@ -181,6 +245,7 @@ def render_m_diaper_type_guide(snapshots, updated_at):
         '<p class="m-type-personal-caveat">各タイプの掲載商品から、同じ1商品を販売セット単位で買い足した場合の最小支払額です。'
         '異なる商品を混ぜた最適化や、現在の在庫・販売価格の保証ではありません。'
         '比較結果は端末内だけで計算し、入力内容を保存・送信しません。'
+        '購入前に販売ページでサイズ・枚数・配送先の送料・現在価格・在庫を確認してください。'
         '価格だけで赤ちゃんに合うタイプを選ばないでください。</p>'
         f'<script type="application/json" data-m-type-snapshot>{safe_json}</script>'
         f'<script defer src="{SITE_URL}static/m_type_planner.js?v={static_version("m_type_planner.js")}"></script>'
