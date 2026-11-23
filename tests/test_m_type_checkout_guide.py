@@ -102,7 +102,10 @@ class MTypeCheckoutGuideTests(unittest.TestCase):
         changed['tape-m'] = {'products': rows}
         html = render_m_diaper_type_guide(changed, NOW)
         self.assertNotIn('</script><img', html)
-        self.assertIn('\\\\u003c/script\\\\u003e', html)
+        match = re.search(r'<script type="application/json" data-m-type-snapshot>(.*?)</script>', html)
+        self.assertIsNotNone(match)
+        parsed = json.loads(match.group(1))
+        self.assertEqual(parsed['tape'][0]['name'], 'おむつM </script><img src=x onerror=alert(1)>')
         self.assertEqual(html.count('data-m-type-snapshot'), 1)
 
     def test_source_and_suitability_cautions_with_clear_outbound_links(self):
