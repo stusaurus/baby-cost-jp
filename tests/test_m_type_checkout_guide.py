@@ -123,7 +123,11 @@ class MTypeCheckoutGuideTests(unittest.TestCase):
                 self.assertIn('購入総額を比較するための商品が不足', html)
                 self.assertNotIn('m-type-table', html)
                 self.assertNotIn('パンツの掲載候補が¥', html)
-                self.assertIn('diapers/tape/m/#purchase-planner', html)
+                self.assertIn('diapers/tape/m/"', html)
+                self.assertIn('diapers/pants/m/"', html)
+                self.assertNotIn('diapers/tape/m/#purchase-planner', html)
+                self.assertNotIn('diapers/pants/m/#purchase-planner', html)
+                self.assertIn('テープMの比較ページを見る', html)
 
     def test_hub_and_M_pages_crawlable_related_links(self):
         hub = render_diaper_index(self.cats, NOW, self.catalog)
