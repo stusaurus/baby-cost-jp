@@ -9,9 +9,6 @@ permissions:
 jobs:
   preflight:
     runs-on: ubuntu-24.04
-    container:
-      image: mcr.microsoft.com/playwright:v1.56.1-noble
-      options: --ipc=host
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +43,12 @@ jobs:
           CHROME_LAUNCHER_MODULE: /tmp/share-qa/node_modules/chrome-launcher/dist/index.js
         run: |
           npm install --prefix /tmp/share-qa --no-audit --no-fund playwright@1.56.1 lighthouse@12.8.2 chrome-launcher@1.2.1
+          # GitHub runner's EC2 APT mirror stalled; use the Ubuntu archive instead.
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            printf 'https://archive.ubuntu.com/ubuntu\n' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          fi
+          sudo find /etc/apt -type f \( -name '*.sources' -o -name '*.list' \) -exec sed -i 's|http://us-east-2.ec2.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' {} +
+          /tmp/share-qa/node_modules/.bin/playwright install --with-deps chromium webkit
           node scripts/check_shared_comparison.cjs
           node scripts/check_purchase_planner.cjs
           node scripts/check_pants_s_planner.cjs
