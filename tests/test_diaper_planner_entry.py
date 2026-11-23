@@ -1,4 +1,4 @@
-"""Diaper index links to the pants-M planner only for sufficiently populated results."""
+"""Diaper index links to the pants-M planner only for trustworthy offers."""
 import sys
 import unittest
 from datetime import datetime
@@ -49,18 +49,42 @@ class DiaperPlannerEntryTests(unittest.TestCase):
         self.assertEqual(parser.fieldsets, 2)
         self.assertNotIn('class="purchase-controls><fieldset>', html)
 
+    @staticmethod
+    def verified_offer(price, pieces=80, *, confidence=.99, shipping="rakuten_postage_filter"):
+        return {
+            "unit_price": price / pieces,
+            "price_yen": price,
+            "quantity": {
+                "total": pieces, "base_unit": "piece", "confidence": confidence,
+                "evidence": f"{pieces}枚",
+            },
+            "shipping_basis": shipping,
+        }
+
     def test_entry_requires_two_verified_products(self):
-        snapshots = {"pants-m": {"products": [{"unit_price": 20, "price_yen": 2000}, {"unit_price": 21, "price_yen": 2100}]}}
-        html = render_diaper_index(self.categories, datetime(2026, 11, 5), snapshots)
-        self.assertIn("diaper_index_planner", html)
+        products = [self.verified_offer(2000), self.verified_offer(2100)]
+        html = render_diaper_index(
+            self.categories, datetime(2026, 11, 5),
+            {"pants-m": {"products": products}},
+        )
+        self.assertIn('data-nav-source="diaper_index_planner"', html)
         self.assertIn("/diapers/pants/m/#purchase-planner", html)
 
-    def test_entry_hidden_for_empty_or_single_product(self):
-        for products in ([], [{"unit_price": 20, "price_yen": 2000}]):
+    def test_entry_hidden_for_empty_single_or_unverified_products(self):
+        a = self.verified_offer(2000)
+        b = self.verified_offer(2100)
+        for products in (
+            [], [a],
+            [a, self.verified_offer(2100, confidence=.5)],
+            [a, self.verified_offer(2100, shipping="unknown")],
+        ):
             with self.subTest(count=len(products)):
-                html = render_diaper_index(self.categories, datetime(2026, 11, 5),
-                                           {"pants-m": {"products": products}})
-                self.assertNotIn("diaper_index_planner", html)
+                html = render_diaper_index(
+                    self.categories, datetime(2026, 11, 5),
+                    {"pants-m": {"products": products}},
+                )
+                self.assertNotIn('data-nav-source="diaper_index_planner"', html)
+                self.assertNotIn("/diapers/pants/m/#purchase-planner", html)
 
 
 if __name__ == "__main__":
