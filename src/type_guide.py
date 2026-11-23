@@ -144,7 +144,7 @@ def render_m_diaper_type_guide(snapshots, updated_at):
         f'パンツM<strong>{len(pants)}商品</strong>から比較しています。'
         '両タイプとも<strong>1日6枚、手持ち在庫0枚</strong>と仮定。'
         '毎日の使用枚数は実際の状況に合わせて各ページの計算機で変更できます。</p>'
-        '<div class="m-type-scroll"><table class="m-type-table">'
+        '<div class="m-type-scroll" role="region" aria-label="販売セット単位の購入総額の比較表" tabindex="0"><table class="m-type-table">'
         '<thead><tr><th scope="col">購入予定</th><th scope="col">テープM</th>'
         '<th scope="col">パンツM</th><th scope="col">支払額の比較</th></tr></thead>'
         f'<tbody>{"".join(rows)}</tbody></table></div>'
