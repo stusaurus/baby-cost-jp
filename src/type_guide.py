@@ -81,12 +81,16 @@ def render_m_diaper_type_guide(snapshots, updated_at):
         'target="_blank" rel="noopener noreferrer">パンパース公式｜サイズアップの目安</a>。</p>'
         '</section>'
     )
+    # If either type lacks sufficient validated offers, the linked calculator
+    # may be absent. Link to the real comparison page, not a dead fragment.
+    tape_path = TYPE_PATHS["tape-m"] if ready else TYPE_PATHS["tape-m"].split("#")[0]
+    pants_path = TYPE_PATHS["pants-m"] if ready else TYPE_PATHS["pants-m"].split("#")[0]
     paths = (
         '<nav class="m-type-paths" aria-label="Mサイズの商品別購入計算へのリンク">'
-        f'<a href="{TYPE_PATHS["tape-m"]}" data-nav-source="m_type_tape_planner" '
+        f'<a href="{tape_path}" data-nav-source="m_type_tape_planner" '
         'data-category-id="diapers" data-product-type="tape" data-size="m">'
         'テープMの購入セット数を計算する →</a>'
-        f'<a href="{TYPE_PATHS["pants-m"]}" data-nav-source="m_type_pants_planner" '
+        f'<a href="{pants_path}" data-nav-source="m_type_pants_planner" '
         'data-category-id="diapers" data-product-type="pants" data-size="m">'
         'パンツMの購入セット数を計算する →</a>'
         '</nav>'
