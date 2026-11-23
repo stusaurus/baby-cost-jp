@@ -57,6 +57,7 @@ jobs:
           node scripts/check_tape_m_planner.cjs
           node scripts/check_home_diaper_purchase_paths.cjs
           node scripts/check_compact_diaper_index.cjs
+          node scripts/check_m_type_guide.cjs
           node scripts/check_toddler_guide.cjs
           node scripts/check_nursery_guide.cjs
           node scripts/check_wipes_planner.cjs
@@ -73,6 +74,7 @@ jobs:
             tape-m-qa-evidence
             home-purchase-qa-evidence
             diaper-hub-qa-evidence
+            m-type-guide-qa-evidence
             toddler-meal-evidence
             nursery-qa-evidence
             wipes-qa-evidence
