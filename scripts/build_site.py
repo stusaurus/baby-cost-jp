@@ -582,7 +582,10 @@ def main(fixture: bool = False, pages: int = 2):
 
     latest["brand_pages"] = brand_pages
 
-    home_html = render_home(categories, snapshots, featured_deals, price_drops, recent_trends, updated_at)
+    home_html = render_home(
+        categories, snapshots, featured_deals, price_drops, recent_trends, updated_at,
+        diaper_snapshots=latest['categories'],
+    )
     home_anchor = '<section class="quality-card quality-visual">'
     if home_html.count(home_anchor) != 1:
         raise RuntimeError("Cannot locate the home-page editorial insertion point")
