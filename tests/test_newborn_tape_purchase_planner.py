@@ -107,7 +107,7 @@ class NewbornTapePurchasePlannerTests(unittest.TestCase):
         html = render_diaper_index(self.categories, NOW, offers)
         self.assertEqual(html.count('data-nav-source="diaper_index_newborn_planner"'), 1)
         self.assertIn('diapers/tape/newborn/#purchase-planner', html)
-        self.assertIn("新生児用おむつは何枚・何セット準備する？", html)
+        self.assertIn("新生児・テープ", html)
         html = render_diaper_index(self.categories, NOW,
                                    {'tape-newborn': {'products': [self.offers[0]]}})
         self.assertNotIn('data-nav-source="diaper_index_newborn_planner"', html)

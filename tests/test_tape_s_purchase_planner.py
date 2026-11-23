@@ -117,7 +117,7 @@ class TapeSPurchasePlannerTests(unittest.TestCase):
         )
         self.assertEqual(html.count('data-nav-source="diaper_index_tape_s_planner"'), 1)
         self.assertIn('diapers/tape/s/#purchase-planner', html)
-        self.assertIn('テープSへのサイズアップ。何枚・何セット買う？', html)
+        self.assertIn('S・テープ', html)
         for products in (
             [self.offers[0]],
             [sku('unknown', 2680, 74, shipping='unknown'), self.offers[1]],

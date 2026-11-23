@@ -302,3 +302,60 @@
   .home-purchase-path-title{font-size:17px}
   .home-purchase-path-detail{font-size:11px}
 }
+
+
+/* Diaper index: one high-signal purchase navigator, no full-height repeated promos. */
+.diaper-hub-jumps{display:flex;flex-wrap:wrap;gap:9px 12px;margin-top:22px}
+.diaper-hub-jumps a{
+  display:inline-flex;align-items:center;justify-content:center;
+  box-sizing:border-box;min-height:46px;padding:10px 14px;
+  border:1px solid #9fb6a7;background:#fffef9;color:var(--ink);
+  font-size:12px;line-height:1.55;text-decoration:none;
+}
+.diaper-hub-jumps a:hover,.diaper-hub-jumps a:focus-visible{
+  background:#edf3ec;border-color:#537d69;outline-offset:3px;
+}
+.diaper-hub-purchase{margin:0 0 26px;padding:22px 23px}
+.diaper-hub-purchase h2{font-size:clamp(21px,2.8vw,26px);margin:4px 0 9px}
+.diaper-hub-purchase>p{font-size:12px;line-height:1.85}
+.diaper-hub-purchase .home-purchase-safety{margin-bottom:13px}
+.diaper-hub-purchase .home-purchase-path-grid{
+  grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:13px 0 0;
+}
+.diaper-hub-purchase .home-purchase-path{
+  min-height:91px;padding:11px 12px;gap:4px;
+}
+.diaper-hub-purchase .home-purchase-path-title{font-size:15px;line-height:1.5}
+.diaper-hub-purchase .home-purchase-path-detail{font-size:11px}
+.diaper-hub-purchase .home-purchase-path-count{font-size:10px}
+.diaper-head{margin-bottom:22px}
+.diaper-head .trust-strip{margin:12px 0}
+.diaper-hub-nursery{
+  display:flex;align-items:center;justify-content:space-between;gap:12px 24px;
+  margin:10px 0 35px;padding:19px 22px;border:1px solid #d2dccc;
+  background:#f3f5ef;color:var(--body);
+}
+.diaper-hub-nursery h2{font:600 19px var(--serif);margin:4px 0}
+.diaper-hub-nursery p{font-size:12px;line-height:1.8;margin:4px 0}
+.diaper-hub-nursery a{
+  flex-shrink:0;display:inline-flex;align-items:center;box-sizing:border-box;
+  min-height:46px;padding:9px 12px;border:1px solid #749a84;
+  background:#fffef9;font-size:12px;color:var(--ink);text-decoration:none;
+}
+.diaper-price-overview,.diaper-hub-purchase,#diaper-selector{scroll-margin-top:86px}
+@media(max-width:1100px){
+ .diaper-hub-purchase .home-purchase-path-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:680px){
+ .diaper-hub-jumps{gap:8px}
+ .diaper-hub-jumps a{width:100%;justify-content:flex-start;padding:9px 12px}
+ .diaper-hub-purchase{padding:18px 14px;margin-bottom:22px}
+ .diaper-hub-purchase .home-purchase-path-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .diaper-hub-purchase .home-purchase-path{padding:10px 11px;min-height:85px}
+ .diaper-hub-purchase .home-purchase-path-title{font-size:14px}
+ .diaper-hub-purchase .home-purchase-path-detail{font-size:10px}
+ .diaper-hub-purchase .home-purchase-path-count{font-size:10px}
+ .diaper-hub-nursery{display:block;padding:17px 14px}
+ .diaper-hub-nursery a{margin-top:10px;max-width:100%}
+ .diaper-head{margin-bottom:17px}
+}
