@@ -83,6 +83,13 @@ const server=http.createServer((req,res)=>{
      const context=await browser.newContext({viewport:{width,height:860},locale:'ja-JP'});
      await context.route('**/*',request=>new URL(request.request().url()).origin===origin?request.continue():request.abort());
      const page=await context.newPage();
+     await page.addInitScript(() => {
+       // Capture GA events offline; never send the user's data to GA.
+       window.dataLayer = [];
+       window.gtag = (...args) => window.dataLayer.push(args);
+     });
+     const events=()=>page.evaluate(()=>Array.from(window.dataLayer||[])
+       .filter(row=>row[0]==='event').map(row=>({name:row[1],data:row[2]})));
      const errors=[];page.on('pageerror',e=>errors.push(e.message));
      await page.goto(origin+base+'diapers/',{waitUntil:'networkidle'});
      const route=page.locator('[data-nav-source="diaper_index_m_type_guide"]');
@@ -115,6 +122,20 @@ const server=http.createServer((req,res)=>{
      assert((await buy('tape').getAttribute('href')).includes('/hgc/tape-74/'));
      assert((await buy('pants').getAttribute('href')).includes('/hgc/pants-50/'));
      assert.equal(await buy('pants').getAttribute('data-click-position'),'m_type_personal_result');
+     assert.equal((await events()).filter(e=>e.name==='purchase_planner_use').length,0);
+     // Link should count as exactly one affiliate click even after navigation
+     // from the diaper index. Preserve its original journey separately.
+     await page.evaluate(()=>document.addEventListener('click',e=>{
+       if(e.target.closest?.('[data-m-type-buy]'))e.preventDefault();
+     },true));
+     await buy('tape').click();
+     const clicks=(await events()).filter(e=>e.name==='affiliate_click');
+     assert.equal(clicks.length,1);
+     assert.equal(clicks[0].data.conversion_source,'m_type_personal_planner');
+     assert.equal(clicks[0].data.journey_origin,'diaper_index_m_type_guide');
+     assert.equal(clicks[0].data.product_id,'fixture:tape-74');
+     assert.equal(clicks[0].data.click_position,'m_type_personal_result');
+     assert.equal((await events()).filter(e=>e.name==='product_result_click').length,1);
      await tapeStock.fill('84');
      assert.equal(await payment('tape').innerText(),'¥0');
      assert.equal(await payment('pants').innerText(),'¥4,200');
@@ -131,6 +152,16 @@ const server=http.createServer((req,res)=>{
      await pantsStock.fill('0');
      await page.locator('[data-m-type-days-choice="30"]').click();
      assert.equal(await days.inputValue(),'30');
+     const uses=(await events()).filter(e=>e.name==='purchase_planner_use');
+     assert(uses.length>=1);
+     const latestUse=uses.at(-1).data;
+     assert.equal(latestUse.conversion_source,'m_type_personal_planner');
+     assert.equal(latestUse.action,'days_preset');
+     assert.equal(latestUse.category_id,'diapers');
+     assert.equal(latestUse.size,'m');
+     assert.equal(latestUse.stock,undefined);
+     assert.equal(latestUse.days,undefined);
+     assert.equal(latestUse.payment,undefined);
      assert.equal(await payment('tape').innerText(),'¥6,920');
      assert.equal(await payment('pants').innerText(),'¥6,100');
      assert.equal(await buy('tape').getAttribute('data-product-id'),'fixture:tape-248');
@@ -161,7 +192,7 @@ const server=http.createServer((req,res)=>{
       assert((await page.evaluate(()=>document.documentElement.scrollWidth))<=width+1,engine+'/'+width+'/'+type+' overflow');
      }
      assert.deepEqual(errors,[],engine+'/'+width+' page errors');
-     observations.push({engine,width,mHub:true,guideIndexable:true,threeScenarios:true,personalizedPlanner:true,exactProductAffiliate:true,noBuyLinkSuppressed:true,independentStock:true,invalidInputBlocked:true,twoPlannerLinks:true,noOverflow:true,noPageErrors:true});
+     observations.push({engine,width,mHub:true,guideIndexable:true,threeScenarios:true,personalizedPlanner:true,exactProductAffiliate:true,correctGA4Source:true,interactionOnlyEvent:true,noBuyLinkSuppressed:true,independentStock:true,invalidInputBlocked:true,twoPlannerLinks:true,noOverflow:true,noPageErrors:true});
      await context.close();
     }
    }finally{await browser.close();}

@@ -134,15 +134,31 @@ if (typeof document !== 'undefined') (() => {
       button.setAttribute('aria-pressed', String(pressed));
     });
   };
+  const track = action => {
+    // Only explicit, valid user actions count. Never emit on page load or
+    // keystrokes, and never transmit usage counts, dates, stock or payment.
+    if (result.hidden) return;
+    window.babyCostEvent?.('purchase_planner_use', {
+      action, conversion_source: 'm_type_personal_planner',
+      category_id: 'diapers', size: 'm', product_type: 'comparison'
+    });
+  };
   box.querySelectorAll('[data-m-type-days-choice]').forEach(button => {
     button.addEventListener('click', () => {
       inputs.days.value = button.dataset.mTypeDaysChoice;
       update();
+      track('days_preset');
     });
   });
-  Object.values(inputs).forEach(input => {
+  Object.entries(inputs).forEach(([name, input]) => {
     input.addEventListener('input', update);
-    input.addEventListener('change', update);
+    input.addEventListener('change', () => {
+      update();
+      track({
+        daily: 'daily_input', days: 'days_input',
+        tapeStock: 'tape_stock_input', pantsStock: 'pants_stock_input'
+      }[name]);
+    });
   });
   update();
 })();
