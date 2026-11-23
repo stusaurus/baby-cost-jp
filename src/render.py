@@ -303,7 +303,7 @@ def render_diaper_index(categories, updated_at, snapshots=None):
         for key in ('tape-m', 'pants-m')
     )
     m_type_entry = (
-        '<aside class="diaper-hub-nursery m-type-hub-entry">'
+        '<aside class="diaper-hub-m-type-entry m-type-hub-entry">'
         '<div><div class="section-kicker">M SIZE / TAPE × PANTS</div>'
         '<h2>テープMとパンツM、同じ枚数ならどちらが安い？</h2>'
         '<p>7日・14日・30日分を販売セット単位で計算。支払額と余りを比較できます。</p></div>'
