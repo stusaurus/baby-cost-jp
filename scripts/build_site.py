@@ -34,7 +34,7 @@ from src.render import (  # noqa: E402
     write_page,
 )
 from src.nursery_guide import render_nursery_diaper_guide  # noqa: E402
-from src.type_guide import render_m_diaper_type_guide  # noqa: E402
+from src.type_guide import guide_available, render_m_diaper_type_guide  # noqa: E402
 
 QUALITY_AUDIT_REASONS = {
     "ambiguous_diaper_size",
@@ -602,6 +602,9 @@ def main(fixture: bool = False, pages: int = 2):
         SITE_DIR / "guides" / "m-diapers-tape-vs-pants" / "index.html",
         render_m_diaper_type_guide(latest["categories"], updated_at),
     )
+    # Reflect exactly the same safety gate in the sitemap and robots meta.
+    if guide_available(latest["categories"]):
+        sitemap_urls.append(f"{SITE_URL}guides/m-diapers-tape-vs-pants/")
     write_page(SITE_DIR / "method" / "index.html", render_method())
     write_page(SITE_DIR / "404.html", '<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,follow"><title>ページが見つかりません</title><h1>ページが見つかりません</h1><p>比較条件をトップページから選び直してください。</p><a href="'+SITE_URL+'">ベビーコスパ比較へ</a></html>')
 
