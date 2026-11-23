@@ -9,6 +9,7 @@ permissions:
 jobs:
   preflight:
     runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +44,6 @@ jobs:
           CHROME_LAUNCHER_MODULE: /tmp/share-qa/node_modules/chrome-launcher/dist/index.js
         run: |
           npm install --prefix /tmp/share-qa --no-audit --no-fund playwright@1.56.1 lighthouse@12.8.2 chrome-launcher@1.2.1
-          /tmp/share-qa/node_modules/.bin/playwright install chromium webkit
           node scripts/check_shared_comparison.cjs
           node scripts/check_purchase_planner.cjs
           node scripts/check_pants_s_planner.cjs
