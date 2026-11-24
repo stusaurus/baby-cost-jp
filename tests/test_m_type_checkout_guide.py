@@ -5,7 +5,7 @@ import re
 from datetime import datetime, timezone
 
 from src.config import load_categories
-from src.render import render_comparison, render_diaper_index
+from src.render import render_comparison, render_diaper_index, render_home
 from src.type_guide import (
     GUIDE_URL, guide_available, lowest_checkout, verified_retail_link,
     render_m_diaper_type_guide, verified_offers,
@@ -218,6 +218,37 @@ class MTypeCheckoutGuideTests(unittest.TestCase):
                 self.assertNotIn('diapers/tape/m/#purchase-planner', html)
                 self.assertNotIn('diapers/pants/m/#purchase-planner', html)
                 self.assertIn('テープMの比較ページを見る', html)
+
+    def test_home_has_one_evidence_gated_crawlable_m_purchase_guide_link(self):
+        home = render_home(self.cats, {}, [], [], [], NOW, diaper_snapshots=self.catalog)
+        self.assertEqual(home.count('data-nav-source="home_m_type_guide"'), 1)
+        self.assertIn(f'href="{GUIDE_URL}"', home)
+        self.assertIn('Mサイズのおむつはテープとパンツ、どっちが安い？', home)
+        self.assertIn('実支払額・販売セット数・余り', home)
+        self.assertIn('data-product-type="both" data-size="m"', home)
+        self.assertNotIn('楽天全店の最安', home)
+        # A missing type or even one unverified SKU must suppress promotion.
+        for invalid in (
+            None, {},
+            {'tape-m': self.catalog['tape-m']},
+            {
+                'tape-m': {'products': [
+                    self.catalog['tape-m']['products'][0],
+                    product('unverified', 64, 2500, shipping='unknown'),
+                ]},
+                'pants-m': self.catalog['pants-m'],
+            },
+        ):
+            with self.subTest(invalid=str(invalid)[:50]):
+                rendered = render_home(self.cats, {}, [], [], [], NOW, diaper_snapshots=invalid)
+                self.assertNotIn('data-nav-source="home_m_type_guide"', rendered)
+
+    def test_diaper_hub_high_intent_guide_precedes_large_price_table(self):
+        html = render_diaper_index(self.cats, NOW, self.catalog)
+        self.assertEqual(html.count('data-nav-source="diaper_index_m_type_guide"'), 1)
+        self.assertLess(html.index('data-nav-source="diaper_index_m_type_guide"'),
+                        html.index('id="diaper-price-by-size"'))
+        self.assertIn(f'href="{GUIDE_URL}"', html)
 
     def test_hub_and_M_pages_crawlable_related_links(self):
         hub = render_diaper_index(self.cats, NOW, self.catalog)
