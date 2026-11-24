@@ -136,11 +136,34 @@ const server=http.createServer((req,res)=>{
             assert.equal(await p.locator('[data-purchase-daily]').inputValue(),daily);
             assert.equal(await p.locator('[data-purchase-days]').inputValue(),days);
             assert.equal(await p.locator(".product").count(),2);
+            if(kind==='pants' && ['l','big'].includes(size)){
+              const stock=p.locator('[data-purchase-stock]');
+              const card=p.locator('.product').filter({has:p.locator('[data-compare-id="pants-'+size+'-80"]')});
+              const checkout=async(sets,payment,surplus)=>{
+                assert.equal(await card.locator('[data-plan-sets]').innerText(),sets+'セット');
+                assert.equal(await card.locator('[data-plan-payment]').innerText(),'¥'+payment.toLocaleString('ja-JP'));
+                assert.equal(await card.locator('[data-plan-surplus]').innerText(),surplus+'枚');
+                const link=card.locator('.product-actions .cta');
+                assert.equal(await link.getAttribute('data-size'),size);
+                assert.equal(await link.getAttribute('data-product-type'),'pants');
+                assert.equal(await link.getAttribute('href'),'https://hb.afl.rakuten.co.jp/hgc/pants-'+size+'-80');
+              };
+              await checkout(1,2800,10);
+              await p.locator('[data-purchase-days-choice="30"]').click();
+              await checkout(2,5600,10);
+              await stock.fill('70');
+              await checkout(1,2800,0);
+              await stock.fill('150');
+              assert.equal(await p.locator('.product-actions .cta:visible').count(),0);
+              await p.locator('[data-purchase-daily]').fill('1.5');
+              assert.equal(await p.locator('[data-purchase-error]').isVisible(),true);
+              assert.equal(await p.locator('[data-plan-payment]').count(),0);
+            }
             assert.equal(await p.locator('meta[name="robots"]').getAttribute("content"),"index,follow");
             assert((await p.evaluate(()=>document.documentElement.scrollWidth))<=width+1,engine+"/"+width+"/"+kind+size+" page overflow");
           }
           assert.deepEqual(errors,[],engine+"/"+width+" page errors");
-          records.push({engine,width,allSevenLinks:true,homeMTypeGuide:true,mTypeEntryIndexable:true,verifiedOffers:true,correctInputs:true,noOverflow:true,keyboardSizedTapTargets:true});
+          records.push({engine,width,allSevenLinks:true,pantsLBIGCheckout:true,homeMTypeGuide:true,mTypeEntryIndexable:true,verifiedOffers:true,correctInputs:true,noOverflow:true,keyboardSizedTapTargets:true});
           await ctx.close();
         }
       }finally{await browser.close();}
