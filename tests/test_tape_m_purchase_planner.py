@@ -58,7 +58,7 @@ class TapeMPurchasePlannerTests(unittest.TestCase):
         self.assertIn('不足は64枚', html)  # 20 sheets in the illustrative scenario
         self.assertIn('テープMの1日6枚は<strong>計算例</strong>', html)
         self.assertIn('テープSの手持ちをMサイズの在庫に含めない', html)
-        self.assertIn('テープMのおむつ何枚必要？', html)
+        self.assertIn('<title>おむつ テープMサイズ｜1枚あたり価格・まとめ買い総額比較</title>', html)
         self.assertIn('content="index,follow"', html)
         self.assertIn('rel="nofollow sponsored noopener"', html)
         self.assertIn('data-size="m"', html)
