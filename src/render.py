@@ -207,6 +207,28 @@ def home_diaper_purchase_paths(categories, segment_snapshots, *, hub=False):
         )
     if not links:
         return ''
+    # Only link to the new M-size guide when *both* types support its
+    # evidence-gated whole-sale-set comparison. A catalog outage must not
+    # promote a noindex/empty purchase guide from the homepage.
+    m_type_ready = all(
+        len(((segment_snapshots or {}).get(key) or {}).get('products', [])) >= 2
+        and all(purchase_inputs(p) is not None for p in
+                ((segment_snapshots or {}).get(key) or {}).get('products', []))
+        for key in ('tape-m', 'pants-m')
+    )
+    m_type_home_entry = (
+        '<aside class="home-m-type-compare" aria-labelledby="home-m-type-title">'
+        '<div><div class="section-kicker">M SIZE / TAPE × PANTS</div>'
+        '<h3 id="home-m-type-title">Mサイズのおむつはテープとパンツ、どっちが安い？</h3>'
+        '<p>1枚単価だけでは分からない、同じ必要枚数を買うときの'
+        '実支払額・販売セット数・余りを比較。1日使用枚数と手持ち在庫も入力できます。</p></div>'
+        f'<a href="{SITE_URL}guides/m-diapers-tape-vs-pants/" '
+        'data-nav-source="home_m_type_guide" data-category-id="diapers" '
+        'data-product-type="both" data-size="m">'
+        'テープMとパンツMの購入総額を比べる →</a>'
+        '</aside>'
+        if m_type_ready and not hub else ''
+    )
     section_class = 'home-diaper-purchase diaper-hub-purchase' if hub else 'home-diaper-purchase'
     heading = '買い足すサイズから、必要な支払額を計算' if hub else 'おむつは何枚・何セット買えばいい？'
     all_sizes_link = (
@@ -227,7 +249,7 @@ def home_diaper_purchase_paths(categories, segment_snapshots, *, hub=False):
         'サイズ変更前は買いすぎに注意。掲載するのは購入数量と送料条件を確認できた商品のみです。</p>'
         '<nav class="home-purchase-path-grid" aria-label="おむつのサイズ別購入計算機への直接リンク">'
         + ''.join(links) + '</nav>'
-        + all_sizes_link +
+        + m_type_home_entry + all_sizes_link +
         '</section>'
     )
 
@@ -296,6 +318,8 @@ def render_diaper_index(categories, updated_at, snapshots=None):
         '<a href="#diaper-price-by-size" data-nav-source="diaper_index_price_jump">'
         '全サイズの価格早見表を見る</a>'
     )
+    # Keep guide promotion conditional on the same validated SKU gate
+    # as the home buyer links. Never point users to a noindex price fallback.
     m_types = all(
         len(((snapshots or {}).get(key) or {}).get('products', [])) >= 2
         and all(purchase_inputs(p) is not None for p in
@@ -320,7 +344,7 @@ def render_diaper_index(categories, updated_at, snapshots=None):
 {trust_strip()}
 <nav class="diaper-hub-jumps" aria-label="このページの目的別ショートカット">{jumps}</nav>
 </section>{planner}{selector(categories, show_index_link=False)}
-{diaper_price_overview(categories, snapshots)}{m_type_entry}{nursery_entry}
+{m_type_entry}{diaper_price_overview(categories, snapshots)}{nursery_entry}
 <p class="updated">最終更新 {updated_at:%Y-%m-%d %H:%M} JST</p>'''
     return shell(
         'おむつの必要枚数・価格比較｜テープ・パンツのサイズ別購入計算',
