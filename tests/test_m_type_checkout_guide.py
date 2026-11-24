@@ -219,6 +219,44 @@ class MTypeCheckoutGuideTests(unittest.TestCase):
                 self.assertNotIn('diapers/pants/m/#purchase-planner', html)
                 self.assertIn('テープMの比較ページを見る', html)
 
+    def test_m_purchase_search_metadata_matches_verified_page(self):
+        for key, title in (
+            ('tape-m', 'おむつ テープMサイズ｜1枚あたり価格・まとめ買い総額比較'),
+            ('pants-m', 'おむつ パンツMサイズ｜1枚あたり価格・まとめ買い総額比較'),
+        ):
+            with self.subTest(key=key):
+                page = render_comparison(
+                    self.cats, 'diapers', self.cats['diapers'], self.seg[key],
+                    self.catalog[key]['products'], NOW,
+                )
+                self.assertIn(f'<title>{title}</title>', page)
+                self.assertIn('購入総額、余る枚数を計算できます', page)
+                self.assertIn('ポイント・クーポンは含めません', page)
+                self.assertIn('id="purchase-planner"', page)
+                self.assertIn('content="index,follow"', page)
+                self.assertIn(f'{title}', page)
+                one = render_comparison(
+                    self.cats, 'diapers', self.cats['diapers'], self.seg[key],
+                    self.catalog[key]['products'][:1], NOW,
+                )
+                self.assertNotIn(f'<title>{title}</title>', one)
+                self.assertIn('content="noindex,follow"', one)
+
+    def test_wipes_search_metadata_requires_verified_purchase_comparison(self):
+        category = self.cats['wipes']
+        segment = category['segments'][0]
+        rows = [dict(product('wipes-a', 640, 1417), name='おしりふき 640枚'),
+                dict(product('wipes-b', 1200, 3000), name='おしりふき 1200枚')]
+        page = render_comparison(self.cats, 'wipes', category, segment, rows, NOW)
+        title = 'おしりふき 1枚あたり価格比較｜まとめ買い・1か月の購入総額'
+        self.assertIn(f'<title>{title}</title>', page)
+        self.assertIn('必要セット数・購入総額・余る枚数を計算できます', page)
+        self.assertIn('id="wipes-plan"', page)
+        one = render_comparison(self.cats, 'wipes', category, segment, rows[:1], NOW)
+        self.assertNotIn(f'<title>{title}</title>', one)
+        self.assertIn('<title>おしりふきの価格・必要枚数｜1か月の買い足し計算</title>', one)
+        self.assertIn('content="noindex,follow"', one)
+
     def test_home_has_one_evidence_gated_crawlable_m_purchase_guide_link(self):
         home = render_home(self.cats, {}, [], [], [], NOW, diaper_snapshots=self.catalog)
         self.assertEqual(home.count('data-nav-source="home_m_type_guide"'), 1)

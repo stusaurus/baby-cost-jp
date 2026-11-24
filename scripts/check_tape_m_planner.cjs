@@ -32,7 +32,7 @@ const result=spawnSync('python',['-c',python],{encoding:'utf8'});
 assert.equal(result.status,0,result.stderr);
 const {page:html,hub:hubHtml}=JSON.parse(result.stdout);
 assert(html.includes('id="purchase-planner"'));
-assert(html.includes('テープMのおむつ何枚必要？'));
+assert(html.includes('<title>おむつ テープMサイズ｜1枚あたり価格・まとめ買い総額比較</title>'));
 assert(hubHtml.includes('data-nav-source="diaper_index_tape_m_planner"'));
 const source='https://stusaurus.github.io/baby-cost-jp/';
 const base='/baby-cost-jp/';
