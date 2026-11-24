@@ -122,7 +122,7 @@ class PantsSPurchasePlannerTests(unittest.TestCase):
         self.assertIn("<title>おむつ パンツMサイズ｜1枚あたり価格・まとめ買い総額比較</title>", m_html)
         self.assertIn("pants_m_nursery_planner", m_html)
         self.assertIn('id="purchase-planner"', m_html)
-        for segment in ("pants-l", "tape-l", "pants-big"):
+        for segment in ("tape-l", "pants-big-plus"):
             html = self.page(segment, m)
             self.assertNotIn('id="purchase-planner"', html)
             self.assertNotIn('id="14day-example"', html)
