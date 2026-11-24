@@ -10,6 +10,7 @@ const {chromium,webkit} = require(process.env.PLAYWRIGHT_MODULE || "playwright")
 const python = `
 from src.config import load_categories
 from src.render import render_comparison,render_home
+from src.type_guide import render_m_diaper_type_guide
 from datetime import datetime,timezone
 import json
 categories=load_categories(); cat=categories['diapers']
@@ -42,6 +43,7 @@ for key,kind,size,daily,days in types:
  pages[f'diapers/{kind}/{size}/']=render_comparison(
      categories,'diapers',cat,seg,rows,now)
 pages['']=render_home(categories,{},[],[],[],now,diaper_snapshots=snapshots)
+pages['guides/m-diapers-tape-vs-pants/']=render_m_diaper_type_guide(snapshots,now)
 print(json.dumps(dict(pages=pages),ensure_ascii=False))
 `;
 const proc=spawnSync("python",["-c",python],{encoding:"utf8",maxBuffer:6*1024*1024});
@@ -96,6 +98,19 @@ const server=http.createServer((req,res)=>{
           assert.equal(await p.locator("nav.home-purchase-path-grid").count(),1);
           assert.equal(await p.locator('[data-nav-source="home_diaper_purchase_planner"]').count(),5);
           assert.equal(await p.locator(".home-purchase-path-count").count(),5);
+          const mGuide=p.locator('[data-nav-source="home_m_type_guide"]');
+          assert.equal(await mGuide.count(),1);
+          assert.equal(await mGuide.getAttribute('href'),origin+base+'guides/m-diapers-tape-vs-pants/');
+          assert((await mGuide.evaluate(el=>el.getBoundingClientRect().height))>=44,engine+"/"+width+" M guide entry tap");
+          assert.equal(await mGuide.getAttribute('data-category-id'),'diapers');
+          assert.equal(await mGuide.getAttribute('data-size'),'m');
+          await mGuide.click();
+          await p.waitForURL("**/guides/m-diapers-tape-vs-pants/");
+          assert.equal(await p.locator('meta[name="robots"]').getAttribute('content'),'index,follow');
+          assert.equal(await p.locator('[data-m-type-planner]').count(),1);
+          assert.equal(await p.locator('input[data-m-type-input]').count(),4);
+          assert((await p.evaluate(()=>document.documentElement.scrollWidth))<=width+1,engine+"/"+width+" M guide overflow");
+          await p.goto(homes,{waitUntil:"networkidle"});
           const jumping=p.locator('[data-nav-source="home_diaper_planner_shortcut"]');
           assert.equal(await jumping.count(),1);
           assert.equal(await jumping.getAttribute("href"),"#diaper-purchase-paths");
@@ -121,7 +136,7 @@ const server=http.createServer((req,res)=>{
             assert((await p.evaluate(()=>document.documentElement.scrollWidth))<=width+1,engine+"/"+width+"/"+kind+size+" page overflow");
           }
           assert.deepEqual(errors,[],engine+"/"+width+" page errors");
-          records.push({engine,width,allFiveLinks:true,verifiedOffers:true,correctInputs:true,noOverflow:true,keyboardSizedTapTargets:true});
+          records.push({engine,width,allFiveLinks:true,homeMTypeGuide:true,mTypeEntryIndexable:true,verifiedOffers:true,correctInputs:true,noOverflow:true,keyboardSizedTapTargets:true});
           await ctx.close();
         }
       }finally{await browser.close();}
