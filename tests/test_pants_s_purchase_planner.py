@@ -124,9 +124,10 @@ class PantsSPurchasePlannerTests(unittest.TestCase):
         self.assertIn('id="purchase-planner"', m_html)
         for segment in ("tape-l", "pants-big-plus"):
             html = self.page(segment, m)
-            self.assertNotIn('id="purchase-planner"', html)
-            self.assertNotIn('id="14day-example"', html)
-            self.assertNotIn("必要枚数分の購入額が安い", html)
+            self.assertIn('id="purchase-planner"', html)
+            self.assertNotIn("パンツSをあと14日", html)
+            self.assertNotIn("パンツMをあと14日", html)
+            self.assertIn("必要枚数分の購入額が安い", html)
 
 
 if __name__ == "__main__":

@@ -96,11 +96,11 @@ class TapeMPurchasePlannerTests(unittest.TestCase):
         self.assertIsNone(purchase_inputs(sku('unknown', 2750, 64, shipping='unknown')))
         self.assertIsNone(purchase_inputs(sku('low', 2750, 64, confidence=.5)))
 
-    def test_other_unmodified_sizes_stay_isolated(self):
+    def test_other_size_planners_stay_isolated(self):
         for segment in ('tape-l', 'pants-big-plus'):
             with self.subTest(segment=segment):
                 html = self.page(segment=segment)
-                self.assertNotIn('id="purchase-planner"', html)
+                self.assertIn('id="purchase-planner"', html)
                 self.assertNotIn('テープMをあと14日', html)
         s = self.page(segment='tape-s')
         self.assertIn('id="purchase-planner"', s)

@@ -100,7 +100,7 @@ class TapeSPurchasePlannerTests(unittest.TestCase):
         for segment in ('tape-l', 'pants-big-plus'):
             with self.subTest(segment=segment):
                 html = self.page(segment=segment)
-                self.assertNotIn('id="purchase-planner"', html)
+                self.assertIn('id="purchase-planner"', html)
                 self.assertNotIn('テープSをあと14日', html)
         newborn = self.page(segment='tape-newborn')
         self.assertIn('id="purchase-planner"', newborn)
