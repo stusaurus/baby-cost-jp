@@ -20,6 +20,8 @@ types=[
  ('tape-m','tape','m',6,14),
  ('pants-s','pants','s',5,30),
  ('pants-m','pants','m',5,30),
+ ('pants-l','pants','l',5,14),
+ ('pants-big','pants','big',5,14),
 ]
 def product(id,kind,size,qty,price):
  return dict(
@@ -81,6 +83,8 @@ const server=http.createServer((req,res)=>{
     ["tape","m","6","14"],
     ["pants","s","5","30"],
     ["pants","m","5","30"],
+    ["pants","l","5","14"],
+    ["pants","big","5","14"],
   ];
   const records=[];
   try{
@@ -94,13 +98,13 @@ const server=http.createServer((req,res)=>{
           p.on("pageerror",err=>errors.push(err.message));
           await p.goto(homes,{waitUntil:"networkidle"});
           assert.equal(await p.locator("nav.home-purchase-path-grid").count(),1);
-          assert.equal(await p.locator('nav.home-purchase-path-grid a.home-purchase-path').count(),5);
+          assert.equal(await p.locator('nav.home-purchase-path-grid a.home-purchase-path').count(),7);
           assert.equal(await p.locator('table.seo-data-table tbody tr').count(),9);
           assert.equal(await p.locator('.choices').count(),0);
           assert.equal(await p.locator('aside.diaper-hub-nursery:not(.m-type-hub-entry)').count(),1);
           assert.equal(await p.locator('aside.m-type-hub-entry').count(),1);
           assert.equal(await p.locator('a[data-nav-source="diaper_index_price_jump"]').getAttribute('href'),'#diaper-price-by-size');
-          assert.equal(await p.locator(".home-purchase-path-count").count(),5);
+          assert.equal(await p.locator(".home-purchase-path-count").count(),7);
           const jumping=p.locator('[data-nav-source="diaper_index_purchase_jump"]');
           assert.equal(await jumping.count(),1);
           assert.equal(await jumping.getAttribute("href"),"#diaper-purchase-paths");
@@ -132,7 +136,7 @@ const server=http.createServer((req,res)=>{
             assert((await p.evaluate(()=>document.documentElement.scrollWidth))<=width+1,engine+"/"+width+"/"+kind+size+" page overflow");
           }
           assert.deepEqual(errors,[],engine+"/"+width+" page errors");
-          records.push({engine,width,allFiveLinks:true,verifiedOffers:true,correctInputs:true,noOverflow:true,keyboardSizedTapTargets:true});
+          records.push({engine,width,allSevenLinks:true,verifiedOffers:true,correctInputs:true,noOverflow:true,keyboardSizedTapTargets:true});
           await ctx.close();
         }
       }finally{await browser.close();}
