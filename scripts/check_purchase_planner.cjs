@@ -42,8 +42,8 @@ const money=n=>'¥'+n.toLocaleString('ja-JP');
   canonical:d.querySelector('link[rel=canonical]').href,robots:d.querySelector('meta[name=robots]').content,
   h1:d.querySelector('h1').textContent,jsonld:[...d.querySelectorAll('script[type="application/ld+json"]')].map(x=>JSON.parse(x.textContent))});
  const expected=seo(doc);
- expected.title='おむつ パンツMの価格比較｜14日・30日分の必要セット数と支払額';
- expected.description='パンツMのおむつを14日・30日など使う期間と手持ち在庫で比較。1日の使用枚数から必要セット数・支払総額・余剰枚数を計算し、サイズ変更前の買いすぎも確認できます。';
+ expected.title='おむつ パンツMサイズ｜1枚あたり価格・まとめ買い総額比較';
+ expected.description='楽天のMサイズ・パンツおむつを送料込み対象の1枚単価で比較。1日の使用枚数・予定日数・手持ち在庫から必要セット数、購入総額、余る枚数を計算できます。ポイント・クーポンは含めません。';
  for(const schema of expected.jsonld.flat())if(schema['@type']==='WebPage'){schema.name=expected.title;schema.description=expected.description;}
  for(const schema of expected.jsonld.flat())if(schema['@type']==='BreadcrumbList'){const current=schema.itemListElement.find(x=>x.item===base+route);assert(current);current.name=expected.title;}
  assert.deepEqual(seo(newDOM.window.document),expected);
