@@ -724,7 +724,7 @@ def comparison_decision_notes(category_id, products, metric, purchase=False):
 </section>'''
 
 
-from .wipes_planner import render_wipes_planner
+from .wipes_planner import render_wipes_planner, verified_wipes_offers
 
 
 def render_comparison(categories, category_id, category, segment, products, updated_at):
@@ -846,20 +846,26 @@ def render_comparison(categories, category_id, category, segment, products, upda
         }
         desc=f'{label}を{metric}あたりで価格比較。{search_notes.get(category_id, "数量・送料条件を確認できた商品を比較します。")}'
     if category_id == 'wipes':
-        title='おしりふき 1か月何枚必要？｜まとめ買い・1枚単価と購入総額比較'
-        desc='おしりふきを1日何枚使うか、手持ち在庫と日数から不足枚数を計算。楽天の検証済み商品で必要セット数・支払総額・余る枚数を比べます。用途の異なる商品を混ぜずに比較し、1枚単価だけでは判断しないためのページです。'
+        # The sheet-count calculator is always available, but do not advertise
+        # a checkout-cost comparison when verified offers are insufficient.
+        if len(verified_wipes_offers(products)) >= 2:
+            title='おしりふき 1枚あたり価格比較｜まとめ買い・1か月の購入総額'
+            desc='楽天のおしりふきを1枚あたりの価格と販売枚数で比較。1日の使用枚数・日数・手持ち在庫から、必要セット数・購入総額・余る枚数を計算できます。送料込み対象で比較し、ポイント・クーポンは含めません。'
+        else:
+            title='おしりふきの価格・必要枚数｜1か月の買い足し計算'
+            desc='おしりふきの1日の使用枚数・日数・手持ち在庫から不足枚数を計算。販売枚数・価格・送料条件を確認できた掲載商品を表示します。'
     if is_tape_m:
-        title='テープMのおむつ何枚必要？｜買い足しセット数・支払総額・余りを比較'
-        desc='テープMのおむつを何枚買い足す？ 1日の使用枚数と7日・14日・30日分の期間、使えるMサイズ在庫から必要セット数・支払総額・余る枚数を検証済み商品で比較します。サイズアップ後の買いすぎも確認。'
+        title='おむつ テープMサイズ｜1枚あたり価格・まとめ買い総額比較'
+        desc='楽天のMサイズ・テープおむつを送料込み対象の1枚単価で比較。1日の使用枚数・7日/14日/30日の予定・手持ち在庫から必要セット数、購入総額、余る枚数を計算できます。ポイント・クーポンは含めません。'
     if is_tape_s:
         title='テープSのおむつ何枚必要？｜買い足しセット数・支払額・余りを比較'
         desc='テープSへサイズアップした後の買いすぎを防ぐため、1日の使用枚数・7日/14日/30日の予定・同じSサイズの手持ち在庫を入力。検証済み商品の販売総枚数から必要セット数・掲載条件での支払額・余る枚数を計算。'
     if is_newborn_tape:
         title='新生児のおむつは何枚必要？｜テープの必要セット数・支払総額比較'
         desc='新生児用テープおむつの出産準備・買い足し量を計算。1日6〜12枚などの使用枚数・7日/14日/30日の期間と手持ち在庫から、必要セット数・実際に買う支払額・余る枚数を価格と容量が確認できた商品で比較。'
-    if is_pants_m:
-        title='おむつ パンツMの価格比較｜14日・30日分の必要セット数と支払額'
-        desc='パンツMのおむつを14日・30日など使う期間と手持ち在庫で比較。1日の使用枚数から必要セット数・支払総額・余剰枚数を計算し、サイズ変更前の買いすぎも確認できます。'
+    if is_pants_m and len(products) >= 2 and all(purchase_inputs(p) is not None for p in products):
+        title='おむつ パンツMサイズ｜1枚あたり価格・まとめ買い総額比較'
+        desc='楽天のMサイズ・パンツおむつを送料込み対象の1枚単価で比較。1日の使用枚数・予定日数・手持ち在庫から必要セット数、購入総額、余る枚数を計算できます。ポイント・クーポンは含めません。'
     elif is_pants_s:
         title='おむつ パンツSの価格比較｜必要セット数・支払総額・余りを計算'
         desc='パンツSのおむつを7日・14日・30日など使う予定と手持ち在庫で比較。サイズ変更前に必要な購入セット数・実支払額・余る枚数を検証済み商品で計算できます。'
