@@ -94,7 +94,9 @@ class NewbornTapePurchasePlannerTests(unittest.TestCase):
 
     def test_other_diaper_sizes_cannot_inherit_newborn_planner(self):
         html = self.page(segment='tape-l')
-        self.assertNotIn('id="purchase-planner"', html)
+        self.assertIn('id="purchase-planner"', html)
+        self.assertIn('テープLをあと14日使う予定なら？', html)
+        self.assertIn('data-usage="5" aria-pressed="true"', html)
         self.assertNotIn("新生児テープをあと14日", html)
         m = self.page(segment='pants-m')
         self.assertIn('id="purchase-planner"', m)
