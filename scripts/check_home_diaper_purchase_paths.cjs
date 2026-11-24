@@ -1,5 +1,5 @@
 // True rendered homepage -> each existing shopping calculator, not mock links.
-// Five validated synthetic SKU categories; blocks every off-origin request.
+// Nine validated synthetic SKU categories; blocks every off-origin request.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -19,10 +19,12 @@ types=[
  ('tape-newborn','tape','newborn',10,14),
  ('tape-s','tape','s',8,14),
  ('tape-m','tape','m',6,14),
+ ('tape-l','tape','l',5,14),
  ('pants-s','pants','s',5,30),
  ('pants-m','pants','m',5,30),
  ('pants-l','pants','l',5,14),
  ('pants-big','pants','big',5,14),
+ ('pants-big-plus','pants','big_plus',5,14),
 ]
 def product(id,kind,size,qty,price):
  return dict(
@@ -83,10 +85,12 @@ const server=http.createServer((req,res)=>{
     ["tape","newborn","10","14"],
     ["tape","s","8","14"],
     ["tape","m","6","14"],
+    ["tape","l","5","14"],
     ["pants","s","5","30"],
     ["pants","m","5","30"],
     ["pants","l","5","14"],
     ["pants","big","5","14"],
+    ["pants","big_plus","5","14"],
   ];
   const records=[];
   try{
@@ -100,8 +104,8 @@ const server=http.createServer((req,res)=>{
           p.on("pageerror",err=>errors.push(err.message));
           await p.goto(homes,{waitUntil:"networkidle"});
           assert.equal(await p.locator("nav.home-purchase-path-grid").count(),1);
-          assert.equal(await p.locator('[data-nav-source="home_diaper_purchase_planner"]').count(),7);
-          assert.equal(await p.locator(".home-purchase-path-count").count(),7);
+          assert.equal(await p.locator('[data-nav-source="home_diaper_purchase_planner"]').count(),9);
+          assert.equal(await p.locator(".home-purchase-path-count").count(),9);
           const mGuide=p.locator('[data-nav-source="home_m_type_guide"]');
           assert.equal(await mGuide.count(),1);
           assert.equal(await mGuide.getAttribute('href'),origin+base+'guides/m-diapers-tape-vs-pants/');
@@ -136,17 +140,18 @@ const server=http.createServer((req,res)=>{
             assert.equal(await p.locator('[data-purchase-daily]').inputValue(),daily);
             assert.equal(await p.locator('[data-purchase-days]').inputValue(),days);
             assert.equal(await p.locator(".product").count(),2);
-            if(kind==='pants' && ['l','big'].includes(size)){
+            if((kind==='pants' && ['l','big','big_plus'].includes(size)) || (kind==='tape' && size==='l')){
+              const key=kind+'-'+(size==='big_plus'?'big-plus':size);
               const stock=p.locator('[data-purchase-stock]');
-              const card=p.locator('.product').filter({has:p.locator('[data-compare-id="pants-'+size+'-80"]')});
+              const card=p.locator('.product').filter({has:p.locator('[data-compare-id="'+key+'-80"]')});
               const checkout=async(sets,payment,surplus)=>{
                 assert.equal(await card.locator('[data-plan-sets]').innerText(),sets+'セット');
                 assert.equal(await card.locator('[data-plan-payment]').innerText(),'¥'+payment.toLocaleString('ja-JP'));
                 assert.equal(await card.locator('[data-plan-surplus]').innerText(),surplus+'枚');
                 const link=card.locator('.product-actions .cta');
                 assert.equal(await link.getAttribute('data-size'),size);
-                assert.equal(await link.getAttribute('data-product-type'),'pants');
-                assert.equal(await link.getAttribute('href'),'https://hb.afl.rakuten.co.jp/hgc/pants-'+size+'-80');
+                assert.equal(await link.getAttribute('data-product-type'),kind);
+                assert.equal(await link.getAttribute('href'),'https://hb.afl.rakuten.co.jp/hgc/'+key+'-80');
               };
               await checkout(1,2800,10);
               await p.locator('[data-purchase-days-choice="30"]').click();
@@ -163,7 +168,7 @@ const server=http.createServer((req,res)=>{
             assert((await p.evaluate(()=>document.documentElement.scrollWidth))<=width+1,engine+"/"+width+"/"+kind+size+" page overflow");
           }
           assert.deepEqual(errors,[],engine+"/"+width+" page errors");
-          records.push({engine,width,allSevenLinks:true,pantsLBIGCheckout:true,homeMTypeGuide:true,mTypeEntryIndexable:true,verifiedOffers:true,correctInputs:true,noOverflow:true,keyboardSizedTapTargets:true});
+          records.push({engine,width,allNineLinks:true,fourLargeSizeCheckout:true,homeMTypeGuide:true,mTypeEntryIndexable:true,verifiedOffers:true,correctInputs:true,noOverflow:true,keyboardSizedTapTargets:true});
           await ctx.close();
         }
       }finally{await browser.close();}
