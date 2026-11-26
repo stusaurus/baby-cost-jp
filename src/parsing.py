@@ -265,6 +265,11 @@ def parse_for_segment_detailed(title: str, parser: str, segment: dict, supplemen
         if any(x in low for x in ['液体','キューブ','スティック','フォローアップ','ぐんぐん','チルミル','ステップ','たっち','アレルギー','特殊ミルク','治療用']): return None,'excluded_formula_variant'
         q=parse_weight_quantity(t); attrs={'stage':'infant','product_type':'powder','age_note':'対象月齢・調乳方法は販売ページとメーカー表示を確認'}
     elif parser=='diaper_bags':
+        # A food-packaging product can contain diaper and deodorizing search keywords.
+        # Do not rank an explicitly named bread bag as a dedicated odor-control bag.
+        primary=re.sub(r'^(?:[【\[].*?[】\]]\s*)+', '', t).strip()
+        if re.search(r'^(?:(?:PP|OPP|IPP|ポリ|HEIKO|ヘイコー|シモジマ)\s*)*(?:食パン袋|パン袋|製パン袋|食品包装袋)',primary,re.I):
+            return None,'food_packaging_bag'
         if not (('おむつ' in t or 'オムツ' in t) and any(x in t for x in ['袋','バッグ','bag','BAG'])): return None,'not_diaper_bag'
         if any(x in t for x in ['カセット','ゴミ箱本体','本体のみ']): return None,'excluded_diaper_bag_variant'
         if len(set(re.findall(r'(?<![A-Za-z])(?:SS|S|M|L|LL)\s*(?:サイズ)?(?=\s*\d+枚|サイズ)',t,re.I)))>1: return None,'selectable_bag_size'
