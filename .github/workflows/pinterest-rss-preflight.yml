@@ -1,0 +1,68 @@
+name: Pinterest RSS preflight
+on:
+  pull_request:
+    paths:
+      - 'scripts/generate_pinterest_feed.py'
+      - 'tests/test_pinterest_feed.py'
+      - '.github/workflows/pinterest-rss-preflight.yml'
+      - '.github/workflows/deploy-pages.yml'
+permissions:
+  contents: read
+jobs:
+  rss:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the production image renderer
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends librsvg2-bin fonts-noto-cjk
+          fc-match 'Noto Sans CJK JP'
+      - name: Generate and validate the production feed and PNG
+        run: |
+          python -m unittest discover -s tests -p test_pinterest_feed.py -v
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          from scripts.generate_pinterest_feed import BASE, PATH, IMAGE, GUID, make_feed
+          from urllib.parse import urlsplit, parse_qs
+          import struct, hashlib
+          site = Path("rss-preview")
+          page = site / PATH / "index.html"
+          page.parent.mkdir(parents=True)
+          page.write_text('<section id="purchase-planner"></section>', encoding="utf-8")
+          (site / "sitemap.xml").write_text('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>'+BASE+PATH+'</loc></url></urlset>', encoding="utf-8")
+          assert make_feed(site)
+          feed = site / "pinterest-feed.xml"
+          png = site / IMAGE
+          first = (hashlib.sha256(feed.read_bytes()).digest(), hashlib.sha256(png.read_bytes()).digest())
+          assert make_feed(site)
+          assert first == (hashlib.sha256(feed.read_bytes()).digest(), hashlib.sha256(png.read_bytes()).digest())
+          root = ET.parse(feed).getroot()
+          assert root.tag == "rss" and root.attrib["version"] == "2.0"
+          items = root.findall("./channel/item")
+          assert len(items) == 1
+          item = items[0]
+          assert item.findtext("guid") == GUID
+          assert item.findtext("title") and item.findtext("description")
+          link = urlsplit(item.findtext("link"))
+          assert link.scheme == "https" and link.netloc == "stusaurus.github.io"
+          assert link.path == "/baby-cost-jp/" + PATH
+          assert parse_qs(link.query)["utm_source"] == ["pinterest"]
+          assert link.fragment == "purchase-planner"
+          image = item.find("enclosure").attrib
+          assert image["url"] == BASE + IMAGE and image["type"] == "image/png"
+          assert int(image["length"]) == png.stat().st_size > 10000
+          assert struct.unpack(">II", png.read_bytes()[16:24]) == (1000, 1500)
+          print("PINTEREST_RSS_QA: rendered PNG 1000x1500, valid enclosure length, stable feed and image hashes, campaign URL and item identity verified")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pinterest-rss-preview
+          path: |
+            rss-preview/pinterest-feed.xml
+            rss-preview/pinterest/p01.png
+          if-no-files-found: error

@@ -55,6 +55,11 @@ jobs:
         run: python scripts/generate_seo_files.py
       - name: Validate generated pages and product quality
         run: python scripts/validate_site.py
+      - name: Generate curated Pinterest RSS and Pin image
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends librsvg2-bin fonts-noto-cjk
+          python scripts/generate_pinterest_feed.py
       - name: Add IndexNow verification key
         run: printf '%s' '7d4f93c2a6814eb5b0d87f216ca9e403' > site/7d4f93c2a6814eb5b0d87f216ca9e403.txt
 
